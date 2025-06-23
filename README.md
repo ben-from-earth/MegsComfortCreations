@@ -1,9 +1,5 @@
 # MegsComfortCreations
 
-Keeping track of all things to do with creating the Comfort Creations Website (WIP)
+Keeping track of all things to do with creating the Comfort Creations Website.
 
-Testing Readme upddate and changes in Github Desktop
-Test
-Test
-
-Test
+This is a working project and is currently a local python based app. In the process of developing this into a full website throughout my Springboard education.
