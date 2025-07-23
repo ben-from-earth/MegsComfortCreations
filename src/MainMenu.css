@@ -13,8 +13,8 @@
   background-size: cover;
   border: 5px solid var(--lightpink);
   border-radius: 25px;
-  justify-content: space-between;
   padding: 20px;
+  justify-content: space-between;
 }
 
 .InfoForm button {

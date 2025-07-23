@@ -1,0 +1,11 @@
+.MediaInputs label {
+  display: contents;
+}
+
+.MediaInputs {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px 20px;
+  align-items: center;
+  padding: 20px;
+}
