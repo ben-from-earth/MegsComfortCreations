@@ -1,0 +1,31 @@
+:root {
+  --lightpink: #f4d8d8;
+  --darkpink: #e1b3b5;
+  --peach: #f9d4b4;
+  --green: #d2d0b7;
+}
+
+.InfoForm {
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  height: 500px;
+  background-size: cover;
+  border: 5px solid var(--lightpink);
+  border-radius: 25px;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.InfoForm button {
+  background-color: var(--peach);
+  height: 50px;
+  font-size: 25px;
+  border: 3px solid var(--darkpink);
+  border-radius: 10px;
+}
+
+.InfoForm button:hover {
+  background-color: #f7c294;
+  cursor: pointer;
+}
