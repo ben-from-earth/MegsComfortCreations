@@ -2,36 +2,36 @@ import { useContext } from "react";
 import "./MediaInputs.css";
 import DataContext from "./DataContext";
 
-const MediaInputs = ({ info }) => {
+const MediaInputs = ({ info: { mediaTypes } }) => {
   const { dispatch } = useContext(DataContext);
   return (
     <>
       <div className="CheckBoxGroup">
-        {info.map(({ mediaType }, idx) => (
-          <label key={mediaType}>
+        {mediaTypes.map(({ type }, idx) => (
+          <label key={type}>
             <input
               id={idx}
               type="checkbox"
               onChange={() => dispatch({ type: "set-checks", idx })}
             />
-            {mediaType}
+            {type}
           </label>
         ))}
       </div>
       <form id="MediaInputForm" className="MediaInputs">
-        {info
+        {mediaTypes
           .filter((mediaType) => mediaType.show)
-          .map(({ mediaType }) => (
-            <label key={mediaType} htmlFor={mediaType}>
-              {`${mediaType} Titles: `}
+          .map(({ type }) => (
+            <label key={type} htmlFor={type}>
+              {`${type} Titles: `}
               <input
-                id={mediaType}
+                id={type}
                 type="text"
-                placeholder={`Input ${mediaType} Titles...`}
+                placeholder={`Input ${type} Titles...`}
                 onChange={(e) =>
                   dispatch({
                     type: "set-collect-text",
-                    mediaType: mediaType,
+                    mediaType: type,
                     text: e.target.value,
                   })
                 }
