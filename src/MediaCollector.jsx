@@ -1,7 +1,7 @@
 import BackgroundIMG from "./assets/FlowerBackground.png";
-import MainMenuTitle from "./assets/MegsMediaCollector.png";
+import MediaCollectorTitle from "./assets/MegsMediaCollector.png";
 import { useEffect, useReducer } from "react";
-import "./MainMenu.css";
+import "./MediaCollector.css";
 import MediaInputs from "./MediaInputs";
 import ButtonGroup from "./ButtonGroup";
 import DataContext from "./DataContext";
@@ -47,7 +47,7 @@ function reducer(state, action) {
   }
 }
 
-const MainMenu = () => {
+const MediaCollector = () => {
   const medias = ["Books", "Movies", "Video Games", "Albums"];
   const [Data, dispatch] = useReducer(reducer, {
     mediaTypes: medias.map((m) => ({ type: m, show: false, titles: [] })),
@@ -95,7 +95,7 @@ const MainMenu = () => {
           backgroundImage: `url(${BackgroundIMG})`,
         }}
       >
-        <img src={`${MainMenuTitle}`} />
+        <img src={`${MediaCollectorTitle}`} />
         <MediaInputs info={Data} />
         <ButtonGroup />
       </div>
@@ -103,4 +103,4 @@ const MainMenu = () => {
   );
 };
 
-export default MainMenu;
+export default MediaCollector;

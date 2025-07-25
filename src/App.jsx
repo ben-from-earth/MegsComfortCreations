@@ -1,10 +1,10 @@
-import MainMenu from "./MainMenu";
+import MediaCollector from "./MediaCollector";
 import "./App.css";
 
 function App() {
   return (
     <>
-      <MainMenu />
+      <MediaCollector />
     </>
   );
 }
