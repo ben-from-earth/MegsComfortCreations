@@ -8,13 +8,15 @@
 .InfoForm {
   display: flex;
   flex-direction: column;
-  width: 500px;
+  width: 100%;
   height: 500px;
   background-size: cover;
-  border: 5px solid var(--lightpink);
-  border-radius: 25px;
+  border-bottom: 5px solid var(--darkpink);
   padding: 20px;
   justify-content: space-between;
+  align-items: center;
+  box-shadow: 5px 5px 30px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
 }
 
 .InfoForm button {
@@ -28,4 +30,17 @@
 .InfoForm button:hover {
   background-color: #f7c294;
   cursor: pointer;
+}
+.InfoForm img {
+  width: 600px;
+}
+
+body {
+  background-color: var(--lightpink);
+}
+
+.queryCount {
+  position: absolute;
+  left: 20px;
+  top: 20px;
 }

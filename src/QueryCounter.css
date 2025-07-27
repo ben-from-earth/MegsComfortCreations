@@ -1,0 +1,10 @@
+.QueryCounter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: var(--lightpink);
+  border: 2px solid var(--darkpink);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}

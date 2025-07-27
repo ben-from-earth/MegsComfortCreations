@@ -1,0 +1,30 @@
+.Block {
+  background-color: var(--green);
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid rgb(86, 172, 86);
+  border-radius: 5px;
+  box-shadow: 5px 5px 30px rgba(0, 0, 0, 0.3);
+}
+
+.imageContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.imageContainer img {
+  box-sizing: border-box;
+  width: 84px;
+  height: 124px;
+}
+
+.imageContainer img:hover {
+  border: 2px solid red;
+  cursor: pointer;
+}
