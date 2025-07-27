@@ -6,15 +6,17 @@ import VideoGameIcon from "@mui/icons-material/VideogameAssetTwoTone";
 import AlbumIcon from "@mui/icons-material/AlbumTwoTone";
 
 const CollectedCoversBlock = ({
-  type,
-  images,
-  blockInfo: { title, author, first_publish_year, number_of_pages },
+  info: {
+    type,
+    images,
+    blockInfo: { title, author, first_publish_year, number_of_pages },
+  },
 }) => {
   const icons = {
-    Book: <BookIcon />,
-    Movie: <MovieIcon />,
-    VideoGame: <VideoGameIcon />,
-    Album: <AlbumIcon />,
+    Book: <BookIcon className="Icon" />,
+    Movie: <MovieIcon className="Icon" />,
+    "Video Game": <VideoGameIcon className="Icon" />,
+    Album: <AlbumIcon className="Icon" />,
   };
 
   return (
@@ -25,16 +27,36 @@ const CollectedCoversBlock = ({
           <img key={uuid()} src={i}></img>
         ))}
       </div>
-      <p>Title: {title}</p>
-      {author ? (
-        <>
-          <p>Author: {author}</p>
-          <p>Publication Year: {first_publish_year}</p>
-          <p>Page Count: {number_of_pages}</p>
-        </>
-      ) : (
-        <></>
-      )}
+      <div className="titleInfoContainer">
+        <label className="MCC-font" htmlFor="title">
+          Title:
+        </label>
+        <textarea name="title" defaultValue={`${title}`}></textarea>
+        {author ? (
+          <>
+            <label className="MCC-font" htmlFor="author">
+              Author:
+            </label>
+            <textarea name="author" defaultValue={`${author}`}></textarea>
+            <label className="MCC-font" htmlFor="pubYear">
+              Publication Year:
+            </label>
+            <textarea
+              name="pubYear"
+              defaultValue={`${first_publish_year}`}
+            ></textarea>
+            <label className="MCC-font" htmlFor="pageCount">
+              Page Count:
+            </label>
+            <textarea
+              name="pageCount"
+              defaultValue={`${number_of_pages}`}
+            ></textarea>
+          </>
+        ) : (
+          <></>
+        )}
+      </div>
     </div>
   );
 };

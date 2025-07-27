@@ -1,11 +1,20 @@
-.MediaInputs label {
-  display: contents;
-}
-
 .MediaInputs {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 10px 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
   align-items: center;
   padding: 20px;
+}
+
+.MediaInput {
+  background-color: white;
+  border-radius: 5px;
+  width: 300px;
+}
+
+@media (max-width: 650px) {
+  .MediaInputs {
+    display: flex;
+    flex-direction: column;
+  }
 }

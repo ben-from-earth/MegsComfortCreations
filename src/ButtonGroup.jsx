@@ -1,15 +1,23 @@
 import { useContext } from "react";
 import "./ButtonGroup.css";
 import DataContext from "./DataContext";
+import MediaDataContext from "./MediaDataContext";
 
 const ButtonGroup = () => {
   const { dispatch } = useContext(DataContext);
+  const { CollectedCoversBlocks } = useContext(MediaDataContext);
   return (
     <div className="ButtonGroup">
       <button onClick={() => dispatch({ type: "Collect" })}>
         Collect Media Covers
       </button>
-      <button>Send to Database</button>
+      <button
+        onClick={() =>
+          dispatch({ type: "send-to-database", items: CollectedCoversBlocks })
+        }
+      >
+        Send to Database
+      </button>
     </div>
   );
 };

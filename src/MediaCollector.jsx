@@ -3,15 +3,16 @@ import MediaCollectorTitle from "./assets/MegsMediaCollector.png";
 import { useEffect, useReducer, useRef, useState } from "react";
 import "./MediaCollector.css";
 import MediaInputs from "./MediaInputs";
+import MediaCheckboxes from "./MediaCheckboxes";
 import ButtonGroup from "./ButtonGroup";
 import DataContext from "./DataContext";
-import CollectedCoversBlock from "./CollectedCoversBlock";
+import MediaDataContext from "./MediaDataContext";
 import { v4 as uuid } from "uuid";
 import TitleBlockContainer from "./TitleBlockContainer";
 import QueryCounter from "./QueryCounter";
 
-const API_KEY = "AIzaSyCtoXKuRUP5p0Xrk21635t67OA6MxFLay4";
-const CX = "e1e30c1aaa513492b";
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+const CX = import.meta.env.VITE_CX;
 
 function reducer(state, action) {
   switch (action.type) {
@@ -46,10 +47,21 @@ function reducer(state, action) {
     case "Collect": {
       return { ...state, shouldFetch: true, isLoading: true };
     }
-    case "Finished Fetch": {
-      return { ...state, shouldFetch: false, isLoading: false };
-    }
+    case "Finished Fetch":
+      return {
+        ...state,
+        shouldFetch: false,
+        isLoading: false,
+        mediaTypes: state.mediaTypes.map((mt) => ({
+          ...mt,
+          toCollect: [],
+        })),
+      };
     case "set-toCollect-data": {
+      return state;
+    }
+    case "send-to-database": {
+      console.log(action.items);
       return state;
     }
   }
@@ -62,8 +74,6 @@ const MediaCollector = () => {
     shouldFetch: false,
     isLoading: false,
   });
-
-  const [shouldRenderBlocks, setShouldRenderBlocks] = useState(false);
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
 
   const updateQueryCount = () => {
@@ -88,6 +98,9 @@ const MediaCollector = () => {
 
   useEffect(() => {
     if (!Data.shouldFetch) return;
+
+    let isCancelled = false;
+    setCollectedCoversBlocks([]);
 
     async function grabOpenLibraryData({ title, author }) {
       try {
@@ -117,7 +130,7 @@ const MediaCollector = () => {
 
     async function CollectMediaCovers(type, { title, author }) {
       const controller = new AbortController();
-      setCollectedCoversBlocks([]);
+
       const imgArr = [];
       try {
         const params = new URLSearchParams({
@@ -149,7 +162,7 @@ const MediaCollector = () => {
         }
       }
       let blockInfo;
-      if (type === "Books") {
+      if (type === "Book") {
         blockInfo = await grabOpenLibraryData({ title, author }); // { title, author, first_publish_year, number_of_pages }
       } else {
         blockInfo = { title };
@@ -158,20 +171,30 @@ const MediaCollector = () => {
 
       setCollectedCoversBlocks((blocks) => [
         ...blocks,
-        <CollectedCoversBlock
-          type={type}
-          images={imgArr}
-          blockInfo={blockInfo}
-          key={uuid()}
-        />,
+        { type, images: imgArr, blockInfo, id: uuid() },
       ]);
     }
-    mediaTypesRef.current.map(({ type, toCollect }) =>
-      toCollect.map((t) => CollectMediaCovers(type, t))
+
+    const work = mediaTypesRef.current
+      .filter((mt) => mt.toCollect.length > 0)
+      .flatMap(({ type, toCollect }) =>
+        toCollect.map((t) => ({ type, payload: t }))
+      );
+
+    const promises = work.map(({ type, payload }) =>
+      CollectMediaCovers(type, payload)
     );
 
-    setShouldRenderBlocks(true);
-    dispatch({ type: "Finished Fetch" });
+    Promise.all(promises)
+      .then(() => {
+        if (isCancelled) return;
+        dispatch({ type: "Finished Fetch" });
+      })
+      .catch(console.error);
+
+    return () => {
+      isCancelled = true;
+    };
   }, [Data.shouldFetch]);
 
   return (
@@ -185,13 +208,17 @@ const MediaCollector = () => {
         >
           <QueryCounter />
           <img src={`${MediaCollectorTitle}`} />
-          <MediaInputs info={Data} />
-          <ButtonGroup />
+          <MediaCheckboxes mediaTypes={Data.mediaTypes} />
+          <MediaDataContext.Provider value={{ CollectedCoversBlocks }}>
+            <ButtonGroup />
+          </MediaDataContext.Provider>
+          <MediaInputs mediaTypes={Data.mediaTypes} />
         </div>
       </DataContext.Provider>
-      {shouldRenderBlocks && (
+      {CollectedCoversBlocks.length > 0 && (
         <TitleBlockContainer blocks={CollectedCoversBlocks} />
       )}
+      {Data.isLoading && <p>Loading...</p>}
     </>
   );
 };
