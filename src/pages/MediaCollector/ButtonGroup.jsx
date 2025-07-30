@@ -8,10 +8,14 @@ const ButtonGroup = () => {
   const { CollectedCoversBlocks } = useContext(MediaDataContext);
   return (
     <div className="ButtonGroup">
-      <button onClick={() => dispatch({ type: "Collect" })}>
+      <button
+        className="MCC-font"
+        onClick={() => dispatch({ type: "Collect" })}
+      >
         Collect Media Covers
       </button>
       <button
+        className="MCC-font"
         onClick={() =>
           dispatch({ type: "send-to-database", items: CollectedCoversBlocks })
         }

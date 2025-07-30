@@ -1,5 +1,5 @@
-import BackgroundIMG from "./assets/FlowerBackground.png";
-import MediaCollectorTitle from "./assets/MegsMediaCollector.png";
+import BackgroundIMG from "../../assets/FlowerBackground.png";
+import MediaCollectorTitle from "../../assets/MegsMediaCollector.png";
 import { useEffect, useReducer, useRef, useState } from "react";
 import "./MediaCollector.css";
 import MediaInputs from "./MediaInputs";

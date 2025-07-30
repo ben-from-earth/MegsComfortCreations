@@ -31,26 +31,26 @@ const CollectedCoversBlock = ({
         <label className="MCC-font" htmlFor="title">
           Title:
         </label>
-        <textarea name="title" defaultValue={`${title}`}></textarea>
+        <textarea name="title" defaultValue={title}></textarea>
         {author ? (
           <>
             <label className="MCC-font" htmlFor="author">
               Author:
             </label>
-            <textarea name="author" defaultValue={`${author}`}></textarea>
+            <textarea name="author" defaultValue={author}></textarea>
             <label className="MCC-font" htmlFor="pubYear">
               Publication Year:
             </label>
             <textarea
               name="pubYear"
-              defaultValue={`${first_publish_year}`}
+              defaultValue={first_publish_year ? first_publish_year : ""}
             ></textarea>
             <label className="MCC-font" htmlFor="pageCount">
               Page Count:
             </label>
             <textarea
               name="pageCount"
-              defaultValue={`${number_of_pages}`}
+              defaultValue={number_of_pages ? number_of_pages : ""}
             ></textarea>
           </>
         ) : (
