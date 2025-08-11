@@ -1,80 +1,31 @@
 import BackgroundIMG from "../../assets/FlowerBackground.png";
 import MediaCollectorTitle from "../../assets/MegsMediaCollector.png";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./MediaCollector.css";
 import MediaInputs from "./MediaInputs";
 import MediaCheckboxes from "./MediaCheckboxes";
 import ButtonGroup from "./ButtonGroup";
-import DataContext from "./DataContext";
-import MediaDataContext from "./MediaDataContext";
-import { v4 as uuid } from "uuid";
 import TitleBlockContainer from "./TitleBlockContainer";
 import QueryCounter from "./QueryCounter";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  finishedFetch,
+  getFetchStatus,
+  getLoadingStatus,
+  mediaData,
+} from "../../app/collectorSlice";
+import { nanoid } from "@reduxjs/toolkit";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const CX = import.meta.env.VITE_CX;
 
-function reducer(state, action) {
-  switch (action.type) {
-    case "set-checks":
-      return {
-        ...state,
-        mediaTypes: state.mediaTypes.map((mediaType, i) =>
-          action.idx === i ? { ...mediaType, show: !mediaType.show } : mediaType
-        ),
-      };
-    case "set-collect-text": {
-      let searchArr = action.text.split(",").map((i) => i.trim());
-      searchArr = searchArr.map((t) => {
-        const titleInfo = t.split("/").map((i) => i.trim());
-        const title = titleInfo[0];
-        const author = titleInfo[1];
-
-        return {
-          title,
-          author,
-        };
-      });
-      return {
-        ...state,
-        mediaTypes: state.mediaTypes.map((mediaType) =>
-          action.mediaType === mediaType.type
-            ? { ...mediaType, toCollect: searchArr }
-            : mediaType
-        ),
-      };
-    }
-    case "Collect": {
-      return { ...state, shouldFetch: true, isLoading: true };
-    }
-    case "Finished Fetch":
-      return {
-        ...state,
-        shouldFetch: false,
-        isLoading: false,
-        mediaTypes: state.mediaTypes.map((mt) => ({
-          ...mt,
-          toCollect: [],
-        })),
-      };
-    case "set-toCollect-data": {
-      return state;
-    }
-    case "send-to-database": {
-      console.log(action.items);
-      return state;
-    }
-  }
-}
-
 const MediaCollector = () => {
-  const medias = ["Book", "Movie", "Video Game", "Album"];
-  const [Data, dispatch] = useReducer(reducer, {
-    mediaTypes: medias.map((m) => ({ type: m, show: false, toCollect: [] })),
-    shouldFetch: false,
-    isLoading: false,
-  });
+  const dispatch = useDispatch();
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
+
+  const Data = useSelector(mediaData);
+  const shouldFetch = useSelector(getFetchStatus);
+  const isLoading = useSelector(getLoadingStatus);
 
   const updateQueryCount = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -90,14 +41,14 @@ const MediaCollector = () => {
     localStorage.setItem("queryCount", `${qCount}`);
   };
 
-  const mediaTypesRef = useRef(Data.mediaTypes);
+  const mediaTypesRef = useRef(Data);
 
   useEffect(() => {
-    mediaTypesRef.current = Data.mediaTypes;
-  }, [Data.mediaTypes]);
+    mediaTypesRef.current = Data;
+  }, [Data]);
 
   useEffect(() => {
-    if (!Data.shouldFetch) return;
+    if (!shouldFetch) return;
 
     let isCancelled = false;
     setCollectedCoversBlocks([]);
@@ -128,7 +79,16 @@ const MediaCollector = () => {
       }
     }
 
-    async function CollectMediaCovers(type, { title, author }) {
+    async function CollectMediaCovers(type, item) {
+      let title;
+      let author;
+      if (type === "book") {
+        title = item.title;
+        author = item.author;
+      } else {
+        title = item;
+      }
+
       const controller = new AbortController();
 
       const imgArr = [];
@@ -162,17 +122,17 @@ const MediaCollector = () => {
         }
       }
       let blockInfo;
-      if (type === "Book") {
+      if (type === "book") {
         blockInfo = await grabOpenLibraryData({ title, author }); // { title, author, first_publish_year, number_of_pages }
       } else {
         blockInfo = { title };
       }
-      dispatch({ type: "set-toCollect-data", payload: [type, blockInfo] });
 
       setCollectedCoversBlocks((blocks) => [
         ...blocks,
-        { type, images: imgArr, blockInfo, id: uuid() },
+        { type, images: imgArr, blockInfo, id: nanoid() },
       ]);
+      return;
     }
 
     const work = mediaTypesRef.current
@@ -188,37 +148,48 @@ const MediaCollector = () => {
     Promise.all(promises)
       .then(() => {
         if (isCancelled) return;
-        dispatch({ type: "Finished Fetch" });
+        dispatch(finishedFetch());
       })
       .catch(console.error);
 
     return () => {
       isCancelled = true;
     };
-  }, [Data.shouldFetch]);
+  }, [shouldFetch, dispatch]);
+
+  //--- Setting state in parent for gathering all of the data from the media text inputs ---//
+
+  const [searchData, setSearchData] = useState(
+    Data.map((media) => ({ type: media.type, text: "" }))
+  );
+
+  //----------------------------------------------------------------------------------------//
 
   return (
     <>
-      <DataContext.Provider value={{ dispatch }}>
-        <div
-          className="InfoForm"
-          style={{
-            backgroundImage: `url(${BackgroundIMG})`,
-          }}
-        >
-          <QueryCounter />
-          <img src={`${MediaCollectorTitle}`} />
-          <MediaCheckboxes mediaTypes={Data.mediaTypes} />
-          <MediaDataContext.Provider value={{ CollectedCoversBlocks }}>
-            <ButtonGroup />
-          </MediaDataContext.Provider>
-          <MediaInputs mediaTypes={Data.mediaTypes} />
-        </div>
-      </DataContext.Provider>
+      <div
+        className="InfoForm"
+        style={{
+          backgroundImage: `url(${BackgroundIMG})`,
+        }}
+      >
+        <QueryCounter />
+        <img src={`${MediaCollectorTitle}`} />
+        <MediaCheckboxes mediaTypes={Data} />
+
+        <ButtonGroup
+          searchData={searchData}
+          setSearchData={setSearchData}
+          mediaTypes={Data}
+        />
+
+        <MediaInputs mediaTypes={Data} setSearchData={setSearchData} />
+      </div>
+
       {CollectedCoversBlocks.length > 0 && (
         <TitleBlockContainer blocks={CollectedCoversBlocks} />
       )}
-      {Data.isLoading && <p>Loading...</p>}
+      {isLoading && <p>Loading...</p>}
     </>
   );
 };

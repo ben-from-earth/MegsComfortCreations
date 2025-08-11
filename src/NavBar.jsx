@@ -14,7 +14,7 @@ const NavBar = () => {
           Shop
         </NavLink>
         <NavLink to="MegsRecs" className="MCC-font">
-          Meg's Rec's
+          Meg's Recs
         </NavLink>
         <NavLink to="Newsletter" className="MCC-font">
           Newsletter

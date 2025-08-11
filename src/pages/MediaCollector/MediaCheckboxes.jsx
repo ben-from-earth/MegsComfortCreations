@@ -1,20 +1,20 @@
-import { useContext } from "react";
 import "./MediaCheckboxes.css";
-import DataContext from "./DataContext";
+import { useDispatch } from "react-redux";
+import { setChecks } from "../../app/collectorSlice";
 
 const MediaCheckboxes = ({ mediaTypes }) => {
-  const { dispatch } = useContext(DataContext);
+  const dispatch = useDispatch();
   return (
     <>
       <div className="CheckBoxGroup">
-        {mediaTypes.map(({ type }, idx) => (
+        {mediaTypes.map(({ type, label }, idx) => (
           <label key={type} className="MCC-font">
             <input
               id={idx}
               type="checkbox"
-              onChange={() => dispatch({ type: "set-checks", idx })}
+              onChange={() => dispatch(setChecks(idx))}
             />
-            {`${type}s`}
+            {`${label}s`}
           </label>
         ))}
       </div>

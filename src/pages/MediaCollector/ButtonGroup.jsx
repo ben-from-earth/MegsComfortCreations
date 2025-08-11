@@ -1,24 +1,28 @@
-import { useContext } from "react";
 import "./ButtonGroup.css";
-import DataContext from "./DataContext";
-import MediaDataContext from "./MediaDataContext";
+import { useDispatch } from "react-redux";
+import { collectMedia, setCollectText } from "../../app/collectorSlice";
 
-const ButtonGroup = () => {
-  const { dispatch } = useContext(DataContext);
-  const { CollectedCoversBlocks } = useContext(MediaDataContext);
+const ButtonGroup = ({ mediaTypes, searchData, setSearchData }) => {
+  const dispatch = useDispatch();
   return (
     <div className="ButtonGroup">
       <button
         className="MCC-font"
-        onClick={() => dispatch({ type: "Collect" })}
+        onClick={() => {
+          dispatch(setCollectText({ searchData }));
+          dispatch(collectMedia());
+          setSearchData(
+            mediaTypes.map((media) => ({ type: media.type, text: "" }))
+          );
+        }}
       >
         Collect Media Covers
       </button>
       <button
         className="MCC-font"
-        onClick={() =>
-          dispatch({ type: "send-to-database", items: CollectedCoversBlocks })
-        }
+        // onClick={() =>
+        //   dispatch({ type: "send-to-database", items: CollectedCoversBlocks })
+        // }
       >
         Send to Database
       </button>

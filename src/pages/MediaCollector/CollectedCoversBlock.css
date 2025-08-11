@@ -30,14 +30,48 @@
 }
 
 .imageContainer img {
-  box-sizing: border-box;
+  display: block;
   width: 84px;
   height: 124px;
 }
 
+.imageContainer .album-img {
+  width: 124px;
+  object-fit: cover;
+}
+
 .imageContainer img:hover {
-  border: 2px solid red;
+  outline: 2px solid green;
   cursor: pointer;
+}
+
+.imageWrapper {
+  position: relative;
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.overlay {
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  background-color: rgba(0, 200, 0, 0.5);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay p {
+  transform: rotate(-65deg);
+  font-size: 30px;
+  font-weight: bold;
+  color: rgb(0, 77, 0);
+}
+
+.overlay.show {
+  opacity: 1;
 }
 
 .Block .Icon {
