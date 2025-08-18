@@ -1,51 +1,53 @@
+// image collection from assets
 import BackgroundIMG from "../../assets/FlowerBackground.png";
 import MediaCollectorTitle from "../../assets/MegsMediaCollector.png";
+
+// react and redux
 import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
+//styles
 import "./MediaCollector.css";
+
+// necessary components
 import MediaInputs from "./MediaInputs";
 import MediaCheckboxes from "./MediaCheckboxes";
 import ButtonGroup from "./ButtonGroup";
 import TitleBlockContainer from "./TitleBlockContainer";
 import QueryCounter from "./QueryCounter";
-import { useDispatch, useSelector } from "react-redux";
+
+// necessary imports from the collector slice
 import {
+  collectMedia,
   finishedFetch,
   getFetchStatus,
   getLoadingStatus,
   mediaData,
+  setCollectText,
+  collectMediaCovers,
 } from "../../app/collectorSlice";
-import { nanoid } from "@reduxjs/toolkit";
-
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-const CX = import.meta.env.VITE_CX;
 
 const MediaCollector = () => {
+  //setup connection to the redux slice
   const dispatch = useDispatch();
-  const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
-
-  const Data = useSelector(mediaData);
+  const stateData = useSelector(mediaData);
   const shouldFetch = useSelector(getFetchStatus);
   const isLoading = useSelector(getLoadingStatus);
 
-  const updateQueryCount = () => {
-    const today = new Date().toISOString().split("T")[0];
-    const storedDate = localStorage.getItem("lastQueryDate");
+  // setup states used throughout the component
+  const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
+  const [searchData, setSearchData] = useState(
+    stateData.map((media) => ({ type: media.type, text: "" }))
+  );
 
-    if (storedDate !== today) {
-      localStorage.setItem("queryCount", "0");
-      localStorage.setItem("lastQueryDate", today);
-    }
+  //refs for useEffect
+  const mediaTypesRef = useRef(stateData);
 
-    let qCount = Number(localStorage.getItem("queryCount"));
-    qCount++;
-    localStorage.setItem("queryCount", `${qCount}`);
-  };
-
-  const mediaTypesRef = useRef(Data);
-
+  //update ref whenever stateData updates
+  //stateData holds data about showing checkboxes, and the toCollect data.
   useEffect(() => {
-    mediaTypesRef.current = Data;
-  }, [Data]);
+    mediaTypesRef.current = stateData;
+  }, [stateData]);
 
   useEffect(() => {
     if (!shouldFetch) return;
@@ -53,97 +55,18 @@ const MediaCollector = () => {
     let isCancelled = false;
     setCollectedCoversBlocks([]);
 
-    async function grabOpenLibraryData({ title, author }) {
-      try {
-        const URL = `https://openlibrary.org/search.json?title=${title.replaceAll(
-          " ",
-          "+"
-        )}&author=${author.replaceAll(" ", "+")}&limit=1`;
-        const res = await fetch(URL);
-        const data = await res.json();
-        const {
-          docs: [{ first_publish_year, cover_edition_key }],
-        } = data;
-
-        const editionURL = `https://openlibrary.org/books/${cover_edition_key}.json`;
-        const editionRes = await fetch(editionURL);
-        const editionData = await editionRes.json();
-
-        const { number_of_pages } = editionData;
-        return { title, author, first_publish_year, number_of_pages };
-      } catch {
-        console.log(
-          `Error in OpenLibrary API Call, data not collected for ${title}`
-        );
-        return { title, author };
-      }
-    }
-
-    async function CollectMediaCovers(type, item) {
-      let title;
-      let author;
-      if (type === "book") {
-        title = item.title;
-        author = item.author;
-      } else {
-        title = item;
-      }
-
-      const controller = new AbortController();
-
-      const imgArr = [];
-      try {
-        const params = new URLSearchParams({
-          q: `${title} ${type} Cover Image`,
-          cx: CX,
-          key: API_KEY,
-          searchType: "image",
-          num: 3,
-        });
-
-        const res = await fetch(
-          `https://www.googleapis.com/customsearch/v1?${params.toString()}`,
-          { signal: controller.signal }
-        );
-
-        if (!res.ok) {
-          throw new Error(
-            `Google Search API failed: ${res.status} ${res.statusText}`
-          );
-        }
-        const data = await res.json();
-        updateQueryCount();
-        data.items.map((i) => imgArr.push(i.link));
-      } catch (e) {
-        if (e.name !== "AbortError") {
-          console.log(e.message);
-        } else {
-          console.log("Aborted");
-        }
-      }
-      let blockInfo;
-      if (type === "book") {
-        blockInfo = await grabOpenLibraryData({ title, author }); // { title, author, first_publish_year, number_of_pages }
-      } else {
-        blockInfo = { title };
-      }
-
-      setCollectedCoversBlocks((blocks) => [
-        ...blocks,
-        { type, images: imgArr, blockInfo, id: nanoid() },
-      ]);
-      return;
-    }
-
     const work = mediaTypesRef.current
-      .filter((mt) => mt.toCollect.length > 0)
+      .filter((mediaType) => mediaType.toCollect.length > 0)
       .flatMap(({ type, toCollect }) =>
-        toCollect.map((t) => ({ type, payload: t }))
+        toCollect.map((t) => ({ type, toCollectItem: t }))
       );
 
-    const promises = work.map(({ type, payload }) =>
-      CollectMediaCovers(type, payload)
-    );
+    const promises = work.map(async ({ type, toCollectItem }) => {
+      const newBlock = await dispatch(
+        collectMediaCovers({ type, toCollectItem })
+      ).unwrap();
+      setCollectedCoversBlocks((blocks) => [...blocks, newBlock]);
+    });
 
     Promise.all(promises)
       .then(() => {
@@ -157,13 +80,11 @@ const MediaCollector = () => {
     };
   }, [shouldFetch, dispatch]);
 
-  //--- Setting state in parent for gathering all of the data from the media text inputs ---//
-
-  const [searchData, setSearchData] = useState(
-    Data.map((media) => ({ type: media.type, text: "" }))
-  );
-
-  //----------------------------------------------------------------------------------------//
+  const handleCollectClick = () => {
+    dispatch(setCollectText({ searchData }));
+    dispatch(collectMedia());
+    setSearchData(stateData.map((media) => ({ type: media.type, text: "" })));
+  };
 
   return (
     <>
@@ -175,15 +96,11 @@ const MediaCollector = () => {
       >
         <QueryCounter />
         <img src={`${MediaCollectorTitle}`} />
-        <MediaCheckboxes mediaTypes={Data} />
+        <MediaCheckboxes mediaTypes={stateData} />
 
-        <ButtonGroup
-          searchData={searchData}
-          setSearchData={setSearchData}
-          mediaTypes={Data}
-        />
+        <ButtonGroup onCollect={handleCollectClick} />
 
-        <MediaInputs mediaTypes={Data} setSearchData={setSearchData} />
+        <MediaInputs mediaTypes={stateData} setSearchData={setSearchData} />
       </div>
 
       {CollectedCoversBlocks.length > 0 && (

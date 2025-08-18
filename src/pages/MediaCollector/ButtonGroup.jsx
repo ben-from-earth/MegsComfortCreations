@@ -1,28 +1,28 @@
 import "./ButtonGroup.css";
-import { useDispatch } from "react-redux";
-import { collectMedia, setCollectText } from "../../app/collectorSlice";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectDatabaseData,
+  sendToDatabase,
+} from "../../app/databaseDataSlice";
 
-const ButtonGroup = ({ mediaTypes, searchData, setSearchData }) => {
+const ButtonGroup = ({ onCollect }) => {
+  // setup connection to redux slice and get all searched information
   const dispatch = useDispatch();
+  const databaseData = useSelector(selectDatabaseData);
+
   return (
     <div className="ButtonGroup">
       <button
         className="MCC-font"
         onClick={() => {
-          dispatch(setCollectText({ searchData }));
-          dispatch(collectMedia());
-          setSearchData(
-            mediaTypes.map((media) => ({ type: media.type, text: "" }))
-          );
+          onCollect();
         }}
       >
         Collect Media Covers
       </button>
       <button
         className="MCC-font"
-        // onClick={() =>
-        //   dispatch({ type: "send-to-database", items: CollectedCoversBlocks })
-        // }
+        onClick={() => dispatch(sendToDatabase({ databaseData }))}
       >
         Send to Database
       </button>

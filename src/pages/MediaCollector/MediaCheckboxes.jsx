@@ -3,7 +3,9 @@ import { useDispatch } from "react-redux";
 import { setChecks } from "../../app/collectorSlice";
 
 const MediaCheckboxes = ({ mediaTypes }) => {
+  //setup connection to redux slice
   const dispatch = useDispatch();
+
   return (
     <>
       <div className="CheckBoxGroup">
