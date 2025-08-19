@@ -1,14 +1,33 @@
 .Block {
-  background-color: var(--green);
   margin: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  border: 2px solid rgb(86, 172, 86);
+  border: 2px solid;
   border-radius: 5px;
   box-shadow: 5px 5px 30px rgba(0, 0, 0, 0.3);
   position: relative;
+  height: fit-content;
+  width: fit-content;
+}
+
+.Block.book {
+  background-color: #98ab88;
+  border-color: #3d770d;
+}
+.Block.movie {
+  background-color: #323b43;
+  color: white;
+  border-color: black;
+}
+.Block.album {
+  background-color: #f4c7c5;
+  border-color: #d49a97;
+}
+.Block.video_game {
+  background-color: #7fa5a3;
+  border-color: #4e8885;
 }
 
 .titleInfoContainer {
@@ -17,7 +36,6 @@
   gap: 10px 20px;
   align-items: center;
   padding: 20px;
-  margin-bottom: 10px;
 }
 
 .imageContainer {
@@ -76,6 +94,16 @@
 
 .Block .Icon {
   position: absolute;
-  left: 2%;
-  bottom: 2%;
+  left: 1%;
+  bottom: 1%;
+}
+
+.genreCheckboxes {
+  font-size: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, max-content); /* two equal-width columns */
+  gap: 5px 10px; /* space between rows and columns */
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 25px 30px 25px;
 }

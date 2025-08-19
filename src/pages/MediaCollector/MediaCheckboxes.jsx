@@ -1,8 +1,8 @@
 import "./MediaCheckboxes.css";
 import { useDispatch } from "react-redux";
-import { setChecks } from "../../app/collectorSlice";
+import { setChecks } from "../../state/collectorSlice";
 
-const MediaCheckboxes = ({ mediaTypes }) => {
+const MediaCheckboxes = ({ mediaTypes, setSearchData }) => {
   //setup connection to redux slice
   const dispatch = useDispatch();
 
@@ -14,7 +14,14 @@ const MediaCheckboxes = ({ mediaTypes }) => {
             <input
               id={idx}
               type="checkbox"
-              onChange={() => dispatch(setChecks(idx))}
+              onChange={() => {
+                dispatch(setChecks(idx));
+                setSearchData((prev) => {
+                  return prev.map((_, i) =>
+                    i === idx ? { ...prev[i], text: "" } : prev[i]
+                  );
+                });
+              }}
             />
             {`${label}s`}
           </label>

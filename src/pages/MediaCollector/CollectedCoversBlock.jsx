@@ -10,15 +10,18 @@ import {
   removeImageFromDatabaseData,
   selectDatabaseData,
   updateDatabaseData,
-} from "../../app/databaseDataSlice";
-import { memo, useEffect, useState } from "react";
+} from "../../state/databaseDataSlice";
+import { memo, useContext, useEffect, useState } from "react";
+
+//genre from context provider
+import GenreContext from "../../context/GenreContext";
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
   //setup memo so block doesnt rerender during other actions
   info: {
     type,
     images,
-    blockInfo: { title, author, first_publish_year, number_of_pages },
+    blockInfo: { title, author, pub_year, page_count },
     blockID,
   },
 }) {
@@ -70,7 +73,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   const payload = {
     type,
-    data: { title, author, first_publish_year, number_of_pages, blockID },
+    data: { title, author, pub_year, page_count, blockID },
   };
 
   //on mount, populate the database data (in the state) with the block information
@@ -107,8 +110,11 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     }
   };
 
+  //get genres for checkbox population
+  const genres = useContext(GenreContext);
+
   return (
-    <div className="Block">
+    <div className={`Block ${type}`}>
       {icons[type]}
       <div className="imageContainer">
         {images.map((src, idx) => (
@@ -129,13 +135,25 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         {type === "book" ? (
           <>
             <MyTextArea name="author" label="Author" />
-            <MyTextArea name="first_publish_year" label="Publication Year" />
-            <MyTextArea name="number_of_pages" label="Page Count" />
+            <MyTextArea name="pub_year" label="Publication Year" />
+            <MyTextArea name="page_count" label="Page Count" />
           </>
         ) : (
           <></>
         )}
       </div>
+      {type === "book" ? (
+        <div className="genreCheckboxes">
+          {genres?.map((text, idx) => (
+            <label key={idx} className="MCC-font">
+              <input type="checkbox" />
+              {text}
+            </label>
+          ))}
+        </div>
+      ) : (
+        <></>
+      )}
     </div>
   );
 });

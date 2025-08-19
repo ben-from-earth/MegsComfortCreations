@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   selectDatabaseData,
   sendToDatabase,
-} from "../../app/databaseDataSlice";
+} from "../../state/databaseDataSlice";
 
 const ButtonGroup = ({ onCollect }) => {
   // setup connection to redux slice and get all searched information

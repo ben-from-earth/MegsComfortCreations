@@ -16,6 +16,20 @@ import MegsRecs from "./pages/MegsRecs/MegsRecs";
 import NewsletterPage from "./pages/Newsletter/NewsletterPage";
 import MediaCollector from "./pages/MediaCollector/MediaCollector";
 
+//Context
+import GenreContext from "./context/GenreContext";
+
+//get genres for use around the app
+const genres = await (async () => {
+  const res = await fetch("http://localhost:3001/genres");
+
+  if (!res.ok) {
+    throw new Error(`Server Error getting genres: ${res.status}`);
+  }
+  const collection = await res.json();
+  return collection.payload.map((item) => item.genre);
+})();
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<RootLayout />}>
@@ -29,7 +43,11 @@ const router = createBrowserRouter(
 );
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <GenreContext.Provider value={genres}>
+      <RouterProvider router={router} />
+    </GenreContext.Provider>
+  );
 }
 
 export default App;

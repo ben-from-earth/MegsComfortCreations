@@ -34,29 +34,26 @@ export const grabOpenLibraryData = createAsyncThunk(
         title,
         author,
         limit: "1",
+        fields: "first_publish_year,number_of_pages_median",
       });
       const res = await fetch(
         `https://openlibrary.org/search.json?${params.toString()}`
       );
-      if (!res.ok) return { title, author };
-
-      const stateData = await res.json();
-      const {
-        docs: [{ first_publish_year, cover_edition_key }],
-      } = stateData;
-
-      let number_of_pages;
-      if (cover_edition_key) {
-        const editionRes = await fetch(
-          `https://openlibrary.org/books/${cover_edition_key}.json`
-        );
-        if (editionRes.ok) {
-          const editionData = await editionRes.json();
-          number_of_pages = editionData?.number_of_pages;
-        }
+      if (!res.ok) {
+        return { title, author };
       }
 
-      return { title, author, first_publish_year, number_of_pages };
+      const data = await res.json();
+      const doc = data?.docs?.[0];
+      if (!doc) {
+        return { title, author };
+      }
+
+      const {
+        first_publish_year: pub_year,
+        number_of_pages_median: page_count,
+      } = doc;
+      return { title, author, pub_year, page_count };
     } catch {
       console.log(`Error gathering Open Library data for ${title}`);
       return { title, author };
@@ -80,7 +77,7 @@ export const collectMediaCovers = createAsyncThunk(
     //setup empty img array to fill with searched images
     const imgArr = [];
     try {
-      //search qeury example: "Dune book cover Image"
+      //search query example: "Dune book cover image"
       //request for three images from this search
       const params = new URLSearchParams({
         q: `${title} ${type} Cover Image`,
@@ -123,7 +120,7 @@ export const collectMediaCovers = createAsyncThunk(
         blockInfo = await dispatch(
           grabOpenLibraryData({ title, author })
         ).unwrap();
-        // blockInfo: { title, author, first_publish_year, number_of_pages } || {title, author}
+        // blockInfo: { title, author, pub_year, page_count } || {title, author}
       } catch (err) {
         console.log("Dispatch issue:", err);
       }
@@ -132,7 +129,6 @@ export const collectMediaCovers = createAsyncThunk(
       //Updates to data collection for other media types can be performed here
       blockInfo = { title };
     }
-
     //return the collected data for creation of collectedCoverBlock
     return { type, images: imgArr, blockInfo, blockID: nanoid() };
   }
@@ -142,15 +138,22 @@ export const collectorSlice = createSlice({
   name: "collector",
   initialState,
   reducers: {
+    //function to handle showing the media collector text area if the checkbox is selected
     setChecks: (state, action) => {
       const idx = action.payload;
       state.mediaTypes[idx].show = !state.mediaTypes[idx].show;
     },
+
+    // takes in the text area text and creates a list of search items.
+    // books are inputted as title / author, title / author, etc. so we parse out the string here
     setCollectText: (state, action) => {
       for (let media of action.payload.searchData) {
         let searchArr = [];
         if (media.type === "book" && media.text) {
-          searchArr = media.text.split(",").map((i) => i.trim());
+          searchArr = media.text
+            .split(",")
+            .map((i) => i.trim())
+            .filter((i) => i !== "");
           searchArr = searchArr.map((t) => {
             const titleInfo = t.split("/").map((i) => i.trim());
             const title = titleInfo[0];
@@ -162,7 +165,10 @@ export const collectorSlice = createSlice({
             };
           });
         } else if (media.text) {
-          searchArr = media.text.split(",").map((i) => i.trim());
+          searchArr = media.text
+            .split(",")
+            .map((i) => i.trim())
+            .filter((i) => i !== "");
         }
         const i = state.mediaTypes.findIndex((m) => m.type === media.type);
         if (i !== -1) state.mediaTypes[i].toCollect = searchArr;
