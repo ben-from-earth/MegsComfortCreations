@@ -7,13 +7,9 @@ const Movie = require("./models/movie.cjs");
 const Video_Game = require("./models/video_game.cjs");
 const Album = require("./models/album.cjs");
 const Genre = require("./models/genre.cjs");
+const outputPNG = require("./outputPNG.cjs");
 
 const app = express();
-
-app.use((req, _res, next) => {
-  console.log(req.method, req.path);
-  next();
-});
 
 app.use(
   cors({
@@ -34,6 +30,16 @@ app.get("/genres", async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
+});
+
+app.post("/print-png", async (req, res) => {
+  //req body: {template, images: [array of image blocks]}
+  //image blocks: {url: "url.com", spineColor: "#ffffffff", type}
+  const template = req.body.template;
+  const images = req.body.images;
+  const png = await outputPNG({ template, images });
+  res.setHeader("Content-Type", "image/png");
+  res.send(png);
 });
 
 app.post("/savetodb/:type", async (req, res, next) => {

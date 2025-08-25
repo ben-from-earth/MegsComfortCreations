@@ -10,21 +10,24 @@ class Book {
             author,
             page_count,
             pub_year,
-            image_urls 
-      ) VALUES ($1, $2, $3, $4, $5) 
+            image_urls,
+            spine_color 
+      ) VALUES ($1, $2, $3, $4, $5, $6) 
       RETURNING 
             id,
             title,
             author,
             page_count,
             pub_year,
-            image_urls`,
+            image_urls,
+            spine_color`,
       [
         data.title,
         data.author,
         convertToNull(data.page_count),
         convertToNull(data.pub_year),
         convertToNull(data.image_urls),
+        data.spineColor,
       ]
     );
     return result.rows[0];

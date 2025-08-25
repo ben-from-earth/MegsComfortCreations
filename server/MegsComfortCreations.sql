@@ -1,3 +1,5 @@
+DROP DATABASE IF EXISTS megscomfortcreations;
+
 CREATE DATABASE megscomfortcreations;
 
 \c megscomfortcreations
@@ -10,6 +12,7 @@ CREATE TABLE books (
     author TEXT NOT NULL,
     page_count INTEGER,
     pub_year INTEGER ,
+    spine_color TEXT,
     image_urls TEXT[]
 );
 
@@ -34,6 +37,12 @@ CREATE TABLE albums (
 CREATE TABLE genres (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     genre TEXT NOT NULL
+);
+
+CREATE TABLE genres_books (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    book_id TEXT,
+    genre_id TEXT
 );
 
 INSERT INTO genres (

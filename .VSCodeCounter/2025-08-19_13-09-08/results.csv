@@ -1,0 +1,51 @@
+"filename", "language", "JavaScript", "JSON", "Markdown", "JSON with Comments", "HTML", "MS SQL", "JavaScript JSX", "PostCSS", "XML", "comment", "blank", "total"
+"/home/ben-from-earth/MegsComfortCreations/README.md", "Markdown", 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 8
+"/home/ben-from-earth/MegsComfortCreations/eslint.config.js", "JavaScript", 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 30
+"/home/ben-from-earth/MegsComfortCreations/index.html", "HTML", 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 1, 20
+"/home/ben-from-earth/MegsComfortCreations/jsconfig.json", "JSON with Comments", 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 8
+"/home/ben-from-earth/MegsComfortCreations/original_goodreads_scraper.js", "JavaScript", 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 90
+"/home/ben-from-earth/MegsComfortCreations/package-lock.json", "JSON", 0, 5146, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5147
+"/home/ben-from-earth/MegsComfortCreations/package.json", "JSON", 0, 42, 0, 0, 0, 0, 0, 0, 0, 0, 1, 43
+"/home/ben-from-earth/MegsComfortCreations/server/MegsComfortCreations.sql", "MS SQL", 0, 0, 0, 0, 0, 53, 0, 0, 0, 0, 8, 61
+"/home/ben-from-earth/MegsComfortCreations/server/app.cjs", "JavaScript", 75, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13, 90
+"/home/ben-from-earth/MegsComfortCreations/server/db.cjs", "JavaScript", 17, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 23
+"/home/ben-from-earth/MegsComfortCreations/server/expressError.cjs", "JavaScript", 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11
+"/home/ben-from-earth/MegsComfortCreations/server/models/album.cjs", "JavaScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 23
+"/home/ben-from-earth/MegsComfortCreations/server/models/book.cjs", "JavaScript", 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 35
+"/home/ben-from-earth/MegsComfortCreations/server/models/genre.cjs", "JavaScript", 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 23
+"/home/ben-from-earth/MegsComfortCreations/server/models/movie.cjs", "JavaScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 23
+"/home/ben-from-earth/MegsComfortCreations/server/models/video_game.cjs", "JavaScript", 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 23
+"/home/ben-from-earth/MegsComfortCreations/server/server.cjs", "JavaScript", 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7
+"/home/ben-from-earth/MegsComfortCreations/src/App.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1
+"/home/ben-from-earth/MegsComfortCreations/src/App.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 41, 0, 0, 4, 9, 54
+"/home/ben-from-earth/MegsComfortCreations/src/NavBar.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 44, 0, 0, 6, 50
+"/home/ben-from-earth/MegsComfortCreations/src/NavBar.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 28, 0, 0, 0, 8, 36
+"/home/ben-from-earth/MegsComfortCreations/src/assets/react.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1
+"/home/ben-from-earth/MegsComfortCreations/src/context/GenreContext.js", "JavaScript", 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6
+"/home/ben-from-earth/MegsComfortCreations/src/index.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 2, 15
+"/home/ben-from-earth/MegsComfortCreations/src/layouts/RootLayout.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 3, 18
+"/home/ben-from-earth/MegsComfortCreations/src/main.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 2, 15
+"/home/ben-from-earth/MegsComfortCreations/src/pages/Home/HomePage.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 6
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/ButtonGroup.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 3, 21
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/ButtonGroup.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 29, 0, 0, 1, 4, 34
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/CollectedCoversBlock.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 97, 0, 0, 13, 110
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/CollectedCoversBlock.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 132, 0, 0, 14, 16, 162
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/MediaCheckboxes.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 1, 8
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/MediaCheckboxes.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 30, 0, 0, 1, 4, 35
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/MediaCollector.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 4, 36
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/MediaCollector.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 91, 0, 0, 14, 22, 127
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/MediaInputs.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 4, 26
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/MediaInputs.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 3, 35
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/QueryCounter.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 1, 12
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/QueryCounter.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 3, 18
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/TitleBlockContainer.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1, 7
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/TitleBlockContainer.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 3, 16
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MediaCollector/helpers/MediaCollectorHelpers.js", "JavaScript", 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 16
+"/home/ben-from-earth/MegsComfortCreations/src/pages/MegsRecs/MegsRecs.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 6
+"/home/ben-from-earth/MegsComfortCreations/src/pages/Newsletter/NewsletterPage.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 6
+"/home/ben-from-earth/MegsComfortCreations/src/pages/Shop/ShopPage.jsx", "JavaScript JSX", 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 6
+"/home/ben-from-earth/MegsComfortCreations/src/state/collectorSlice.js", "JavaScript", 161, 0, 0, 0, 0, 0, 0, 0, 0, 19, 18, 198
+"/home/ben-from-earth/MegsComfortCreations/src/state/databaseDataSlice.js", "JavaScript", 139, 0, 0, 0, 0, 0, 0, 0, 0, 12, 14, 165
+"/home/ben-from-earth/MegsComfortCreations/src/state/store.js", "JavaScript", 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"/home/ben-from-earth/MegsComfortCreations/vite.config.js", "JavaScript", 10, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 13
+"Total", "-", 654, 5188, 4, 8, 19, 53, 455, 250, 1, 70, 234, 6936

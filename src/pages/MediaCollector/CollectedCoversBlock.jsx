@@ -5,9 +5,9 @@ import VideoGameIcon from "@mui/icons-material/VideogameAssetTwoTone";
 import AlbumIcon from "@mui/icons-material/AlbumTwoTone";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  addImageToDatabaseData,
+  addToDatabaseData,
   populateDatabaseData,
-  removeImageFromDatabaseData,
+  removeFromDatabaseData,
   selectDatabaseData,
   updateDatabaseData,
 } from "../../state/databaseDataSlice";
@@ -70,10 +70,23 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   };
 
   const dispatch = useDispatch();
+  const [color, setColor] = useState("#ffffff");
+
+  const bookSpecificPayload = {
+    author,
+    pub_year,
+    page_count,
+    genres: [],
+  };
 
   const payload = {
     type,
-    data: { title, author, pub_year, page_count, blockID },
+    data: {
+      title,
+      spineColor: color,
+      blockID,
+      ...(type === "book" ? bookSpecificPayload : {}),
+    },
   };
 
   //on mount, populate the database data (in the state) with the block information
@@ -98,7 +111,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     );
     if (next) {
       dispatch(
-        addImageToDatabaseData({
+        addToDatabaseData({
           type,
           src,
           idx,
@@ -106,12 +119,36 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         })
       );
     } else {
-      dispatch(removeImageFromDatabaseData({ blockID, type, idx }));
+      dispatch(removeFromDatabaseData({ blockID, type, idx }));
     }
   };
 
   //get genres for checkbox population
   const genres = useContext(GenreContext);
+
+  const doGenreClick = (genreText, checked) => {
+    if (checked) {
+      dispatch(addToDatabaseData({ blockID, type, genreText }));
+    } else {
+      dispatch(removeFromDatabaseData({ blockID, type, genreText }));
+    }
+  };
+
+  const doColorPick = async (blockID, type) => {
+    if (!window.EyeDropper) {
+      console.log("EyeDropper API not supported in this browser");
+      return;
+    }
+    const eyeDropper = new EyeDropper();
+    try {
+      const { sRGBHex } = await eyeDropper.open();
+      const spineColor = sRGBHex;
+      setColor(spineColor);
+      dispatch(addToDatabaseData({ blockID, type, spineColor }));
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   return (
     <div className={`Block ${type}`}>
@@ -130,6 +167,15 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           </div>
         ))}
       </div>
+      {type !== "album" ? (
+        <div
+          className="colorPicker"
+          style={{ backgroundColor: color }}
+          onClick={() => doColorPick(blockID, type)}
+        ></div>
+      ) : (
+        <></>
+      )}
       <div className="titleInfoContainer">
         <MyTextArea name="title" label="Title" />
         {type === "book" ? (
@@ -145,7 +191,14 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       {type === "book" ? (
         <div className="genreCheckboxes">
           {genres?.map((text, idx) => (
-            <label key={idx} className="MCC-font">
+            <label
+              key={idx}
+              name={text}
+              className="MCC-font"
+              onChange={(e) => {
+                doGenreClick(text, e.target.checked);
+              }}
+            >
               <input type="checkbox" />
               {text}
             </label>
