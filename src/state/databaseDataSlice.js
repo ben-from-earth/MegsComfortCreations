@@ -146,7 +146,7 @@ export const databaseDataSlice = createSlice({
     },
     //remove image from state storage if user deselects it
     removeFromDatabaseData: (state, action) => {
-      const { blockID, type, idx, genreText } = action.payload;
+      const { blockID, type, idx, genreText, deleteBlock } = action.payload;
       const i = state.findIndex((m) => m.type === type);
       const j = state[i].data.findIndex((block) => block.blockID === blockID);
       const chosenBlock = state[i].data[j];
@@ -159,6 +159,12 @@ export const databaseDataSlice = createSlice({
       if (genreText) {
         chosenBlock.genres = chosenBlock.genres.filter(
           (genre) => genre !== genreText
+        );
+      }
+
+      if (deleteBlock) {
+        state[i].data = state[i].data.filter(
+          (block) => block.blockID !== blockID
         );
       }
     },

@@ -3,6 +3,8 @@ import BookIcon from "@mui/icons-material/BookTwoTone";
 import MovieIcon from "@mui/icons-material/LocalMoviesTwoTone";
 import VideoGameIcon from "@mui/icons-material/VideogameAssetTwoTone";
 import AlbumIcon from "@mui/icons-material/AlbumTwoTone";
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addToDatabaseData,
@@ -24,6 +26,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     blockInfo: { title, author, pub_year, page_count },
     blockID,
   },
+  handleDeleteBlock,
 }) {
   // setup component Text area for each data field in the block
   const MyTextArea = ({ name, label }) => {
@@ -126,7 +129,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   //get genres for checkbox population
   const genres = useContext(GenreContext);
 
-  const doGenreClick = (genreText, checked) => {
+  //if genre is clicked we add it to the data associated with the block and remove if unchecked
+  const handleGenreClick = (genreText, checked) => {
     if (checked) {
       dispatch(addToDatabaseData({ blockID, type, genreText }));
     } else {
@@ -134,7 +138,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     }
   };
 
-  const doColorPick = async (blockID, type) => {
+  //div under the covers to pick a color for the spine.
+  //this is used in png creation
+  const handleColorPick = async (blockID, type) => {
     if (!window.EyeDropper) {
       console.log("EyeDropper API not supported in this browser");
       return;
@@ -153,6 +159,13 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   return (
     <div className={`Block ${type}`}>
       {icons[type]}
+      <IconButton
+        aria-label="delete"
+        className="DeleteIcon"
+        onClick={() => handleDeleteBlock({ blockID, type, deleteBlock: true })}
+      >
+        <DeleteIcon />
+      </IconButton>
       <div className="imageContainer">
         {images.map((src, idx) => (
           <div
@@ -171,7 +184,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         <div
           className="colorPicker"
           style={{ backgroundColor: color }}
-          onClick={() => doColorPick(blockID, type)}
+          onClick={() => handleColorPick(blockID, type)}
         ></div>
       ) : (
         <></>
@@ -196,7 +209,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
               name={text}
               className="MCC-font"
               onChange={(e) => {
-                doGenreClick(text, e.target.checked);
+                handleGenreClick(text, e.target.checked);
               }}
             >
               <input type="checkbox" />

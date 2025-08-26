@@ -28,6 +28,7 @@ import {
 } from "../../state/collectorSlice";
 import {
   clearDatabaseData,
+  removeFromDatabaseData,
   selectDatabaseData,
 } from "../../state/databaseDataSlice";
 
@@ -136,6 +137,13 @@ const MediaCollector = () => {
     a.click();
   };
 
+  const handleDeleteBlock = ({ blockID, type, deleteBlock }) => {
+    setCollectedCoversBlocks((prev) =>
+      prev.filter((block) => block.blockID !== blockID)
+    );
+    dispatch(removeFromDatabaseData({ blockID, type, deleteBlock }));
+  };
+
   return (
     <>
       <div
@@ -200,7 +208,10 @@ const MediaCollector = () => {
       </div>
 
       {CollectedCoversBlocks.length > 0 && (
-        <TitleBlockContainer blocks={CollectedCoversBlocks} />
+        <TitleBlockContainer
+          blocks={CollectedCoversBlocks}
+          handleDeleteBlock={handleDeleteBlock}
+        />
       )}
       {isLoading && <p>Loading...</p>}
     </>
