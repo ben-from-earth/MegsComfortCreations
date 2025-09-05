@@ -7,34 +7,57 @@ const initialState = medias.map(({ type, label }) => ({
   data: [],
 }));
 
+const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
+
 export const sendToDatabase = createAsyncThunk(
   "/databaseData/sendtodb",
   async ({ databaseData }) => {
+    const serverResponses = [];
     for (const media of databaseData) {
       const sendData = media.data;
       if (media.type === "book") {
         const bookPromises = sendData.map(async (book) => {
-          //bookData looks like {title, author, pub_year, page_count, blockID, images:[{src, idx}], genres: [], spineColor}
-          //need {title, author, page_count, pub_year, image_urls, spineColor}
+          //bookData looks like {title, author, pub_year, page_count, blockID, images:[{src, idx}], genres: [], spine_color}
+          //need {title, author, page_count, pub_year, image_urls, spine_color}
           const bookData = {
             title: book.title,
             author: book.author,
             page_count: book.page_count,
             pub_year: book.pub_year,
             image_urls: book.images.map((item) => item.src),
-            spineColor: book.spineColor,
+            spine_color: book.spine_color,
           };
 
-          const res = await fetch("http://localhost:3001/savetodb/book", {
+          const bookSaveRes = await fetch(
+            `${serverDomain}/database/save/book`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(bookData),
+            }
+          );
+
+          if (!bookSaveRes.ok) {
+            throw new Error(`Server Error ${bookSaveRes.status}`);
+          }
+          const bookCreationResponse = await bookSaveRes.json();
+          const bookDatabaseID = bookCreationResponse.saved_book.id;
+
+          const genreLinkRes = await fetch(`${serverDomain}/genres/addLink`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(bookData),
+            body: JSON.stringify({
+              bookID: bookDatabaseID,
+              genres: book.genres,
+            }),
           });
-
-          if (!res.ok) {
-            throw new Error(`Server Error ${res.status}`);
+          if (!genreLinkRes.ok) {
+            throw new Error(`Server Error ${genreLinkRes.status}`);
           }
-          return res.json();
+
+          const genreLinkResponse = await genreLinkRes.json();
+
+          return { ...bookCreationResponse, ...genreLinkResponse };
         });
 
         try {
@@ -42,7 +65,7 @@ export const sendToDatabase = createAsyncThunk(
           const results = await Promise.allSettled(bookPromises);
           results.forEach((r) => {
             if (r.status === "fulfilled") {
-              console.log("Server response:", r.value);
+              serverResponses.push(r.value);
             } else {
               console.error("Save failed:", r.reason);
             }
@@ -60,7 +83,7 @@ export const sendToDatabase = createAsyncThunk(
           };
 
           const res = await fetch(
-            `http://localhost:3001/savetodb/${media.type}`,
+            `${serverDomain}/database/save/${media.type}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -79,7 +102,7 @@ export const sendToDatabase = createAsyncThunk(
           const results = await Promise.allSettled(mediaPromises);
           results.forEach((r) => {
             if (r.status === "fulfilled") {
-              //get id from generated books and link genres.
+              serverResponses.push(r.value);
             } else {
               console.error("Save failed:", r.reason);
             }
@@ -92,6 +115,7 @@ export const sendToDatabase = createAsyncThunk(
         }
       }
     }
+    return serverResponses;
   }
 );
 
@@ -136,12 +160,13 @@ export const databaseDataSlice = createSlice({
     },
     //push image to state storage if user selects it
     addToDatabaseData: (state, action) => {
-      const { blockID, type, idx, src, spineColor, genreText } = action.payload;
+      const { blockID, type, idx, src, spine_color, genreText } =
+        action.payload;
       const i = state.findIndex((m) => m.type === type);
       const j = state[i].data.findIndex((block) => block.blockID === blockID);
       const chosenBlock = state[i].data[j];
       if (src) chosenBlock.images.push({ src, idx });
-      if (spineColor) chosenBlock.spineColor = spineColor;
+      if (spine_color) chosenBlock.spine_color = spine_color;
       if (genreText) chosenBlock.genres.push(genreText);
     },
     //remove image from state storage if user deselects it
@@ -150,7 +175,7 @@ export const databaseDataSlice = createSlice({
       const i = state.findIndex((m) => m.type === type);
       const j = state[i].data.findIndex((block) => block.blockID === blockID);
       const chosenBlock = state[i].data[j];
-      if (idx) {
+      if (isFinite(idx)) {
         chosenBlock.images = chosenBlock.images.filter(
           (img) => img.idx !== idx
         );

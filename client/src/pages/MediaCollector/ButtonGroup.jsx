@@ -5,6 +5,11 @@ import {
   sendToDatabase,
 } from "../../state/databaseDataSlice";
 
+const handleDatabaseClick = async (dispatch, databaseData) => {
+  const responses = await dispatch(sendToDatabase({ databaseData }));
+  console.log(responses.payload); //capturing database creation responses here. Keeping as log until handling it.
+};
+
 const ButtonGroup = ({ onCollect, onPNG }) => {
   // setup connection to redux slice and get all searched information
   const dispatch = useDispatch();
@@ -22,7 +27,7 @@ const ButtonGroup = ({ onCollect, onPNG }) => {
       </button>
       <button
         className="MCC-font"
-        onClick={() => dispatch(sendToDatabase({ databaseData }))}
+        onClick={() => handleDatabaseClick(dispatch, databaseData)}
       >
         Send to Database
       </button>

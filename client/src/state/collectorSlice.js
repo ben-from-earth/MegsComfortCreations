@@ -2,8 +2,8 @@ import { createAsyncThunk, createSlice, nanoid } from "@reduxjs/toolkit";
 import { updateQueryCount } from "../pages/MediaCollector/helpers/MediaCollectorHelpers";
 
 //get Google Search API information from .env
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-const CX = import.meta.env.VITE_CX;
+const API_KEY = import.meta.env.VITE_GOOGLE_SEARCH_API_KEY;
+const CX = import.meta.env.VITE_GOOGLE_SEARCH_CX;
 
 //set up media types and respective labels
 export const medias = [
@@ -61,7 +61,7 @@ export const grabOpenLibraryData = createAsyncThunk(
   }
 );
 
-export const collectMediaCovers = createAsyncThunk(
+export const collectBlockInformation = createAsyncThunk(
   "collector/getMediaCovers",
   async ({ type, toCollectItem }, { signal, dispatch }) => {
     //setup search inputs based on media type
@@ -74,8 +74,53 @@ export const collectMediaCovers = createAsyncThunk(
       title = toCollectItem;
     }
 
+    //check database for existing data with same title.
+    const bookSearchRes = await fetch(
+      `http://localhost:3001/database/search?type=${type}&title=${title}`
+    );
+    const bookSearchData = await bookSearchRes.json();
+    if (bookSearchData.foundBooksLength?.length > 0) {
+      //--- still need to write logic for more than one return ---//
+      const {
+        id,
+        image_urls,
+        title,
+        author,
+        page_count,
+        pub_year,
+        spine_color,
+      } = bookSearchData.foundBooksLength[0];
+      const genreSearchRes = await fetch(
+        `http://localhost:3001/genres/getFromBook`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookID: id,
+          }),
+        }
+      );
+      const genreSearchData = await genreSearchRes.json();
+      const databaseGenres = genreSearchData.payload;
+      return {
+        type,
+        images: image_urls,
+        blockInfo: {
+          title,
+          author,
+          pub_year,
+          page_count,
+          spine_color,
+          databaseGenres,
+        },
+        blockID: nanoid(),
+        isDatabase: true,
+      };
+    }
+
     //setup empty img array to fill with searched images
     const imgArr = [];
+
     try {
       //search query example: "Dune book cover image"
       //request for three images from this search
@@ -130,7 +175,13 @@ export const collectMediaCovers = createAsyncThunk(
       blockInfo = { title };
     }
     //return the collected data for creation of collectedCoverBlock
-    return { type, images: imgArr, blockInfo, blockID: nanoid() };
+    return {
+      type,
+      images: imgArr,
+      blockInfo,
+      blockID: nanoid(),
+      isDatabase: false,
+    };
   }
 );
 

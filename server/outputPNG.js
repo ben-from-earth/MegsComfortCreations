@@ -6,7 +6,7 @@
  * Input:
  * {
  *   template: 3 | 5,
- *   images: Array<{ url: string, spineColor: string, type: string }>
+ *   images: Array<{ url: string, spine_color: string, type: string }>
  * }
  *
  * Behavior:
@@ -16,7 +16,7 @@
  * - For each (template,type) combo, use a specific cell width (px) and inner pair gap (px).
  * - Cells flow left→right and wrap to a new row if the next cell would overflow the canvas width.
  * - Per cell:
- *    • Background = spineColor
+ *    • Background = spine_color
  *    • Pair cells: url on left (rotated 180°) + url on right (normal) with combo’s pairGap
  *    • Album cells: single centered url (pairGap=0)
  */
@@ -206,7 +206,7 @@ function layoutSlots({
 
 /** Render one cell according to the combo mode ("pair" or "single"). */
 async function renderCell(slot, img, template, rowHeight) {
-  const { url, spineColor, type } = img || {};
+  const { url, spine_color, type } = img || {};
   //{x,y,w,h} = slot
   //template 3 or 5
   const cfg = COMBOS[template][type];
@@ -215,7 +215,7 @@ async function renderCell(slot, img, template, rowHeight) {
   const cellBg = await makeBlock(
     slot.w,
     slot.h,
-    spineColor ?? { r: 255, g: 0, b: 0, alpha: 1 }
+    spine_color ?? { r: 255, g: 0, b: 0, alpha: 1 }
   );
 
   if (cfg.mode === "single") {

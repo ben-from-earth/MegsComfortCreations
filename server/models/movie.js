@@ -1,11 +1,11 @@
-const db = require("../db.cjs");
+const db = require("../database/db");
 
 const convertToNull = (v) => (v === undefined ? null : v);
 
-class Album {
+class Movie {
   static async create(data) {
     const result = await db.query(
-      `INSERT INTO albums (
+      `INSERT INTO movies (
             title,
             image_urls 
       ) VALUES ($1, $2) 
@@ -17,6 +17,14 @@ class Album {
     );
     return result.rows[0];
   }
+  static async find(title) {
+    const result = await db.query(
+      `SELECT title, image_urls 
+     FROM movies
+     WHERE title ILIKE '${title}'`
+    );
+    return result.rows;
+  }
 }
 
-module.exports = Album;
+module.exports = Movie;

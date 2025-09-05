@@ -24,7 +24,7 @@ import {
   getLoadingStatus,
   mediaData,
   setCollectText,
-  collectMediaCovers,
+  collectBlockInformation,
 } from "../../state/collectorSlice";
 import {
   clearDatabaseData,
@@ -57,6 +57,16 @@ const MediaCollector = () => {
     mediaTypesRef.current = stateData;
   }, [stateData]);
 
+  //on mount, reset query count if its a new day
+  useEffect(() => {
+    const lastQueryDate = localStorage.getItem("lastQueryDate");
+    const today = new Date().toISOString().split("T")[0];
+    if (lastQueryDate !== today) {
+      localStorage.setItem("queryCount", 0);
+      localStorage.setItem("lastQueryDate", today);
+    }
+  }, []);
+
   useEffect(() => {
     if (!shouldFetch) return;
 
@@ -71,7 +81,7 @@ const MediaCollector = () => {
 
     // Kick off thunks
     const tasks = work.map(({ type, toCollectItem }) =>
-      dispatch(collectMediaCovers({ type, toCollectItem }))
+      dispatch(collectBlockInformation({ type, toCollectItem }))
     );
 
     //IIFE for async promise collection and collected covers block setting
@@ -115,7 +125,7 @@ const MediaCollector = () => {
         let imageObjs = item.images.map((img) => ({
           url: img.src,
           type: type.type,
-          spineColor: item.spineColor,
+          spine_color: item.spine_color,
         }));
         pngImages.push(...imageObjs);
       }

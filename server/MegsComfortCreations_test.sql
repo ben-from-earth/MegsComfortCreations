@@ -1,8 +1,8 @@
-DROP DATABASE IF EXISTS megscomfortcreations;
+DROP DATABASE IF EXISTS megscomfortcreations_test;
 
-CREATE DATABASE megscomfortcreations;
+CREATE DATABASE megscomfortcreations_test;
 
-\c megscomfortcreations
+\c megscomfortcreations_test
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

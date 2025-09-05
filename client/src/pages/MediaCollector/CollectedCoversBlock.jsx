@@ -5,12 +5,11 @@ import VideoGameIcon from "@mui/icons-material/VideogameAssetTwoTone";
 import AlbumIcon from "@mui/icons-material/AlbumTwoTone";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
   addToDatabaseData,
   populateDatabaseData,
   removeFromDatabaseData,
-  selectDatabaseData,
   updateDatabaseData,
 } from "../../state/databaseDataSlice";
 import { memo, useContext, useEffect, useState } from "react";
@@ -18,52 +17,53 @@ import { memo, useContext, useEffect, useState } from "react";
 //genre from context provider
 import GenreContext from "../../context/GenreContext";
 
+// setup component Text area for each data field in the block
+const MyTextArea = ({ name, label, type, blockID, value }) => {
+  const dispatch = useDispatch();
+
+  return (
+    <>
+      <label className="MCC-font" htmlFor={name}>
+        {label}:
+      </label>
+      <textarea
+        name={name}
+        defaultValue={value}
+        onChange={(e) => {
+          dispatch(
+            updateDatabaseData({
+              blockID,
+              type,
+              name,
+              newText: e.target.value,
+            })
+          );
+        }}
+      ></textarea>
+    </>
+  );
+};
+
+//setup memo so block doesnt rerender during other actions
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
-  //setup memo so block doesnt rerender during other actions
   info: {
     type,
     images,
-    blockInfo: { title, author, pub_year, page_count },
+    blockInfo: {
+      title,
+      author,
+      pub_year,
+      page_count,
+      spine_color = "#ffffff",
+      databaseGenres = [],
+    },
     blockID,
+    isDatabase,
   },
   handleDeleteBlock,
 }) {
-  // setup component Text area for each data field in the block
-  const MyTextArea = ({ name, label }) => {
-    //setup connection to redux slice
-    const dispatch = useDispatch();
-    const databaseData = useSelector(selectDatabaseData);
-    // databaseData: [{ type, label, data: [...] }]
-
-    const typeData = databaseData.find((media) => media.type === type);
-    //typeData: [{ title, blockID, images, ... }]
-
-    const block = typeData?.data?.find((data) => data.blockID === blockID);
-    // Use store value if present; otherwise fallback from props
-    const value = block ? block[name] : "";
-
-    return (
-      <>
-        <label className="MCC-font" htmlFor={name}>
-          {label}:
-        </label>
-        <textarea
-          name={name}
-          value={value}
-          onChange={(e) => {
-            dispatch(
-              updateDatabaseData({
-                blockID,
-                type,
-                name,
-                newText: e.target.value,
-              })
-            );
-          }}
-        />
-      </>
-    );
-  };
+  //setup connection to redux slice
+  const dispatch = useDispatch();
 
   const icons = {
     book: <BookIcon className="Icon" />,
@@ -71,9 +71,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     video_game: <VideoGameIcon className="Icon" />,
     album: <AlbumIcon className="Icon" />,
   };
-
-  const dispatch = useDispatch();
-  const [color, setColor] = useState("#ffffff");
+  const [color, setColor] = useState(spine_color);
 
   const bookSpecificPayload = {
     author,
@@ -86,7 +84,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     type,
     data: {
       title,
-      spineColor: color,
+      spine_color: color,
       blockID,
       ...(type === "book" ? bookSpecificPayload : {}),
     },
@@ -94,7 +92,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   //on mount, populate the database data (in the state) with the block information
   useEffect(() => {
-    dispatch(populateDatabaseData(payload));
+    if (!isDatabase) dispatch(populateDatabaseData(payload));
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
@@ -148,9 +146,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     const eyeDropper = new EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
-      const spineColor = sRGBHex;
-      setColor(spineColor);
-      dispatch(addToDatabaseData({ blockID, type, spineColor }));
+      const spine_color = sRGBHex;
+      setColor(spine_color);
+      dispatch(addToDatabaseData({ blockID, type, spine_color }));
     } catch (e) {
       console.log(e);
     }
@@ -158,6 +156,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   return (
     <div className={`Block ${type}`}>
+      {isDatabase ? "Database" : ""}
       {icons[type]}
       <IconButton
         aria-label="delete"
@@ -190,12 +189,37 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         <></>
       )}
       <div className="titleInfoContainer">
-        <MyTextArea name="title" label="Title" />
+        <MyTextArea
+          name="title"
+          label="Title"
+          type={type}
+          dispatch={dispatch}
+          blockID={blockID}
+          value={title || ""}
+        />
         {type === "book" ? (
           <>
-            <MyTextArea name="author" label="Author" />
-            <MyTextArea name="pub_year" label="Publication Year" />
-            <MyTextArea name="page_count" label="Page Count" />
+            <MyTextArea
+              name="author"
+              label="Author"
+              type={type}
+              blockID={blockID}
+              value={author || ""}
+            />
+            <MyTextArea
+              name="pub_year"
+              label="Publication Year"
+              type={type}
+              blockID={blockID}
+              value={pub_year || ""}
+            />
+            <MyTextArea
+              name="page_count"
+              label="Page Count"
+              type={type}
+              blockID={blockID}
+              value={page_count || ""}
+            />
           </>
         ) : (
           <></>
@@ -212,7 +236,10 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                 handleGenreClick(text, e.target.checked);
               }}
             >
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                defaultChecked={databaseGenres?.includes(text)}
+              />
               {text}
             </label>
           ))}

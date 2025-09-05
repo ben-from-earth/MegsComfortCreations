@@ -1,4 +1,4 @@
-const db = require("../db.cjs");
+const db = require("../database/db");
 
 const convertToNull = (v) => (v === undefined ? null : v);
 
@@ -26,11 +26,20 @@ class Book {
         data.author,
         convertToNull(data.page_count),
         convertToNull(data.pub_year),
-        convertToNull(data.image_urls),
-        data.spineColor,
+        data.image_urls,
+        data.spine_color,
       ]
     );
     return result.rows[0];
+  }
+
+  static async find(title) {
+    const result = await db.query(
+      `SELECT id, title, author, page_count, pub_year, image_urls, spine_color 
+     FROM books
+     WHERE title ILIKE '${title}'`
+    );
+    return result.rows;
   }
 }
 

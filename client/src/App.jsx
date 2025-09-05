@@ -21,13 +21,18 @@ import GenreContext from "./context/GenreContext";
 
 //get genres for use around the app
 const genres = await (async () => {
-  const res = await fetch("http://localhost:3001/genres");
+  try {
+    const res = await fetch("http://localhost:3001/genres/getAll");
 
-  if (!res.ok) {
-    throw new Error(`Server Error getting genres: ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`Server Error getting genres: ${res.status}`);
+    }
+    const collection = await res.json();
+    return collection.payload?.map((item) => item.genre);
+  } catch (err) {
+    console.error("Could not fetch genres: Server down or not active");
+    return [];
   }
-  const collection = await res.json();
-  return collection.payload.map((item) => item.genre);
 })();
 
 const router = createBrowserRouter(
