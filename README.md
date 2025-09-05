@@ -1,7 +1,7 @@
 # Meg's Comfort Creations
 
-This is a website built with Vite + React for the Etsy Shop Meg's Comfort Creations
+This is a tool built with Vite + React for the Etsy Shop Meg's Comfort Creations
 
-You can reach the site here: (Current WIP)
+You can visit the shop here: https://www.etsy.com/shop/megscomfortcreations
 
-Or visit the Etsy shop directly here (not recommended after website deployment): https://www.etsy.com/shop/megscomfortcreations
+You can view the documentation at: (WIP)
