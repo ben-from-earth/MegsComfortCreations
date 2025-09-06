@@ -111,27 +111,51 @@ router.get("/search", async (req, res, next) => {
     case "movie":
       try {
         const movieList = await Movie.find(req.query.title);
-        return res
-          .status(200)
-          .json({ message: "Successfully ", payload: movieList });
+        if (movieList.length === 0) {
+          return next({
+            status: 404,
+            error: "Media not found",
+            message: `No movie in database with title ${req.query.title}`,
+          });
+        }
+        return res.status(200).json({
+          message: `Successfully found ${movieList.length} movie(s) with title ${movieList[0].title}`,
+          foundMoviesList: movieList,
+        });
       } catch (err) {
         return next(err);
       }
     case "video_game":
       try {
         const VGList = await Video_Game.find(req.query.title);
-        return res
-          .status(200)
-          .json({ message: "Successful search", payload: VGList });
+        if (VGList.length === 0) {
+          return next({
+            status: 404,
+            error: "Media not found",
+            message: `No video game in database with title ${req.query.title}`,
+          });
+        }
+        return res.status(200).json({
+          message: `Successfully found ${VGList.length} video game(s) with title ${VGList[0].title}`,
+          foundVideoGamesList: VGList,
+        });
       } catch (err) {
         return next(err);
       }
     case "album":
       try {
         const albumList = await Album.find(req.query.title);
-        return res
-          .status(200)
-          .json({ message: "Successful search", payload: albumList });
+        if (albumList.length === 0) {
+          return next({
+            status: 404,
+            error: "Media not found",
+            message: `No album in database with title ${req.query.title}`,
+          });
+        }
+        return res.status(200).json({
+          message: `Successfully found ${albumList.length} album(s) with title ${albumList[0].title}`,
+          foundAlbumsList: albumList,
+        });
       } catch (err) {
         return next(err);
       }

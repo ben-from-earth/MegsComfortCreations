@@ -102,6 +102,7 @@
   position: absolute;
   right: 1%;
   bottom: 1%;
+  padding: 0;
 }
 
 .genreCheckboxes {
@@ -125,4 +126,18 @@
 
 .colorPicker:hover {
   cursor: pointer;
+}
+
+.databaseTag {
+  font-size: 20px;
+  color: white;
+  border: 2px solid rgb(0, 0, 0);
+  border-radius: 5px;
+
+  position: absolute;
+  right: 1%;
+  top: 1%;
+  padding: 5px;
+  margin: 0;
+  background-color: rgb(70, 66, 66);
 }

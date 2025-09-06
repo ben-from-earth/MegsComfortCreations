@@ -37,7 +37,8 @@ class Book {
     const result = await db.query(
       `SELECT id, title, author, page_count, pub_year, image_urls, spine_color 
      FROM books
-     WHERE title ILIKE '${title}'`
+     WHERE title ILIKE $1`,
+      [title]
     );
     return result.rows;
   }

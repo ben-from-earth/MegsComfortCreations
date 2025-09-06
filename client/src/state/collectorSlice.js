@@ -79,7 +79,7 @@ export const collectBlockInformation = createAsyncThunk(
       `http://localhost:3001/database/search?type=${type}&title=${title}`
     );
     const bookSearchData = await bookSearchRes.json();
-    if (bookSearchData.foundBooksLength?.length > 0) {
+    if (bookSearchData.foundBooksList?.length > 0) {
       //--- still need to write logic for more than one return ---//
       const {
         id,
@@ -89,7 +89,7 @@ export const collectBlockInformation = createAsyncThunk(
         page_count,
         pub_year,
         spine_color,
-      } = bookSearchData.foundBooksLength[0];
+      } = bookSearchData.foundBooksList[0]; //still checking only first index here
       const genreSearchRes = await fetch(
         `http://localhost:3001/genres/getFromBook`,
         {

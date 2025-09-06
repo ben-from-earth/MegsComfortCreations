@@ -107,7 +107,6 @@ const COMBOS = {
 };
 
 async function outputPNG({ template, images = [] }) {
-  console.log(template, images);
   const metrics = TEMPLATE_METRICS[template];
   if (!metrics) throw new Error("Unsupported template (use 3 or 5)");
 

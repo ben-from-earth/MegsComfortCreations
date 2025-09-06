@@ -31,6 +31,11 @@ import {
   removeFromDatabaseData,
   selectDatabaseData,
 } from "../../state/databaseDataSlice";
+import {
+  clearPNGCollectionList,
+  removeFromPNGCollectionList,
+  selectPNGList,
+} from "../../state/pngCollectionSlice";
 
 const MediaCollector = () => {
   //setup connection to the redux slice
@@ -38,15 +43,16 @@ const MediaCollector = () => {
   const stateData = useSelector(mediaData);
   const shouldFetch = useSelector(getFetchStatus);
   const isLoading = useSelector(getLoadingStatus);
-  const databaseData = useSelector(selectDatabaseData);
+  const pngCollectionList = useSelector(selectPNGList);
 
   // setup states used throughout the component
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
   const [searchData, setSearchData] = useState(
     stateData.map((media) => ({ type: media.type, text: "" }))
   );
-  const [pngTemplateChecks, setPngTemplateChecks] = useState([false, false]);
-  const [pngTemplate, setPngTemplate] = useState();
+  const [pngTemplateChecks, setPNGTemplateChecks] = useState([false, false]);
+  const [pngTemplate, setPNGTemplate] = useState();
+  const [pngError, setPNGError] = useState(false);
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);
@@ -111,30 +117,26 @@ const MediaCollector = () => {
 
   const handleCollectClick = () => {
     dispatch(clearDatabaseData());
+    dispatch(clearPNGCollectionList());
     dispatch(setCollectText({ searchData }));
     dispatch(collectMedia());
   };
 
   const handlePNGClick = async () => {
-    if (pngTemplate && pngTemplate === 0) {
+    if (!pngTemplate) {
+      setPNGError(true);
       return;
     }
-    const pngImages = [];
-    databaseData.map((type) => {
-      for (let item of type.data) {
-        let imageObjs = item.images.map((img) => ({
-          url: img.src,
-          type: type.type,
-          spine_color: item.spine_color,
-        }));
-        pngImages.push(...imageObjs);
-      }
-    });
+
+    console.log(pngCollectionList);
 
     const res = await fetch("http://localhost:3001/print-png", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ template: pngTemplate, images: pngImages }),
+      body: JSON.stringify({
+        template: pngTemplate,
+        images: pngCollectionList,
+      }),
     });
     if (!res.ok) {
       throw new Error(`Server Error ${res.status}`);
@@ -147,11 +149,14 @@ const MediaCollector = () => {
     a.click();
   };
 
-  const handleDeleteBlock = ({ blockID, type, deleteBlock }) => {
+  const handleDeleteBlock = ({ blockID, type, deleteBlock, urls }) => {
     setCollectedCoversBlocks((prev) =>
       prev.filter((block) => block.blockID !== blockID)
     );
     dispatch(removeFromDatabaseData({ blockID, type, deleteBlock }));
+    for (let url of urls) {
+      dispatch(removeFromPNGCollectionList({ url }));
+    }
   };
 
   return (
@@ -166,13 +171,17 @@ const MediaCollector = () => {
         <img src={`${MediaCollectorTitle}`} />
         <MediaCheckboxes mediaTypes={stateData} setSearchData={setSearchData} />
 
-        <ButtonGroup onCollect={handleCollectClick} onPNG={handlePNGClick} />
+        <ButtonGroup
+          onCollect={handleCollectClick}
+          onPNG={handlePNGClick}
+          PNGButtonAllowed={pngTemplateChecks.some((val) => val === true)}
+        />
 
         <MediaInputs mediaTypes={stateData} setSearchData={setSearchData} />
         <div className="PNGFormat">
           <p
             style={{
-              visibility: pngTemplate === 0 ? "visible" : "hidden",
+              visibility: pngError ? "visible" : "hidden",
               color: "red",
             }}
           >
@@ -186,11 +195,12 @@ const MediaCollector = () => {
                 checked={pngTemplateChecks[0]}
                 onChange={(e) => {
                   if (e.target.checked === true) {
-                    setPngTemplateChecks([true, false]);
-                    setPngTemplate(3);
+                    setPNGError(false);
+                    setPNGTemplateChecks([true, false]);
+                    setPNGTemplate(3);
                   } else {
-                    setPngTemplateChecks((prev) => [false, prev[1]]);
-                    setPngTemplate(0);
+                    setPNGTemplateChecks((prev) => [false, prev[1]]);
+                    setPNGTemplate();
                   }
                 }}
               />
@@ -203,11 +213,12 @@ const MediaCollector = () => {
                 checked={pngTemplateChecks[1]}
                 onChange={(e) => {
                   if (e.target.checked === true) {
-                    setPngTemplateChecks([false, true]);
-                    setPngTemplate(5);
+                    setPNGTemplateChecks([false, true]);
+                    setPNGTemplate(5);
+                    setPNGError(false);
                   } else {
-                    setPngTemplateChecks((prev) => [prev[0], false]);
-                    setPngTemplate(0);
+                    setPNGTemplateChecks((prev) => [prev[0], false]);
+                    setPNGTemplate();
                   }
                 }}
               />

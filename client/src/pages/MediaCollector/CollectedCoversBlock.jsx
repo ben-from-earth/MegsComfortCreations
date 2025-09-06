@@ -16,6 +16,10 @@ import { memo, useContext, useEffect, useState } from "react";
 
 //genre from context provider
 import GenreContext from "../../context/GenreContext";
+import {
+  addToPNGCollectionList,
+  removeFromPNGCollectionList,
+} from "../../state/pngCollectionSlice";
 
 // setup component Text area for each data field in the block
 const MyTextArea = ({ name, label, type, blockID, value }) => {
@@ -92,7 +96,11 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   //on mount, populate the database data (in the state) with the block information
   useEffect(() => {
-    if (!isDatabase) dispatch(populateDatabaseData(payload));
+    if (!isDatabase) {
+      dispatch(populateDatabaseData(payload));
+    } else {
+      dispatch(addToPNGCollectionList({ type, spine_color, url: images[0] }));
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
@@ -119,8 +127,10 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           blockID,
         })
       );
+      dispatch(addToPNGCollectionList({ url: src, type, spine_color: color }));
     } else {
       dispatch(removeFromDatabaseData({ blockID, type, idx }));
+      dispatch(removeFromPNGCollectionList({ url: src }));
     }
   };
 
@@ -156,12 +166,14 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   return (
     <div className={`Block ${type}`}>
-      {isDatabase ? "Database" : ""}
+      {isDatabase && <p className="databaseTag MCC-font">Database</p>}
       {icons[type]}
       <IconButton
         aria-label="delete"
         className="DeleteIcon"
-        onClick={() => handleDeleteBlock({ blockID, type, deleteBlock: true })}
+        onClick={() =>
+          handleDeleteBlock({ blockID, type, deleteBlock: true, urls: images })
+        }
       >
         <DeleteIcon />
       </IconButton>
@@ -170,7 +182,11 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           <div
             className="imageWrapper"
             key={src}
-            onClick={() => handleClick(blockID, type, idx, src)}
+            onClick={() => {
+              if (!isDatabase) {
+                handleClick(blockID, type, idx, src);
+              }
+            }}
           >
             <img className={`${type}-img `} src={src}></img>
             <div className={`overlay ${clicked[idx] ? "show" : ""}`}>
