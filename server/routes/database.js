@@ -14,6 +14,7 @@ const otherMediaCreateSchema = require("../schemas/otherMediaCreateSchema.json")
 
 //custom Error
 const ExpressError = require("../expressError");
+const db = require("../database/db");
 
 router.post("/save/:type", async (req, res, next) => {
   switch (req.params.type) {
@@ -159,6 +160,39 @@ router.get("/search", async (req, res, next) => {
       } catch (err) {
         return next(err);
       }
+  }
+});
+
+router.get("/", async (req, res, next) => {
+  // /database?type=movie&limit=5&page=2
+  // SELECT * FROM movies ORDER BY title LIMIT 5 OFFSET 5
+
+  //All of these options are handled by the front end so errors will be prevented before the request.
+  const limit = Number(req.query.limit);
+  const page = Number(req.query.page) || 1;
+  const type = req.query.type;
+  const sort = req.query.sort;
+
+  const offset = (page - 1) * limit;
+  try {
+    const result = await db.query(
+      `SELECT * 
+          FROM ${type + "s"}
+          ORDER BY ${sort}
+          LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    paginatedList = result.rows;
+    return res.status(200).json({
+      message: `Successful database gather`,
+      paginatedList,
+    });
+  } catch (error) {
+    return next({
+      status: 400,
+      error: "Database collection error",
+      message: "Error gathering items from the database during pagination",
+    });
   }
 });
 

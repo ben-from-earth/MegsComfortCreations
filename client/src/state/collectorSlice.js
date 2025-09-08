@@ -61,6 +61,8 @@ export const grabOpenLibraryData = createAsyncThunk(
   }
 );
 
+const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
+
 export const collectBlockInformation = createAsyncThunk(
   "collector/getMediaCovers",
   async ({ type, toCollectItem }, { signal, dispatch }) => {
@@ -76,7 +78,7 @@ export const collectBlockInformation = createAsyncThunk(
 
     //check database for existing data with same title.
     const bookSearchRes = await fetch(
-      `http://localhost:3001/database/search?type=${type}&title=${title}`
+      `${serverDomain}/database/search?type=${type}&title=${title}`
     );
     const bookSearchData = await bookSearchRes.json();
     if (bookSearchData.foundBooksList?.length > 0) {
@@ -90,16 +92,13 @@ export const collectBlockInformation = createAsyncThunk(
         pub_year,
         spine_color,
       } = bookSearchData.foundBooksList[0]; //still checking only first index here
-      const genreSearchRes = await fetch(
-        `http://localhost:3001/genres/getFromBook`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookID: id,
-          }),
-        }
-      );
+      const genreSearchRes = await fetch(`${serverDomain}/genres/getFromBook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookID: id,
+        }),
+      });
       const genreSearchData = await genreSearchRes.json();
       const databaseGenres = genreSearchData.payload;
       return {

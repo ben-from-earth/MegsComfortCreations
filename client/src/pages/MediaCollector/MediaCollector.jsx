@@ -29,13 +29,15 @@ import {
 import {
   clearDatabaseData,
   removeFromDatabaseData,
-  selectDatabaseData,
 } from "../../state/databaseDataSlice";
 import {
   clearPNGCollectionList,
   removeFromPNGCollectionList,
   selectPNGList,
 } from "../../state/pngCollectionSlice";
+import LoadingWidget from "./LoadingWidget";
+
+const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 const MediaCollector = () => {
   //setup connection to the redux slice
@@ -53,6 +55,7 @@ const MediaCollector = () => {
   const [pngTemplateChecks, setPNGTemplateChecks] = useState([false, false]);
   const [pngTemplate, setPNGTemplate] = useState();
   const [pngError, setPNGError] = useState(false);
+  const [searchCount, setSearchCount] = useState(0);
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);
@@ -118,7 +121,19 @@ const MediaCollector = () => {
   const handleCollectClick = () => {
     dispatch(clearDatabaseData());
     dispatch(clearPNGCollectionList());
+    console.log(searchData);
     dispatch(setCollectText({ searchData }));
+
+    //count number of items for loading widget
+    let count = 0;
+    searchData.map((type) => {
+      if (type.text.length > 0) {
+        console.log(type.text.split(",").length);
+        count += type.text.split(",").length;
+      }
+    });
+    setSearchCount(count);
+
     dispatch(collectMedia());
   };
 
@@ -130,7 +145,7 @@ const MediaCollector = () => {
 
     console.log(pngCollectionList);
 
-    const res = await fetch("http://localhost:3001/print-png", {
+    const res = await fetch(`${serverDomain}/print-png`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -227,14 +242,13 @@ const MediaCollector = () => {
           </div>
         </div>
       </div>
-
+      {isLoading && <LoadingWidget searchCount={searchCount} />}
       {CollectedCoversBlocks.length > 0 && (
         <TitleBlockContainer
           blocks={CollectedCoversBlocks}
           handleDeleteBlock={handleDeleteBlock}
         />
       )}
-      {isLoading && <p>Loading...</p>}
     </>
   );
 };

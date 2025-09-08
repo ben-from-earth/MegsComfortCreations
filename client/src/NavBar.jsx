@@ -23,6 +23,9 @@ const NavBar = () => {
         <NavLink to="Newsletter" className="MCC-font">
           Newsletter
         </NavLink>
+        <NavLink to="ShowDatabase" className="MCC-font">
+          Show Database
+        </NavLink>
 
         <NavLink to="MediaCollector" className="MCC-font">
           Media Collector

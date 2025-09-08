@@ -14,15 +14,17 @@ import HomePage from "./pages/Home/HomePage";
 import ShopPage from "./pages/Shop/ShopPage";
 import MegsRecs from "./pages/MegsRecs/MegsRecs";
 import NewsletterPage from "./pages/Newsletter/NewsletterPage";
+import ShowDatabasePage from "./pages/ShowDatabase/ShowDatabasePage";
 import MediaCollector from "./pages/MediaCollector/MediaCollector";
 
 //Context
 import GenreContext from "./context/GenreContext";
+const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 //get genres for use around the app
 const genres = await (async () => {
   try {
-    const res = await fetch("http://localhost:3001/genres/getAll");
+    const res = await fetch(`${serverDomain}/genres/getAll`);
 
     if (!res.ok) {
       throw new Error(`Server Error getting genres: ${res.status}`);
@@ -42,6 +44,7 @@ const router = createBrowserRouter(
       <Route path="Shop" element={<ShopPage />} />
       <Route path="MegsRecs" element={<MegsRecs />} />
       <Route path="Newsletter" element={<NewsletterPage />} />
+      <Route path="ShowDatabase" element={<ShowDatabasePage />} />
       <Route path="MediaCollector" element={<MediaCollector />} />
     </Route>
   )

@@ -134,6 +134,14 @@ describe("Test saving book to database", () => {
     );
     expect(res.statusCode).toEqual(400);
   });
+
+  test("Attempt pagination retrieval of database items", async () => {
+    const res = await request(app).get(
+      "/database?type=book&sort=title&limit=1&page=2"
+    );
+    expect(res.body.message).toEqual("Successful database gather");
+    expect(res.body.paginatedList[0].title).toEqual("Ready Player One");
+  });
 });
 
 describe("Test saving other media to database", () => {
