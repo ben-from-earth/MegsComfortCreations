@@ -143,10 +143,9 @@ describe("Test saving book to database", () => {
     expect(res.body.paginatedList[0].title).toEqual("Ready Player One");
   });
 });
-
-describe("Test saving other media to database", () => {
-  const otherMedias = ["movie", "album", "video_game"];
-  for (let media of otherMedias) {
+const otherMedias = ["movie", "album", "video_game"];
+for (let media of otherMedias) {
+  describe(`Test saving ${media}s to database`, () => {
     test(`Attempt database save of ${media} with proper inputs`, async () => {
       const res = await request(app)
         .post(`/database/save/${media}`)
@@ -178,8 +177,25 @@ describe("Test saving other media to database", () => {
 
       expect(res.statusCode).toEqual(400);
     });
-  }
-});
+
+    test(`Attempt database save of ${media} with empty image array`, async () => {
+      const missingImagesReq = {
+        title: "Title",
+        image_urls: [],
+      };
+      const res = await request(app)
+        .post(`/database/save/${media}`)
+        .send(missingImagesReq);
+      const error = res.body.error;
+      const validationErrors = res.body.validationErrors;
+      expect(error).toEqual("Schema violation during save request");
+      expect(validationErrors[0]).toEqual(
+        "Database save attempted without images"
+      );
+      expect(res.statusCode).toEqual(400);
+    });
+  });
+}
 
 describe("Test finding media items by title", () => {
   test("Attempt find book by title, non-common capitalization", async () => {

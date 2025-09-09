@@ -224,9 +224,14 @@ export const collectorSlice = createSlice({
         if (i !== -1) state.mediaTypes[i].toCollect = searchArr;
       }
     },
-    collectMedia: (state) => {
-      state.shouldFetch = true;
+    startLoad: (state) => {
       state.isLoading = true;
+    },
+    startFetch: (state) => {
+      state.shouldFetch = true;
+    },
+    finishedLoad: (state) => {
+      state.isLoading = false;
     },
     finishedFetch: (state) => {
       state.isLoading = false;
@@ -242,6 +247,12 @@ export const collectorSlice = createSlice({
 export const mediaData = (state) => state.collector.mediaTypes;
 export const getFetchStatus = (state) => state.collector.shouldFetch;
 export const getLoadingStatus = (state) => state.collector.isLoading;
-export const { setChecks, setCollectText, collectMedia, finishedFetch } =
-  collectorSlice.actions;
+export const {
+  setChecks,
+  setCollectText,
+  startLoad,
+  startFetch,
+  finishedLoad,
+  finishedFetch,
+} = collectorSlice.actions;
 export default collectorSlice.reducer;

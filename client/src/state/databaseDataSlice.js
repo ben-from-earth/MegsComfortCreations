@@ -82,37 +82,33 @@ export const sendToDatabase = createAsyncThunk(
             image_urls: item.images.map((item) => item.src),
           };
 
-          const res = await fetch(
-            `${serverDomain}/database/save/${media.type}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(mediaData),
-            }
-          );
+          try {
+            const res = await fetch(
+              `${serverDomain}/database/save/${media.type}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(mediaData),
+              }
+            );
 
-          if (!res.ok) {
-            throw new Error(`Server Error ${res.status}`);
+            if (!res.ok) {
+              //errors are correct captured from the server here
+              return res.json();
+            }
+            return res.json();
+          } catch (error) {
+            return {
+              error: "Server Error",
+              message: "Something went wrong connecting to the server",
+            };
           }
-          return res.json();
         });
 
-        try {
-          // Wait for all to finish
-          const results = await Promise.allSettled(mediaPromises);
-          results.forEach((r) => {
-            if (r.status === "fulfilled") {
-              serverResponses.push(r.value);
-            } else {
-              console.error("Save failed:", r.reason);
-            }
-          });
-        } catch (err) {
-          console.error(
-            `Unexpected error saving ${media.label.toLowerCase()}s:`,
-            err
-          );
-        }
+        // Wait for all to finish
+        const results = await Promise.allSettled(mediaPromises);
+
+        serverResponses.push(...results.map((result) => result.value));
       }
     }
     return serverResponses;

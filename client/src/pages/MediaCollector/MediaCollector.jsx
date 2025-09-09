@@ -18,7 +18,9 @@ import QueryCounter from "./QueryCounter";
 
 // necessary imports from the collector slice
 import {
-  collectMedia,
+  startLoad,
+  startFetch,
+  finishedLoad,
   finishedFetch,
   getFetchStatus,
   getLoadingStatus,
@@ -29,6 +31,7 @@ import {
 import {
   clearDatabaseData,
   removeFromDatabaseData,
+  sendToDatabase,
 } from "../../state/databaseDataSlice";
 import {
   clearPNGCollectionList,
@@ -36,11 +39,12 @@ import {
   selectPNGList,
 } from "../../state/pngCollectionSlice";
 import LoadingWidget from "./LoadingWidget";
+import DatabaseSavedWidget from "./DatabaseSavedWidget";
 
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 const MediaCollector = () => {
-  //setup connection to the redux slice
+  //setup connection to the redux slice and associated variables
   const dispatch = useDispatch();
   const stateData = useSelector(mediaData);
   const shouldFetch = useSelector(getFetchStatus);
@@ -55,7 +59,9 @@ const MediaCollector = () => {
   const [pngTemplateChecks, setPNGTemplateChecks] = useState([false, false]);
   const [pngTemplate, setPNGTemplate] = useState();
   const [pngError, setPNGError] = useState(false);
-  const [searchCount, setSearchCount] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
+  const [databaseSaved, setDatabaseSaved] = useState(false);
+  const [databaseSavedData, setDatabaseSavedData] = useState([]);
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);
@@ -66,7 +72,7 @@ const MediaCollector = () => {
     mediaTypesRef.current = stateData;
   }, [stateData]);
 
-  //on mount, reset query count if its a new day
+  //on mount, reset query count in local storage if its a new day
   useEffect(() => {
     const lastQueryDate = localStorage.getItem("lastQueryDate");
     const today = new Date().toISOString().split("T")[0];
@@ -76,6 +82,7 @@ const MediaCollector = () => {
     }
   }, []);
 
+  //if should fetch comes true, set off chain of events to collect media covers
   useEffect(() => {
     if (!shouldFetch) return;
 
@@ -121,20 +128,25 @@ const MediaCollector = () => {
   const handleCollectClick = () => {
     dispatch(clearDatabaseData());
     dispatch(clearPNGCollectionList());
-    console.log(searchData);
     dispatch(setCollectText({ searchData }));
 
     //count number of items for loading widget
     let count = 0;
     searchData.map((type) => {
       if (type.text.length > 0) {
-        console.log(type.text.split(",").length);
         count += type.text.split(",").length;
       }
     });
-    setSearchCount(count);
+    setLoadingMessage(`Gathering ${count} media covers`);
+    dispatch(startLoad());
+    dispatch(startFetch());
+  };
 
-    dispatch(collectMedia());
+  const handleDatabaseClick = async (databaseData) => {
+    const responses = await dispatch(sendToDatabase({ databaseData }));
+    console.log("Server Responses:", responses.payload);
+    setDatabaseSavedData(responses.payload);
+    setDatabaseSaved(true); //capturing database creation responses here. Keeping as log until handling it.
   };
 
   const handlePNGClick = async () => {
@@ -143,7 +155,8 @@ const MediaCollector = () => {
       return;
     }
 
-    console.log(pngCollectionList);
+    setLoadingMessage(`Putting together PNG export`);
+    dispatch(startLoad());
 
     const res = await fetch(`${serverDomain}/print-png`, {
       method: "POST",
@@ -160,8 +173,9 @@ const MediaCollector = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "output.png";
+    a.download = "MCC_PNG_export.png";
     a.click();
+    dispatch(finishedLoad());
   };
 
   const handleDeleteBlock = ({ blockID, type, deleteBlock, urls }) => {
@@ -189,6 +203,7 @@ const MediaCollector = () => {
         <ButtonGroup
           onCollect={handleCollectClick}
           onPNG={handlePNGClick}
+          onDatabase={handleDatabaseClick}
           PNGButtonAllowed={pngTemplateChecks.some((val) => val === true)}
         />
 
@@ -242,7 +257,13 @@ const MediaCollector = () => {
           </div>
         </div>
       </div>
-      {isLoading && <LoadingWidget searchCount={searchCount} />}
+      {isLoading && <LoadingWidget message={loadingMessage} />}
+      {databaseSaved && (
+        <DatabaseSavedWidget
+          data={databaseSavedData}
+          close={() => setDatabaseSaved(false)}
+        />
+      )}
       {CollectedCoversBlocks.length > 0 && (
         <TitleBlockContainer
           blocks={CollectedCoversBlocks}

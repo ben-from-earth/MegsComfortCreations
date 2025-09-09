@@ -265,37 +265,109 @@ function isHttpUrl(s) {
   }
 }
 
+function getReferer(url) {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}/`;
+  } catch {
+    return undefined;
+  }
+}
+
+function isImageCtype(ctype) {
+  if (!ctype) return false;
+  const base = String(ctype).split(";")[0].trim().toLowerCase();
+  return base.startsWith("image/");
+}
+
+async function sniffIsImage(buffer) {
+  const { fileTypeFromBuffer } = await import("file-type");
+  // Detect from bytes (handles jpg/png/webp/avif/gif/ico/svg-as-xml, etc.)
+  const ft = await fileTypeFromBuffer(buffer).catch(() => null);
+  if (ft?.mime?.startsWith("image/"))
+    return { ok: true, mime: ft.mime, ext: ft.ext };
+  // very light fallback for SVG served as text/xml or text/plain
+  const head = buffer.slice(0, 256).toString("utf8");
+  if (/\<svg[\s>]/i.test(head))
+    return { ok: true, mime: "image/svg+xml", ext: "svg" };
+  return { ok: false };
+}
+
+/**
+ * Fetch an image as Buffer, with retries and MIME sniffing.
+ */
 async function fetchImageBufferAxios(
   url,
-  { maxBytes = 8 * 1024 * 1024, timeout = 8000 } = {}
+  {
+    maxBytes = 8 * 1024 * 1024,
+    timeout = 15000,
+    retries = 3,
+    backoff = 500,
+    requireImage = true, // set false if you want to accept any binary
+    sendReferer = true,
+  } = {}
 ) {
-  try {
-    const res = await axios.get(url, {
-      responseType: "arraybuffer",
-      maxContentLength: maxBytes,
-      timeout,
-      maxRedirects: 3,
-      headers: {
-        "User-Agent": "png-renderer/1.0 (+node)",
-        Accept: "image/*,*/*;q=0.8",
-      },
-      validateStatus: (s) => s >= 200 && s < 400,
-    });
-    const ctype = String(res.headers["content-type"] || "");
-    if (!/^image\//i.test(ctype))
-      throw new Error(`Not an image. Content-Type=${ctype || "unknown"}`);
-    return Buffer.from(res.data);
-  } catch (err) {
-    const parts = [
-      `message=${err.message}`,
-      err.code && `code=${err.code}`,
-      err.config?.url && `url=${err.config.url}`,
-      err.response && `status=${err.response.status}`,
-      err.response?.headers?.["content-type"] &&
-        `ctype=${err.response.headers["content-type"]}`,
-    ].filter(Boolean);
-    console.error("[fetchImageBufferAxios]", parts.join(" | "));
-    throw new Error(`IMAGE_FETCH_FAILED: ${err.code || ""} ${err.message}`);
+  let attempt = 0;
+  const referer = sendReferer ? getReferer(url) : undefined;
+
+  while (true) {
+    try {
+      const res = await axios.get(url, {
+        responseType: "arraybuffer",
+        maxContentLength: maxBytes, // Axios v0.x
+        maxBodyLength: maxBytes, // Axios v1.x
+        timeout,
+        maxRedirects: 3,
+        headers: {
+          "User-Agent": "png-renderer/1.0 (+node)",
+          Accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+          ...(referer ? { Referer: referer } : {}),
+        },
+        // Accept only 2xx after redirects; treat 3xx/4xx/etc. as failures
+        validateStatus: (s) => s >= 200 && s < 300,
+      });
+
+      const buffer = Buffer.from(res.data);
+      const ctype = res.headers["content-type"];
+
+      // Fast path: header says image/*
+      if (isImageCtype(ctype)) return buffer;
+
+      // If header is missing or octet-stream, sniff the bytes
+      if (requireImage) {
+        const sniff = await sniffIsImage(buffer);
+        if (sniff.ok) return buffer;
+        throw new Error(`Not an image. Content-Type=${ctype || "unknown"}`);
+      }
+
+      // If you don't require image verification, just return
+      return buffer;
+    } catch (err) {
+      attempt++;
+      const status = err.response?.status;
+      const ctype = err.response?.headers?.["content-type"];
+      const urlLogged = err.config?.url;
+      console.error(
+        `[fetchImageBufferAxios] attempt=${attempt} | message=${err.message}` +
+          (err.code ? ` | code=${err.code}` : "") +
+          (status ? ` | status=${status}` : "") +
+          (ctype ? ` | ctype=${ctype}` : "") +
+          (urlLogged ? ` | url=${urlLogged}` : "")
+      );
+
+      // Give up if out of retries
+      if (attempt > retries) {
+        throw new Error(
+          `IMAGE_FETCH_FAILED after ${retries} retries: ${err.code || ""} ${
+            err.message
+          }`
+        );
+      }
+
+      // Backoff with jitter
+      const delay = backoff * Math.pow(2, attempt - 1) + Math.random() * 150;
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
 }
 
