@@ -1,13 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-
 const outputPNG = require("./outputPNG");
-
-const ExpressError = require("./expressError");
 
 //get routes
 const databaseRoutes = require("./routes/database");
 const genresRoutes = require("./routes/genres");
+const getOnlineDataRoutes = require("./routes/getOnlineData");
 
 const app = express();
 
@@ -22,6 +20,7 @@ app.use(
 app.use(express.json());
 app.use("/database", databaseRoutes);
 app.use("/genres", genresRoutes);
+app.use("/getOnlineData", getOnlineDataRoutes);
 
 app.post("/print-png", async (req, res) => {
   //req body: {template, images: [array of image blocks]}
@@ -34,61 +33,64 @@ app.post("/print-png", async (req, res) => {
 });
 
 app.use((req, res, next) => {
-  const err = new ExpressError("Not Found", 404);
-  return next(err);
+  res
+    .status(404)
+    .json({
+      error: "Page not Found",
+      message: "The requested route does not exist",
+    });
 });
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500);
-  let errorResponse = { error: "", message: "" };
+  let errorResponse = { errors: [], message: "" };
 
   if (err.error === "Media not found") {
-    errorResponse.error = err.error;
+    errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
-  }
-  //errors from schema violation
-  if (err.schemaErrors) {
+  } else if (err.error === "Open Library Error") {
+    errorResponse.errors.push(err.error);
+    errorResponse.message = err.message;
+    errorResponse.failedSearchData = err.failedSearchData;
+  } else if (
+    //errors from schema violation
+    err.schemaErrors
+  ) {
     const missingFields = [];
     const wrongTypes = [];
-    const arrayLengthViolation = [];
     for (let error of err.schemaErrors) {
       if (error.includes("instance requires property")) {
         const missingField = error.split('"')[1];
-        missingFields.push(
-          `Database save request is missing field: ${missingField}`
-        );
+        missingFields.push(`Save request missing ${missingField}`);
       } else if (error.includes("is not of a type(s)")) {
         const wrongTypeField = error.split(" ")[0].split(".")[1];
-        const correctType = error.split(") ")[1];
-        wrongTypes.push(
-          `${wrongTypeField} was input as the wrong type, should be a(n) ${correctType}`
-        );
-      } else if (error.includes("does not meet minimum length of 1")) {
-        arrayLengthViolation.push("Database save attempted without images");
+        wrongTypes.push(`${wrongTypeField} is of wrong type`);
+      } else if (error.includes("does not meet minimum length")) {
+        const field = error.split(" ")[0].split(".")[1];
+        missingFields.push(`Save request missing ${field}`);
       }
     }
-    errorResponse.error = "Schema violation during save request";
-    errorResponse["validationErrors"] = [
-      ...missingFields,
-      ...wrongTypes,
-      ...arrayLengthViolation,
-    ];
-  }
+    errorResponse.message = "Schema violation(s) during save request";
+    errorResponse.saved = false;
+    errorResponse.saveAttemptItem = err.saveAttemptItem;
 
-  //errors from pg
-  if (err.detail) {
+    errorResponse.errors = [...missingFields, ...wrongTypes];
+  } else if (err.detail) {
+    //errors from PostgreSQL
     let errorDetail = err.detail;
     if (errorDetail?.includes("Failing row")) console.log(err);
 
-    if (
-      errorDetail?.includes("Key (title, author)") &&
-      errorDetail?.includes("already exists")
-    ) {
-      errorResponse.error = "Error saving book to database";
+    if (errorDetail?.includes("already exists")) {
+      errorResponse.errors.push("already exists in database");
       res.status(400);
     }
 
-    errorResponse.message = err.detail;
+    errorResponse.message = errorDetail;
+    errorResponse.saved = false;
+    errorResponse.saveAttemptItem = err.saveAttemptItem;
+  } else {
+    errorResponse.errors.push(err.error);
+    errorResponse.message = err.message;
   }
 
   return res.json(errorResponse);

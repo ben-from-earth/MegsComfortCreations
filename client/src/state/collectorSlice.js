@@ -1,9 +1,11 @@
 import { createAsyncThunk, createSlice, nanoid } from "@reduxjs/toolkit";
-import { updateQueryCount } from "../pages/MediaCollector/helpers/MediaCollectorHelpers";
+import axios from "axios";
+import {
+  titleRearrange,
+  updateQueryCount,
+} from "../pages/MediaCollector/helpers/mediaCollectorHelpers";
 
-//get Google Search API information from .env
-const API_KEY = import.meta.env.VITE_GOOGLE_SEARCH_API_KEY;
-const CX = import.meta.env.VITE_GOOGLE_SEARCH_CX;
+const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 //set up media types and respective labels
 export const medias = [
@@ -26,61 +28,28 @@ const initialState = {
   isLoading: false,
 };
 
-export const grabOpenLibraryData = createAsyncThunk(
-  "collector/fetchLibraryData",
-  async ({ title, author }) => {
-    try {
-      const params = new URLSearchParams({
-        title,
-        author,
-        limit: "1",
-        fields: "first_publish_year,number_of_pages_median",
-      });
-      const res = await fetch(
-        `https://openlibrary.org/search.json?${params.toString()}`
-      );
-      if (!res.ok) {
-        return { title, author };
-      }
-
-      const data = await res.json();
-      const doc = data?.docs?.[0];
-      if (!doc) {
-        return { title, author };
-      }
-
-      const {
-        first_publish_year: pub_year,
-        number_of_pages_median: page_count,
-      } = doc;
-      return { title, author, pub_year, page_count };
-    } catch {
-      console.log(`Error gathering Open Library data for ${title}`);
-      return { title, author };
-    }
-  }
-);
-
-const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
-
 export const collectBlockInformation = createAsyncThunk(
   "collector/getMediaCovers",
-  async ({ type, toCollectItem }, { signal, dispatch }) => {
+  async ({ type, toCollectItem }) => {
     //setup search inputs based on media type
     let title;
     let author;
     if (type === "book") {
-      title = toCollectItem.title;
+      title = titleRearrange(toCollectItem.title);
       author = toCollectItem.author;
     } else {
-      title = toCollectItem;
+      title = titleRearrange(toCollectItem);
     }
 
     //check database for existing data with same title.
-    const bookSearchRes = await fetch(
-      `${serverDomain}/database/search?type=${type}&title=${title}`
-    );
-    const bookSearchData = await bookSearchRes.json();
+    const bookSearchRes = await axios.get(`${serverDomain}/database/search`, {
+      params: { type, title },
+      //accept 400 codes for error handling
+      validateStatus: (status) => status < 500,
+    });
+    const bookSearchData = bookSearchRes.data;
+
+    //if we return a book from the database, return the information.
     if (bookSearchData.foundBooksList?.length > 0) {
       //--- still need to write logic for more than one return ---//
       const {
@@ -92,15 +61,16 @@ export const collectBlockInformation = createAsyncThunk(
         pub_year,
         spine_color,
       } = bookSearchData.foundBooksList[0]; //still checking only first index here
-      const genreSearchRes = await fetch(`${serverDomain}/genres/getFromBook`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookID: id,
-        }),
-      });
-      const genreSearchData = await genreSearchRes.json();
+
+      //get genres tied to the found book id
+      const genreSearchRes = await axios.post(
+        `${serverDomain}/genres/getFromBook`,
+        { bookID: id },
+      );
+      const genreSearchData = genreSearchRes.data;
       const databaseGenres = genreSearchData.payload;
+
+      //return all the block info and designate isDatabase to be true
       return {
         type,
         images: image_urls,
@@ -117,62 +87,39 @@ export const collectBlockInformation = createAsyncThunk(
       };
     }
 
-    //setup empty img array to fill with searched images
-    const imgArr = [];
+    //if media wasnt in database, collect cover images:
 
-    try {
-      //search query example: "Dune book cover image"
-      //request for three images from this search
-      const params = new URLSearchParams({
-        q: `${title} ${type} Cover Image`,
-        cx: CX,
-        key: API_KEY,
-        searchType: "image",
-        num: 3,
-      });
-
-      const res = await fetch(
-        `https://www.googleapis.com/customsearch/v1?${params.toString()}`,
-        { signal }
-      );
-
-      //this counts as a query even if failed so let the UI know
-      updateQueryCount();
-
-      //if some kind of API failure, deal with it here
-      if (!res.ok) {
-        throw new Error(
-          `Google Search API failed: ${res.status} ${res.statusText}`
-        );
-      }
-
-      //push the images into the array that was established earlier
-      const imageURLs = await res.json();
-      imageURLs.items.map((i) => imgArr.push(i.link));
-    } catch (e) {
-      if (e.name !== "AbortError") {
-        console.log("Media Cover Collection error:", e.message);
-      } else {
-        console.log("Aborted");
-      }
-    }
+    const imageSearchRes = await axios.post(
+      `${serverDomain}/getOnlineData/mediacovers`,
+      {
+        title,
+        author,
+        type,
+      },
+    );
+    //conservative query count update every time we make a request to google search API.
+    updateQueryCount();
+    const imgArr = imageSearchRes.data.images;
 
     let blockInfo;
     if (type === "book") {
-      try {
-        //if book, go to open library and get more data about the book
-        blockInfo = await dispatch(
-          grabOpenLibraryData({ title, author })
-        ).unwrap();
-        // blockInfo: { title, author, pub_year, page_count } || {title, author}
-      } catch (err) {
-        console.log("Dispatch issue:", err);
+      //if book, go to open library and get more data about the book
+      const openLibraryRes = await axios.post(
+        `${serverDomain}/getOnlineData/openlibrary`,
+        { title, author },
+      );
+      if (openLibraryRes.data.errors) {
+        blockInfo = { title, author };
+      } else {
+        blockInfo = openLibraryRes.data;
       }
+      // blockInfo: { title, author, pub_year, page_count } || {title, author}
     } else {
       //Just submit title as blockInfo for non-books
-      //Updates to data collection for other media types can be performed here
+      //Updates to data collection for other media types can be performed here if necessary in future update.
       blockInfo = { title };
     }
+
     //return the collected data for creation of collectedCoverBlock
     return {
       type,
@@ -181,7 +128,7 @@ export const collectBlockInformation = createAsyncThunk(
       blockID: nanoid(),
       isDatabase: false,
     };
-  }
+  },
 );
 
 export const collectorSlice = createSlice({

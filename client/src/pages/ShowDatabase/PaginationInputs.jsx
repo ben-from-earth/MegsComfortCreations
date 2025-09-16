@@ -3,6 +3,8 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { useState } from "react";
+import axios from "axios";
+import Button from "@/components/Button";
 
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
@@ -14,16 +16,13 @@ const PaginationInputs = ({ setDatabaseItems }) => {
 
   const handleGetMedia = async () => {
     try {
-      const res = await fetch(
-        `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}`
+      const res = await axios.get(
+        `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}`,
       );
-      if (!res.ok) {
-        throw new Error(`Server Error getting database items: ${res.status}`);
-      }
-      const databaseResults = await res.json();
+      const databaseResults = res.data;
       setDatabaseItems({ type, items: databaseResults.paginatedList });
     } catch (err) {
-      console.log(err);
+      console.log(`Server Error getting database items:`, err);
     }
   };
 
@@ -52,7 +51,7 @@ const PaginationInputs = ({ setDatabaseItems }) => {
     setSortBy(e.target.value);
   };
   return (
-    <div className="paginationInputs">
+    <div className="border-3 w-3/10 mt-6 flex items-center justify-between rounded-lg border-[var(--darkpink)] bg-[var(--lightpink)] p-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]">
       <FormControl sx={{ m: 1, minWidth: 130 }} size="small">
         <InputLabel id="type">Media Type</InputLabel>
         <Select
@@ -96,9 +95,12 @@ const PaginationInputs = ({ setDatabaseItems }) => {
           ))}
         </Select>
       </FormControl>
-      <button className="MCC-font" onClick={handleGetMedia}>
-        Get Media
-      </button>
+      <Button
+        onClick={handleGetMedia}
+        label={"Get Media"}
+        width={100}
+        fontSize={25}
+      />
     </div>
   );
 };

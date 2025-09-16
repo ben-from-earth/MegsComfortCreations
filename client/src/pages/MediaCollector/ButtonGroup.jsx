@@ -1,27 +1,33 @@
-import "./ButtonGroup.css";
-import { useDispatch, useSelector } from "react-redux";
-import { selectDatabaseData } from "../../state/databaseDataSlice";
+import { useSelector } from "react-redux";
+import { selectDatabaseData } from "@/state/databaseDataSlice";
+import Button from "@/components/Button";
 
 const ButtonGroup = ({ onCollect, onPNG, onDatabase }) => {
-  // setup connection to redux slice and get all searched information
+  // setup connection to redux slice and get the database information
   const databaseData = useSelector(selectDatabaseData);
 
   return (
-    <div className="ButtonGroup">
-      <button
-        className="MCC-font"
+    <div className="flex flex-row content-center gap-4">
+      <Button
         onClick={() => {
           onCollect();
         }}
-      >
-        Collect Media Covers
-      </button>
-      <button className="MCC-font" onClick={() => onDatabase(databaseData)}>
-        Send to Database
-      </button>
-      <button className="MCC-font" onClick={() => onPNG()}>
-        Get PNG
-      </button>
+        label={"Collect Media Covers"}
+        width={175}
+        fontSize={25}
+      />
+      <Button
+        onClick={() => onDatabase(databaseData)}
+        label={"Send to Database"}
+        width={175}
+        fontSize={25}
+      />
+      <Button
+        onClick={() => onPNG()}
+        label={"Get PNG"}
+        width={175}
+        fontSize={25}
+      />
     </div>
   );
 };

@@ -1,13 +1,16 @@
 // image collection from assets
-import BackgroundIMG from "../../assets/FlowerBackground.png";
-import MediaCollectorTitle from "../../assets/MegsMediaCollector.png";
+import BackgroundIMG from "@/assets/FlowerBackground.png";
+import MediaCollectorTitle from "@/assets/MegsMediaCollector.png";
 
 // react and redux
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-//styles
-import "./MediaCollector.css";
+//axios
+import axios from "axios";
+
+//server domain for axios requests
+const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 // necessary components
 import MediaInputs from "./MediaInputs";
@@ -15,8 +18,10 @@ import MediaCheckboxes from "./MediaCheckboxes";
 import ButtonGroup from "./ButtonGroup";
 import TitleBlockContainer from "./TitleBlockContainer";
 import QueryCounter from "./QueryCounter";
+import LoadingWidget from "./LoadingWidget";
+import DatabaseSavedWidget from "./DatabaseSavedWidget";
 
-// necessary imports from the collector slice
+//imports from the collector state slice
 import {
   startLoad,
   startFetch,
@@ -27,21 +32,22 @@ import {
   mediaData,
   setCollectText,
   collectBlockInformation,
-} from "../../state/collectorSlice";
+} from "@/state/collectorSlice";
+
+//imports from the database state slice
 import {
   clearDatabaseData,
   removeFromDatabaseData,
   sendToDatabase,
-} from "../../state/databaseDataSlice";
+} from "@/state/databaseDataSlice";
+
+//imports from the png state slice
 import {
   clearPNGCollectionList,
   removeFromPNGCollectionList,
   selectPNGList,
-} from "../../state/pngCollectionSlice";
-import LoadingWidget from "./LoadingWidget";
-import DatabaseSavedWidget from "./DatabaseSavedWidget";
-
-const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
+} from "@/state/pngCollectionSlice";
+import PNGFormatPicker from "./PNGFormatPicker";
 
 const MediaCollector = () => {
   //setup connection to the redux slice and associated variables
@@ -54,7 +60,7 @@ const MediaCollector = () => {
   // setup states used throughout the component
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
   const [searchData, setSearchData] = useState(
-    stateData.map((media) => ({ type: media.type, text: "" }))
+    stateData.map((media) => ({ type: media.type, text: "" })),
   );
   const [pngTemplateChecks, setPNGTemplateChecks] = useState([false, false]);
   const [pngTemplate, setPNGTemplate] = useState();
@@ -92,12 +98,12 @@ const MediaCollector = () => {
     const work = mediaTypesRef.current
       .filter((m) => m.toCollect.length > 0)
       .flatMap(({ type, toCollect }) =>
-        toCollect.map((t) => ({ type, toCollectItem: t }))
+        toCollect.map((t) => ({ type, toCollectItem: t })),
       );
 
     // Kick off thunks
     const tasks = work.map(({ type, toCollectItem }) =>
-      dispatch(collectBlockInformation({ type, toCollectItem }))
+      dispatch(collectBlockInformation({ type, toCollectItem })),
     );
 
     //IIFE for async promise collection and collected covers block setting
@@ -158,29 +164,29 @@ const MediaCollector = () => {
     setLoadingMessage(`Putting together PNG export`);
     dispatch(startLoad());
 
-    const res = await fetch(`${serverDomain}/print-png`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const res = await axios.post(`${serverDomain}/print-png`, {
         template: pngTemplate,
         images: pngCollectionList,
-      }),
-    });
-    if (!res.ok) {
-      throw new Error(`Server Error ${res.status}`);
+      });
+
+      const blob = res.data;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "MCC_PNG_export.png";
+      a.click();
+      dispatch(finishedLoad());
+    } catch (err) {
+      throw new Error(`Server Error ${err}`);
+    } finally {
+      dispatch(finishedLoad());
     }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "MCC_PNG_export.png";
-    a.click();
-    dispatch(finishedLoad());
   };
 
   const handleDeleteBlock = ({ blockID, type, deleteBlock, urls }) => {
     setCollectedCoversBlocks((prev) =>
-      prev.filter((block) => block.blockID !== blockID)
+      prev.filter((block) => block.blockID !== blockID),
     );
     dispatch(removeFromDatabaseData({ blockID, type, deleteBlock }));
     for (let url of urls) {
@@ -191,13 +197,13 @@ const MediaCollector = () => {
   return (
     <>
       <div
-        className="InfoForm"
+        className="border-b-5 relative box-border flex h-fit w-full flex-col items-center border-b-[var(--darkpink)] bg-cover pt-1 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]"
         style={{
           backgroundImage: `url(${BackgroundIMG})`,
         }}
       >
         <QueryCounter />
-        <img src={`${MediaCollectorTitle}`} />
+        <img className="w-xl m-0" src={`${MediaCollectorTitle}`} />
         <MediaCheckboxes mediaTypes={stateData} setSearchData={setSearchData} />
 
         <ButtonGroup
@@ -208,54 +214,13 @@ const MediaCollector = () => {
         />
 
         <MediaInputs mediaTypes={stateData} setSearchData={setSearchData} />
-        <div className="PNGFormat">
-          <p
-            style={{
-              visibility: pngError ? "visible" : "hidden",
-              color: "red",
-            }}
-          >
-            Please select a PNG template option
-          </p>
-          <div className="pngTemplateSelection">
-            <label className="MCC-font">
-              <input
-                id={"3mm"}
-                type="checkbox"
-                checked={pngTemplateChecks[0]}
-                onChange={(e) => {
-                  if (e.target.checked === true) {
-                    setPNGError(false);
-                    setPNGTemplateChecks([true, false]);
-                    setPNGTemplate(3);
-                  } else {
-                    setPNGTemplateChecks((prev) => [false, prev[1]]);
-                    setPNGTemplate();
-                  }
-                }}
-              />
-              3mm PNG Format
-            </label>
-            <label className="MCC-font">
-              <input
-                id={"5mm"}
-                type="checkbox"
-                checked={pngTemplateChecks[1]}
-                onChange={(e) => {
-                  if (e.target.checked === true) {
-                    setPNGTemplateChecks([false, true]);
-                    setPNGTemplate(5);
-                    setPNGError(false);
-                  } else {
-                    setPNGTemplateChecks((prev) => [prev[0], false]);
-                    setPNGTemplate();
-                  }
-                }}
-              />
-              5mm PNG Format
-            </label>
-          </div>
-        </div>
+        <PNGFormatPicker
+          pngTemplateChecks={pngTemplateChecks}
+          pngError={pngError}
+          setPNGError={setPNGError}
+          setPNGTemplate={setPNGTemplate}
+          setPNGTemplateChecks={setPNGTemplateChecks}
+        />
       </div>
       {isLoading && <LoadingWidget message={loadingMessage} />}
       {databaseSaved && (

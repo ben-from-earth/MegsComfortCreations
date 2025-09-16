@@ -67,7 +67,7 @@ describe("Test saving book to database", () => {
     const res = await request(app)
       .post("/database/save/book")
       .send(testBookReq);
-    const newBook = res.body.saved_book;
+    const newBook = res.body.saveAttemptItem;
     const message = res.body.message;
     expect(newBook.id).toBeDefined();
     expect(message).toEqual("Dune successfully added to database.");
@@ -78,9 +78,9 @@ describe("Test saving book to database", () => {
     const res = await request(app)
       .post("/database/save/book")
       .send(testBookReq);
-    const error = res.body.error;
+    const saved = res.body.saved;
     const message = res.body.message;
-    expect(error).toEqual("Error saving book to database");
+    expect(saved).toEqual(false);
     expect(message).toEqual(
       "Key (title, author)=(Dune, Frank Herbert) already exists."
     );
@@ -100,16 +100,12 @@ describe("Test saving book to database", () => {
     const res = await request(app)
       .post("/database/save/book")
       .send(missingFieldsReq);
-    const error = res.body.error;
-    const validationErrors = res.body.validationErrors;
-    expect(error).toEqual("Schema violation during save request");
-    expect(validationErrors.length).toEqual(2);
-    expect(validationErrors[0]).toEqual(
-      "Database save request is missing field: spine_color"
-    );
-    expect(validationErrors[1]).toEqual(
-      "author was input as the wrong type, should be a(n) string"
-    );
+    const message = res.body.message;
+    const errors = res.body.errors;
+    expect(message).toEqual("Schema violation(s) during save request");
+    expect(errors.length).toEqual(2);
+    expect(errors[0]).toEqual("Save request missing spine_color");
+    expect(errors[1]).toEqual("author is of wrong type");
 
     expect(res.statusCode).toEqual(400);
   });
@@ -126,12 +122,10 @@ describe("Test saving book to database", () => {
     const res = await request(app)
       .post("/database/save/book")
       .send(missingImagesReq);
-    const error = res.body.error;
-    const validationErrors = res.body.validationErrors;
-    expect(error).toEqual("Schema violation during save request");
-    expect(validationErrors[0]).toEqual(
-      "Database save attempted without images"
-    );
+    const message = res.body.message;
+    const errors = res.body.errors;
+    expect(message).toEqual("Schema violation(s) during save request");
+    expect(errors[0]).toEqual("Save request missing image_urls");
     expect(res.statusCode).toEqual(400);
   });
 
@@ -164,16 +158,12 @@ for (let media of otherMedias) {
       const res = await request(app)
         .post(`/database/save/${media}`)
         .send(missingFieldsReq);
-      const error = res.body.error;
-      const validationErrors = res.body.validationErrors;
-      expect(error).toEqual("Schema violation during save request");
-      expect(validationErrors.length).toEqual(2);
-      expect(validationErrors[0]).toEqual(
-        "Database save request is missing field: image_urls"
-      );
-      expect(validationErrors[1]).toEqual(
-        "title was input as the wrong type, should be a(n) string"
-      );
+      const message = res.body.message;
+      const errors = res.body.errors;
+      expect(message).toEqual("Schema violation(s) during save request");
+      expect(errors.length).toEqual(2);
+      expect(errors[0]).toEqual("Save request missing image_urls");
+      expect(errors[1]).toEqual("title is of wrong type");
 
       expect(res.statusCode).toEqual(400);
     });
@@ -186,12 +176,10 @@ for (let media of otherMedias) {
       const res = await request(app)
         .post(`/database/save/${media}`)
         .send(missingImagesReq);
-      const error = res.body.error;
-      const validationErrors = res.body.validationErrors;
-      expect(error).toEqual("Schema violation during save request");
-      expect(validationErrors[0]).toEqual(
-        "Database save attempted without images"
-      );
+      const message = res.body.message;
+      const errors = res.body.errors;
+      expect(message).toEqual("Schema violation(s) during save request");
+      expect(errors[0]).toEqual("Save request missing image_urls");
       expect(res.statusCode).toEqual(400);
     });
   });

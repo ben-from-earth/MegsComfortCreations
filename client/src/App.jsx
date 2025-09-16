@@ -1,4 +1,7 @@
-import "./App.css";
+//package imports
+import axios from "axios";
+
+//react router modules
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -19,17 +22,15 @@ import MediaCollector from "./pages/MediaCollector/MediaCollector";
 
 //Context
 import GenreContext from "./context/GenreContext";
+
+//server location import from .env
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 //get genres for use around the app
 const genres = await (async () => {
   try {
-    const res = await fetch(`${serverDomain}/genres/getAll`);
-
-    if (!res.ok) {
-      throw new Error(`Server Error getting genres: ${res.status}`);
-    }
-    const collection = await res.json();
+    const res = await axios.get(`${serverDomain}/genres/getAll`);
+    const collection = res.data;
     return collection.payload?.map((item) => item.genre);
   } catch (err) {
     console.error("Could not fetch genres: Server down or not active");
@@ -46,8 +47,8 @@ const router = createBrowserRouter(
       <Route path="Newsletter" element={<NewsletterPage />} />
       <Route path="ShowDatabase" element={<ShowDatabasePage />} />
       <Route path="MediaCollector" element={<MediaCollector />} />
-    </Route>
-  )
+    </Route>,
+  ),
 );
 
 function App() {

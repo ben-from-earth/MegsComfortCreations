@@ -13,8 +13,11 @@ const bookCreateSchema = require("../schemas/bookCreateSchema.json");
 const otherMediaCreateSchema = require("../schemas/otherMediaCreateSchema.json");
 
 //custom Error
-const ExpressError = require("../expressError");
 const db = require("../database/db");
+
+const {
+  titleRearrange,
+} = require("../../client/src/pages/MediaCollector/helpers/mediaCollectorHelpers");
 
 router.post("/save/:type", async (req, res, next) => {
   switch (req.params.type) {
@@ -25,16 +28,27 @@ router.post("/save/:type", async (req, res, next) => {
           return next({
             status: 400,
             schemaErrors: validation.errors.map((e) => e.stack),
+            saveAttemptItem: req.body,
+            type: req.params.type,
           });
         }
         const book = await Book.create(req.body);
         //book.id will give in database id
         return res.status(201).json({
-          message: `${req.body.title} successfully added to database.`,
-          saved_book: book,
+          message: `${titleRearrange(
+            req.body.title
+          )} successfully added to database.`,
+          saveAttemptItem: book,
+          saved: true,
+          type: req.params.type,
         });
       } catch (err) {
-        return next(err);
+        const error = {
+          ...err,
+          saveAttemptItem: req.body,
+          type: req.params.type,
+        };
+        return next(error);
       }
     case "movie":
       try {

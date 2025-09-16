@@ -1,18 +1,17 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
-
-console.log("Vite root is:", new URL(".", import.meta.url).pathname);
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: "../dist",
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "client/src"),
+      "@": resolve(__dirname, "src"),
     },
   },
   server: {

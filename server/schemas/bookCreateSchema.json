@@ -10,6 +10,7 @@
       "$id": "#/properties/title",
       "type": "string",
       "title": "The Title Schema",
+      "minLength": 1,
       "default": "",
       "examples": ["Dune"],
       "pattern": "^(.*)$"
@@ -18,6 +19,7 @@
       "$id": "#/properties/author",
       "type": "string",
       "title": "The Author Schema",
+      "minLength": 1,
       "default": "",
       "examples": ["Frank Herbert"],
       "pattern": "^(.*)$"
@@ -40,6 +42,7 @@
       "$id": "#/properties/spine_color",
       "type": "string",
       "title": "The Spine Color Schema",
+      "minLength": 1,
       "default": "",
       "examples": ["#f25b26"],
       "pattern": "^(.*)$"

@@ -1,10 +1,9 @@
 import CollectedCoversBlock from "./CollectedCoversBlock";
-import "./TitleBlockContainer.css";
 import { memo } from "react";
 
 const TitleBlockContainer = memo(function ({ blocks, handleDeleteBlock }) {
   return (
-    <div className="TitleBlockContainer">
+    <div className="flex w-full flex-row flex-wrap">
       {blocks.map((b) => (
         <CollectedCoversBlock
           info={b}

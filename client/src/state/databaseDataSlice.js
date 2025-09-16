@@ -1,5 +1,14 @@
+//library imports
+import axios from "axios";
+
+//redux imports
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+//imports from collector state slice
 import { medias } from "./collectorSlice";
+
+//import helper function for title rearranging
+import { titleRearrange } from "../pages/MediaCollector/helpers/mediaCollectorHelpers";
 
 const initialState = medias.map(({ type, label }) => ({
   type,
@@ -19,60 +28,56 @@ export const sendToDatabase = createAsyncThunk(
         const bookPromises = sendData.map(async (book) => {
           //bookData looks like {title, author, pub_year, page_count, blockID, images:[{src, idx}], genres: [], spine_color}
           //need {title, author, page_count, pub_year, image_urls, spine_color}
+
+          console.log(book);
+
+          //Do a bit of syntax rearranging to books starting with A, An, or The
+          const title = titleRearrange(book.title);
+
           const bookData = {
-            title: book.title,
+            title,
             author: book.author,
             page_count: book.page_count,
             pub_year: book.pub_year,
             image_urls: book.images.map((item) => item.src),
             spine_color: book.spine_color,
           };
+          console.log(bookData);
+          try {
+            const bookSaveRes = await axios.post(
+              `${serverDomain}/database/save/book`,
+              bookData,
+              { validateStatus: (status) => status < 500 }
+            );
 
-          const bookSaveRes = await fetch(
-            `${serverDomain}/database/save/book`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(bookData),
-            }
-          );
-
-          if (!bookSaveRes.ok) {
-            throw new Error(`Server Error ${bookSaveRes.status}`);
-          }
-          const bookCreationResponse = await bookSaveRes.json();
-          const bookDatabaseID = bookCreationResponse.saved_book.id;
-
-          const genreLinkRes = await fetch(`${serverDomain}/genres/addLink`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              bookID: bookDatabaseID,
-              genres: book.genres,
-            }),
-          });
-          if (!genreLinkRes.ok) {
-            throw new Error(`Server Error ${genreLinkRes.status}`);
-          }
-
-          const genreLinkResponse = await genreLinkRes.json();
-
-          return { ...bookCreationResponse, ...genreLinkResponse };
-        });
-
-        try {
-          // Wait for all to finish
-          const results = await Promise.allSettled(bookPromises);
-          results.forEach((r) => {
-            if (r.status === "fulfilled") {
-              serverResponses.push(r.value);
+            const bookCreationResponse = bookSaveRes.data;
+            if (bookCreationResponse.saved === false) {
+              return { ...bookCreationResponse };
             } else {
-              console.error("Save failed:", r.reason);
+              const bookDatabaseID = bookCreationResponse.saveAttemptItem.id;
+              console.log(book.genres);
+
+              const genreLinkRes = await axios.post(
+                `${serverDomain}/genres/addLink`,
+                {
+                  bookID: bookDatabaseID,
+                  genres: book.genres,
+                },
+                { validateStatus: (status) => status < 500 }
+              );
+              const genreLinkResponse = genreLinkRes.data;
+
+              return { ...bookCreationResponse, ...genreLinkResponse };
             }
-          });
-        } catch (err) {
-          console.error("Unexpected error saving books:", err);
-        }
+          } catch (error) {
+            return {
+              error: "Server Error",
+              message: "Something went wrong connecting to the server",
+            };
+          }
+        });
+        const results = await Promise.allSettled(bookPromises);
+        serverResponses.push(...results.map((result) => result.value));
       } else {
         const mediaPromises = sendData.map(async (item) => {
           //mediaData looks like {title, blockID, images:[{src, idx}]}
@@ -83,20 +88,13 @@ export const sendToDatabase = createAsyncThunk(
           };
 
           try {
-            const res = await fetch(
+            const res = await axios.post(
               `${serverDomain}/database/save/${media.type}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(mediaData),
-              }
+              mediaData,
+              { validateStatus: (status) => status < 500 }
             );
 
-            if (!res.ok) {
-              //errors are correct captured from the server here
-              return res.json();
-            }
-            return res.json();
+            return res.data;
           } catch (error) {
             return {
               error: "Server Error",

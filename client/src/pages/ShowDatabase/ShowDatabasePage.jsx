@@ -1,12 +1,11 @@
 import { useState } from "react";
 import DatabaseItemDisplay from "./DatabaseItemDisplay";
 import PaginationInputs from "./PaginationInputs";
-import "./ShowDatabasePage.css";
 
 const ShowDatabasePage = () => {
   const [databaseItems, setDatabaseItems] = useState({ type: "", items: [] });
   return (
-    <div className="ShowDatabasePage">
+    <div className="flex flex-col items-center">
       <PaginationInputs setDatabaseItems={setDatabaseItems} />
       <DatabaseItemDisplay databaseItems={databaseItems} />
     </div>
