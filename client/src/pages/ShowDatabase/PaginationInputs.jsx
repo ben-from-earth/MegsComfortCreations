@@ -1,47 +1,36 @@
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import { useState } from "react";
-import axios from "axios";
-import Button from "@/components/Button";
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import Button from '@/components/Button';
 
-const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
-
-const PaginationInputs = ({ setDatabaseItems }) => {
-  const [type, setType] = useState("book");
-  const [limit, setLimit] = useState(5);
-  const [sortBy, setSortBy] = useState("title");
-  const [page, setPage] = useState(1);
-
-  const handleGetMedia = async () => {
-    try {
-      const res = await axios.get(
-        `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}`,
-      );
-      const databaseResults = res.data;
-      setDatabaseItems({ type, items: databaseResults.paginatedList });
-    } catch (err) {
-      console.log(`Server Error getting database items:`, err);
-    }
-  };
-
+const PaginationInputs = ({
+  paginationFunctions: {
+    setType,
+    setLimit,
+    setSortBy,
+    setPage,
+    setTitleSearch,
+    handleGetMedia,
+  },
+  paginationVariables: { type, limit, sortBy, page },
+}) => {
   let sortOptions;
-  if (type === "book") {
+  if (type === 'book') {
     sortOptions = [
-      { label: "Title", value: "title" },
-      { label: "Author", value: "author" },
-      { label: "Page Count", value: "page_count" },
-      { label: "Pub. Year", value: "pub_year" },
+      { label: 'Title', value: 'title' },
+      { label: 'Author', value: 'author' },
+      { label: 'Page Count', value: 'page_count' },
+      { label: 'Pub. Year', value: 'pub_year' },
     ];
   } else {
-    sortOptions = [{ label: "Title", value: "title" }];
+    sortOptions = [{ label: 'Title', value: 'title' }];
   }
 
   const handleTypeChange = (e) => {
     setType(e.target.value);
-    if (e.target.value !== "book") {
-      setSortBy("title");
+    if (e.target.value !== 'book') {
+      setSortBy('title');
     }
   };
   const handleLimitChange = (e) => {
@@ -51,7 +40,13 @@ const PaginationInputs = ({ setDatabaseItems }) => {
     setSortBy(e.target.value);
   };
   return (
-    <div className="border-3 w-3/10 mt-6 flex items-center justify-between rounded-lg border-[var(--darkpink)] bg-[var(--lightpink)] p-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]">
+    <div className="border-3 mt-6 flex w-fit items-center justify-between rounded-lg border-[var(--darkpink)] bg-[var(--lightpink)] p-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]">
+      <input
+        id="titleSearch"
+        onChange={(e) => setTitleSearch(e.target.value)}
+        placeholder="Title"
+        className="h-10 rounded-sm border border-[rgba(0,0,0,0.23)] bg-[var(--lightpink)] pl-2"
+      ></input>
       <FormControl sx={{ m: 1, minWidth: 130 }} size="small">
         <InputLabel id="type">Media Type</InputLabel>
         <Select
@@ -61,19 +56,19 @@ const PaginationInputs = ({ setDatabaseItems }) => {
           label="Media Type"
           onChange={handleTypeChange}
         >
-          <MenuItem value={"book"}>Book</MenuItem>
-          <MenuItem value={"movie"}>Movie</MenuItem>
-          <MenuItem value={"video_game"}>Video Game</MenuItem>
-          <MenuItem value={"album"}>Album</MenuItem>
+          <MenuItem value={'book'}>Book</MenuItem>
+          <MenuItem value={'movie'}>Movie</MenuItem>
+          <MenuItem value={'video_game'}>Video Game</MenuItem>
+          <MenuItem value={'album'}>Album</MenuItem>
         </Select>
       </FormControl>
       <FormControl sx={{ m: 1, minWidth: 80 }} size="small">
-        <InputLabel id="limit">Limit</InputLabel>
+        <InputLabel id="limit">Per Page</InputLabel>
         <Select
           labelId="limit"
           id="limit"
           value={limit}
-          label="limit"
+          label="Per Page"
           onChange={handleLimitChange}
         >
           <MenuItem value={3}>3</MenuItem>
@@ -97,7 +92,7 @@ const PaginationInputs = ({ setDatabaseItems }) => {
       </FormControl>
       <Button
         onClick={handleGetMedia}
-        label={"Get Media"}
+        label={'Search'}
         width={100}
         fontSize={25}
       />

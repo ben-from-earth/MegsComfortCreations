@@ -1,9 +1,11 @@
+import { twMerge } from 'tailwind-merge';
+
 const Button = ({ onClick, label, width, fontSize, additionalStyling }) => {
-  console.log(width);
+  const base = `border-3 cursor-pointer rounded-lg border-[var(--darkpink)] bg-[var(--lightpink)] px-2 font-["Just_Another_Hand"] tracking-wider text-black hover:bg-[var(--darkpink)]`;
   return (
     <button
       style={{ width: `${width}px`, fontSize: `${fontSize}px` }}
-      className={`${additionalStyling} cursor-pointer rounded-[8px] border-[3px] border-[var(--darkpink)] bg-[var(--lightpink)] pl-[4px] pr-[4px] font-["Just_Another_Hand"] tracking-wider text-black hover:bg-[var(--darkpink)]`}
+      className={twMerge(base, additionalStyling)}
       onClick={onClick}
     >
       {label}

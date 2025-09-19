@@ -12,6 +12,7 @@ const updateQueryCount = () => {
   localStorage.setItem("queryCount", `${qCount}`);
 };
 
+//updates to this function must be translated to serverside as well
 const titleRearrange = (title) => {
   if (title.startsWith("The ")) {
     const newTitle = title.slice(4) + ", The";

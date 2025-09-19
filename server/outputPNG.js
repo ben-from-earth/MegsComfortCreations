@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * outputPNG({ template, images })
@@ -10,7 +10,7 @@
  * }
  *
  * Behavior:
- * - Fixed canvas: 2775w × 2025h
+ * - Fixed canvas: 2025w x 2775h
  * - template=5 → rowHeight=324, yGap=26
  *   template=3 → rowHeight=261, yGap=18
  * - For each (template,type) combo, use a specific cell width (px) and inner pair gap (px).
@@ -21,8 +21,8 @@
  *    • Album cells: single centered url (pairGap=0)
  */
 
-const sharp = require("sharp");
-const axios = require("axios");
+const sharp = require('sharp');
+const axios = require('axios');
 
 /* ===========================
  * CONSTANTS
@@ -63,31 +63,31 @@ const variation1 = {
   cellWidth: 387,
   imageWidth: 174,
   pairGap: 39,
-  mode: "pair",
+  mode: 'pair',
 };
 const variation2 = {
   cellWidth: 261,
   imageWidth: 261,
   pairGap: 0,
-  mode: "single",
+  mode: 'single',
 };
 const variation3 = {
   cellWidth: 489,
   imageWidth: 216,
   pairGap: 57,
-  mode: "pair",
+  mode: 'pair',
 };
 const variation4 = {
   cellWidth: 471,
   imageWidth: 216,
   pairGap: 39,
-  mode: "pair",
+  mode: 'pair',
 };
 const variation5 = {
   cellWidth: 324,
   imageWidth: 324,
   pairGap: 0,
-  mode: "single",
+  mode: 'single',
 };
 const COMBOS = {
   3: {
@@ -108,7 +108,7 @@ const COMBOS = {
 
 async function outputPNG({ template, images = [] }) {
   const metrics = TEMPLATE_METRICS[template];
-  if (!metrics) throw new Error("Unsupported template (use 3 or 5)");
+  if (!metrics) throw new Error('Unsupported template (use 3 or 5)');
 
   // Base canvas
   const base = sharp({
@@ -147,9 +147,9 @@ async function outputPNG({ template, images = [] }) {
   } catch (err) {
     if (err && Array.isArray(err.errors)) {
       for (const e of err.errors)
-        console.error("composite overlay error", e?.message || e);
+        console.error('composite overlay error', e?.message || e);
     }
-    console.error("sharp composite error", err?.message || err);
+    console.error('sharp composite error', err?.message || err);
     throw err;
   }
 }
@@ -181,7 +181,7 @@ function layoutSlots({
 
   for (let i = 0; i < images.length; i++) {
     const type = images[i].type;
-    const cfg = COMBOS[template][type];
+    const cfg = COMBOS[template][type] ?? COMBOS[template].default;
     const w = cfg.cellWidth;
     const h = rowHeight;
 
@@ -208,7 +208,7 @@ async function renderCell(slot, img, template, rowHeight) {
   const { url, spine_color, type } = img || {};
   //{x,y,w,h} = slot
   //template 3 or 5
-  const cfg = COMBOS[template][type];
+  const cfg = COMBOS[template][type] ?? COMBOS[template].default;
 
   // Common cell background (spine color fills full slot)
   const cellBg = await makeBlock(
@@ -217,7 +217,7 @@ async function renderCell(slot, img, template, rowHeight) {
     spine_color ?? { r: 255, g: 0, b: 0, alpha: 1 }
   );
 
-  if (cfg.mode === "single") {
+  if (cfg.mode === 'single') {
     // Single centered cover
     const imageWidth = cfg.imageWidth;
     const imageHeight = rowHeight;
@@ -259,7 +259,7 @@ async function renderCell(slot, img, template, rowHeight) {
 function isHttpUrl(s) {
   try {
     const u = new URL(String(s));
-    return u.protocol === "http:" || u.protocol === "https:";
+    return u.protocol === 'http:' || u.protocol === 'https:';
   } catch {
     return false;
   }
@@ -276,20 +276,20 @@ function getReferer(url) {
 
 function isImageCtype(ctype) {
   if (!ctype) return false;
-  const base = String(ctype).split(";")[0].trim().toLowerCase();
-  return base.startsWith("image/");
+  const base = String(ctype).split(';')[0].trim().toLowerCase();
+  return base.startsWith('image/');
 }
 
 async function sniffIsImage(buffer) {
-  const { fileTypeFromBuffer } = await import("file-type");
+  const { fileTypeFromBuffer } = await import('file-type');
   // Detect from bytes (handles jpg/png/webp/avif/gif/ico/svg-as-xml, etc.)
   const ft = await fileTypeFromBuffer(buffer).catch(() => null);
-  if (ft?.mime?.startsWith("image/"))
+  if (ft?.mime?.startsWith('image/'))
     return { ok: true, mime: ft.mime, ext: ft.ext };
   // very light fallback for SVG served as text/xml or text/plain
-  const head = buffer.slice(0, 256).toString("utf8");
+  const head = buffer.slice(0, 256).toString('utf8');
   if (/\<svg[\s>]/i.test(head))
-    return { ok: true, mime: "image/svg+xml", ext: "svg" };
+    return { ok: true, mime: 'image/svg+xml', ext: 'svg' };
   return { ok: false };
 }
 
@@ -313,14 +313,14 @@ async function fetchImageBufferAxios(
   while (true) {
     try {
       const res = await axios.get(url, {
-        responseType: "arraybuffer",
+        responseType: 'arraybuffer',
         maxContentLength: maxBytes, // Axios v0.x
         maxBodyLength: maxBytes, // Axios v1.x
         timeout,
         maxRedirects: 3,
         headers: {
-          "User-Agent": "png-renderer/1.0 (+node)",
-          Accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+          'User-Agent': 'png-renderer/1.0 (+node)',
+          Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
           ...(referer ? { Referer: referer } : {}),
         },
         // Accept only 2xx after redirects; treat 3xx/4xx/etc. as failures
@@ -328,7 +328,7 @@ async function fetchImageBufferAxios(
       });
 
       const buffer = Buffer.from(res.data);
-      const ctype = res.headers["content-type"];
+      const ctype = res.headers['content-type'];
 
       // Fast path: header says image/*
       if (isImageCtype(ctype)) return buffer;
@@ -337,7 +337,7 @@ async function fetchImageBufferAxios(
       if (requireImage) {
         const sniff = await sniffIsImage(buffer);
         if (sniff.ok) return buffer;
-        throw new Error(`Not an image. Content-Type=${ctype || "unknown"}`);
+        throw new Error(`Not an image. Content-Type=${ctype || 'unknown'}`);
       }
 
       // If you don't require image verification, just return
@@ -345,20 +345,20 @@ async function fetchImageBufferAxios(
     } catch (err) {
       attempt++;
       const status = err.response?.status;
-      const ctype = err.response?.headers?.["content-type"];
+      const ctype = err.response?.headers?.['content-type'];
       const urlLogged = err.config?.url;
       console.error(
         `[fetchImageBufferAxios] attempt=${attempt} | message=${err.message}` +
-          (err.code ? ` | code=${err.code}` : "") +
-          (status ? ` | status=${status}` : "") +
-          (ctype ? ` | ctype=${ctype}` : "") +
-          (urlLogged ? ` | url=${urlLogged}` : "")
+          (err.code ? ` | code=${err.code}` : '') +
+          (status ? ` | status=${status}` : '') +
+          (ctype ? ` | ctype=${ctype}` : '') +
+          (urlLogged ? ` | url=${urlLogged}` : '')
       );
 
       // Give up if out of retries
       if (attempt > retries) {
         throw new Error(
-          `IMAGE_FETCH_FAILED after ${retries} retries: ${err.code || ""} ${
+          `IMAGE_FETCH_FAILED after ${retries} retries: ${err.code || ''} ${
             err.message
           }`
         );
@@ -379,12 +379,12 @@ async function fetchImageBufferAxios(
  */
 async function makeBlock(w, h, fill, rotation = 0) {
   let pipe;
-  if (typeof fill === "string" && isHttpUrl(fill)) {
+  if (typeof fill === 'string' && isHttpUrl(fill)) {
     try {
       const buf = await fetchImageBufferAxios(fill);
-      pipe = sharp(buf).toColorspace("srgb").resize(w, h, { fit: "cover" });
+      pipe = sharp(buf).toColourspace('srgb').resize(w, h, { fit: 'cover' });
     } catch (e) {
-      console.warn("[makeBlock] fetch failed, using placeholder:", e.message);
+      console.warn('[makeBlock] fetch failed, using placeholder:', e.message);
       pipe = sharp({
         create: {
           width: w,

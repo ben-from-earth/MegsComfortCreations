@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import { TextField } from '@mui/material';
 
 const MediaInputs = ({ mediaTypes, setSearchData }) => {
   return (
@@ -11,11 +11,24 @@ const MediaInputs = ({ mediaTypes, setSearchData }) => {
           .filter((mediaType) => mediaType.show)
           .map(({ type, label }) => (
             <TextField
-              className="w-75 rounded-sm bg-white"
+              className="w-90 rounded-sm bg-white"
               id="outlined-multiline-static"
               multiline
               key={type}
               label={`${label} Titles`}
+              slotProps={{
+                inputLabel: {
+                  sx: {
+                    '&.MuiInputLabel-shrink': {
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      px: '10px',
+                      color: 'rgb(0,0,0, 0.5)',
+                      transform: 'translate(6px, -8px) scale(0.75)',
+                    },
+                  },
+                },
+              }}
               rows={5}
               onChange={(e) => {
                 setSearchData((prev) => {

@@ -1,25 +1,25 @@
 // image collection from assets
-import BackgroundIMG from "@/assets/FlowerBackground.png";
-import MediaCollectorTitle from "@/assets/MegsMediaCollector.png";
+import BackgroundIMG from '@/assets/FlowerBackground.png';
+import MediaCollectorTitle from '@/assets/MegsMediaCollector.png';
 
 // react and redux
-import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 //axios
-import axios from "axios";
+import axios from 'axios';
 
 //server domain for axios requests
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 // necessary components
-import MediaInputs from "./MediaInputs";
-import MediaCheckboxes from "./MediaCheckboxes";
-import ButtonGroup from "./ButtonGroup";
-import TitleBlockContainer from "./TitleBlockContainer";
-import QueryCounter from "./QueryCounter";
-import LoadingWidget from "./LoadingWidget";
-import DatabaseSavedWidget from "./DatabaseSavedWidget";
+import MediaInputs from './MediaInputs';
+import MediaCheckboxes from './MediaCheckboxes';
+import ButtonGroup from './ButtonGroup';
+import TitleBlockContainer from './TitleBlockContainer';
+import QueryCounter from '@/components/QueryCounter';
+import LoadingWidget from '@/components/LoadingWidget';
+import DatabaseSavedWidget from './DatabaseSavedWidget';
 
 //imports from the collector state slice
 import {
@@ -32,22 +32,22 @@ import {
   mediaData,
   setCollectText,
   collectBlockInformation,
-} from "@/state/collectorSlice";
+} from '@/state/collectorSlice';
 
 //imports from the database state slice
 import {
   clearDatabaseData,
   removeFromDatabaseData,
   sendToDatabase,
-} from "@/state/databaseDataSlice";
+} from '@/state/databaseDataSlice';
 
 //imports from the png state slice
 import {
   clearPNGCollectionList,
   removeFromPNGCollectionList,
   selectPNGList,
-} from "@/state/pngCollectionSlice";
-import PNGFormatPicker from "./PNGFormatPicker";
+} from '@/state/pngCollectionSlice';
+import PNGFormatPicker from './PNGFormatPicker';
 
 const MediaCollector = () => {
   //setup connection to the redux slice and associated variables
@@ -60,12 +60,12 @@ const MediaCollector = () => {
   // setup states used throughout the component
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState([]);
   const [searchData, setSearchData] = useState(
-    stateData.map((media) => ({ type: media.type, text: "" })),
+    stateData.map((media) => ({ type: media.type, text: '' })),
   );
   const [pngTemplateChecks, setPNGTemplateChecks] = useState([false, false]);
   const [pngTemplate, setPNGTemplate] = useState();
   const [pngError, setPNGError] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState("");
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [databaseSaved, setDatabaseSaved] = useState(false);
   const [databaseSavedData, setDatabaseSavedData] = useState([]);
 
@@ -80,11 +80,11 @@ const MediaCollector = () => {
 
   //on mount, reset query count in local storage if its a new day
   useEffect(() => {
-    const lastQueryDate = localStorage.getItem("lastQueryDate");
-    const today = new Date().toISOString().split("T")[0];
+    const lastQueryDate = localStorage.getItem('lastQueryDate');
+    const today = new Date().toISOString().split('T')[0];
     if (lastQueryDate !== today) {
-      localStorage.setItem("queryCount", 0);
-      localStorage.setItem("lastQueryDate", today);
+      localStorage.setItem('queryCount', 0);
+      localStorage.setItem('lastQueryDate', today);
     }
   }, []);
 
@@ -114,7 +114,7 @@ const MediaCollector = () => {
         if (cancelled) return;
 
         const blocks = results
-          .filter((r) => r.status === "fulfilled")
+          .filter((r) => r.status === 'fulfilled')
           .map((r) => r.value);
         setCollectedCoversBlocks(blocks);
       } catch (e) {
@@ -140,7 +140,7 @@ const MediaCollector = () => {
     let count = 0;
     searchData.map((type) => {
       if (type.text.length > 0) {
-        count += type.text.split(",").length;
+        count += type.text.split(',').length;
       }
     });
     setLoadingMessage(`Gathering ${count} media covers`);
@@ -150,7 +150,7 @@ const MediaCollector = () => {
 
   const handleDatabaseClick = async (databaseData) => {
     const responses = await dispatch(sendToDatabase({ databaseData }));
-    console.log("Server Responses:", responses.payload);
+    console.log('Server Responses:', responses.payload);
     setDatabaseSavedData(responses.payload);
     setDatabaseSaved(true); //capturing database creation responses here. Keeping as log until handling it.
   };
@@ -164,17 +164,23 @@ const MediaCollector = () => {
     setLoadingMessage(`Putting together PNG export`);
     dispatch(startLoad());
 
+    console.log(pngCollectionList);
+
     try {
-      const res = await axios.post(`${serverDomain}/print-png`, {
-        template: pngTemplate,
-        images: pngCollectionList,
-      });
+      const res = await axios.post(
+        `${serverDomain}/print-png`,
+        {
+          template: pngTemplate,
+          images: pngCollectionList,
+        },
+        { responseType: 'blob', headers: { Accept: 'image/png' } },
+      );
 
       const blob = res.data;
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = "MCC_PNG_export.png";
+      a.download = 'MCC_PNG_export.png';
       a.click();
       dispatch(finishedLoad());
     } catch (err) {

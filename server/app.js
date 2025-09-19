@@ -1,54 +1,52 @@
-const express = require("express");
-const cors = require("cors");
-const outputPNG = require("./outputPNG");
+const express = require('express');
+const cors = require('cors');
+const outputPNG = require('./outputPNG');
 
 //get routes
-const databaseRoutes = require("./routes/database");
-const genresRoutes = require("./routes/genres");
-const getOnlineDataRoutes = require("./routes/getOnlineData");
+const databaseRoutes = require('./routes/database');
+const genresRoutes = require('./routes/genres');
+const getOnlineDataRoutes = require('./routes/getOnlineData');
 
 const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
 app.use(express.json());
-app.use("/database", databaseRoutes);
-app.use("/genres", genresRoutes);
-app.use("/getOnlineData", getOnlineDataRoutes);
+app.use('/database', databaseRoutes);
+app.use('/genres', genresRoutes);
+app.use('/getOnlineData', getOnlineDataRoutes);
 
-app.post("/print-png", async (req, res) => {
+app.post('/print-png', async (req, res) => {
   //req body: {template, images: [array of image blocks]}
   //image blocks: {url: "url.com", spine_color: "#ffffffff", type}
   const template = req.body.template;
   const images = req.body.images;
   const png = await outputPNG({ template, images });
-  res.setHeader("Content-Type", "image/png");
+  res.setHeader('Content-Type', 'image/png');
   res.send(png);
 });
 
 app.use((req, res, next) => {
-  res
-    .status(404)
-    .json({
-      error: "Page not Found",
-      message: "The requested route does not exist",
-    });
+  res.status(404).json({
+    error: 'Page not Found',
+    message: 'The requested route does not exist',
+  });
 });
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500);
-  let errorResponse = { errors: [], message: "" };
+  let errorResponse = { errors: [], message: '' };
 
-  if (err.error === "Media not found") {
+  if (err.error === 'Media not found') {
     errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
-  } else if (err.error === "Open Library Error") {
+  } else if (err.error === 'Open Library Error') {
     errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
     errorResponse.failedSearchData = err.failedSearchData;
@@ -59,18 +57,18 @@ app.use((err, req, res, next) => {
     const missingFields = [];
     const wrongTypes = [];
     for (let error of err.schemaErrors) {
-      if (error.includes("instance requires property")) {
+      if (error.includes('instance requires property')) {
         const missingField = error.split('"')[1];
         missingFields.push(`Save request missing ${missingField}`);
-      } else if (error.includes("is not of a type(s)")) {
-        const wrongTypeField = error.split(" ")[0].split(".")[1];
+      } else if (error.includes('is not of a type(s)')) {
+        const wrongTypeField = error.split(' ')[0].split('.')[1];
         wrongTypes.push(`${wrongTypeField} is of wrong type`);
-      } else if (error.includes("does not meet minimum length")) {
-        const field = error.split(" ")[0].split(".")[1];
+      } else if (error.includes('does not meet minimum length')) {
+        const field = error.split(' ')[0].split('.')[1];
         missingFields.push(`Save request missing ${field}`);
       }
     }
-    errorResponse.message = "Schema violation(s) during save request";
+    errorResponse.message = 'Schema violation(s) during save request';
     errorResponse.saved = false;
     errorResponse.saveAttemptItem = err.saveAttemptItem;
 
@@ -78,10 +76,12 @@ app.use((err, req, res, next) => {
   } else if (err.detail) {
     //errors from PostgreSQL
     let errorDetail = err.detail;
-    if (errorDetail?.includes("Failing row")) console.log(err);
+    console.log('err:', err);
+    if (errorDetail?.includes('Failing row'))
+      console.log('Failing Row Error:', err);
 
-    if (errorDetail?.includes("already exists")) {
-      errorResponse.errors.push("already exists in database");
+    if (errorDetail?.includes('already exists')) {
+      errorResponse.errors.push('This media already exists in database');
       res.status(400);
     }
 
