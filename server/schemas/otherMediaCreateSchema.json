@@ -4,7 +4,7 @@
   "$id": "http://example.com/root.json",
   "type": "object",
   "title": "The Root Schema",
-  "required": ["title", "image_urls"],
+  "required": ["title", "image_urls", "spine_color"],
   "properties": {
     "title": {
       "$id": "#/properties/title",
@@ -25,6 +25,14 @@
         "examples": ["http://imageurl1.com", "http://imageurl2.com"],
         "pattern": "^(.*)$"
       }
+    },
+    "spine_color": {
+      "$id": "#/properties/spine_color",
+      "type": "string",
+      "title": "The Spine Color Schema",
+      "default": "",
+      "examples": ["#ffffff"],
+      "pattern": "^(.*)$"
     }
   }
 }

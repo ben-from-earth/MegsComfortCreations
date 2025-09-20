@@ -48,6 +48,7 @@ export const collectBlockInformation = createAsyncThunk(
       validateStatus: (status) => status < 500,
     });
     const mediaSearchData = mediaSearchRes.data;
+
     //if we return a book from the database, return the information.
     if (mediaSearchData.foundMediaList?.length > 0) {
       //--- still need to write logic for more than one return ---//
@@ -93,6 +94,7 @@ export const collectBlockInformation = createAsyncThunk(
         images: image_urls,
         blockInfo: {
           title,
+          spine_color,
         },
         blockID: nanoid(),
         isDatabase: true,

@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const outputPNG = require('./outputPNG');
+const outputPNG = require('./helpers/outputPNG');
 
 //get routes
 const databaseRoutes = require('./routes/database');
@@ -76,7 +76,6 @@ app.use((err, req, res, next) => {
   } else if (err.detail) {
     //errors from PostgreSQL
     let errorDetail = err.detail;
-    console.log('err:', err);
     if (errorDetail?.includes('Failing row'))
       console.log('Failing Row Error:', err);
 

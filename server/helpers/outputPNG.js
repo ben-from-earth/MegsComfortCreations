@@ -6,10 +6,10 @@
  * Input:
  * {
  *   template: 3 | 5,
- *   images: Array<{ url: string, spine_color: string, type: string }>
+ *   images: Array of { url: string, spine_color: string, type: string }
  * }
  *
- * Behavior:
+ * Output:
  * - Fixed canvas: 2025w x 2775h
  * - template=5 → rowHeight=324, yGap=26
  *   template=3 → rowHeight=261, yGap=18
@@ -382,7 +382,7 @@ async function makeBlock(w, h, fill, rotation = 0) {
   if (typeof fill === 'string' && isHttpUrl(fill)) {
     try {
       const buf = await fetchImageBufferAxios(fill);
-      pipe = sharp(buf).toColourspace('srgb').resize(w, h, { fit: 'cover' });
+      pipe = sharp(buf).toColourspace('srgb').resize(w, h, { fit: 'fill' });
     } catch (e) {
       console.warn('[makeBlock] fetch failed, using placeholder:', e.message);
       pipe = sharp({

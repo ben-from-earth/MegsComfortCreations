@@ -1,6 +1,4 @@
-const db = require("../database/db");
-
-const convertToNull = (v) => (v === undefined ? null : v);
+const db = require('../database/db');
 
 class Album {
   static async create(data) {
@@ -13,13 +11,13 @@ class Album {
             id,
             title,
             image_urls`,
-      [data.title, convertToNull(data.image_urls)]
+      [data.title, data.image_urls]
     );
     return result.rows[0];
   }
   static async find(title) {
     const result = await db.query(
-      `SELECT title, image_urls 
+      `SELECT title, image_urls
      FROM albums
      WHERE title ILIKE '${title}'`
     );

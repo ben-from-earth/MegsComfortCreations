@@ -79,6 +79,7 @@ const MediaCollector = () => {
   }, [stateData]);
 
   //on mount, reset query count in local storage if its a new day
+  //on unmount reset the visual state
   useEffect(() => {
     const lastQueryDate = localStorage.getItem('lastQueryDate');
     const today = new Date().toISOString().split('T')[0];
@@ -163,8 +164,6 @@ const MediaCollector = () => {
 
     setLoadingMessage(`Putting together PNG export`);
     dispatch(startLoad());
-
-    console.log(pngCollectionList);
 
     try {
       const res = await axios.post(

@@ -3,18 +3,22 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import Button from '@/components/Button';
+import { useContext } from 'react';
+import DatabasePageContext from '@/context/DatabasePageContext';
 
-const PaginationInputs = ({
-  paginationFunctions: {
+const PaginationInputs = () => {
+  const {
+    type,
     setType,
+    limit,
     setLimit,
+    sortBy,
     setSortBy,
+    page,
     setPage,
     setTitleSearch,
     handleGetMedia,
-  },
-  paginationVariables: { type, limit, sortBy, page },
-}) => {
+  } = useContext(DatabasePageContext);
   let sortOptions;
   if (type === 'book') {
     sortOptions = [
@@ -28,15 +32,19 @@ const PaginationInputs = ({
   }
 
   const handleTypeChange = (e) => {
+    setPage(1);
     setType(e.target.value);
+
     if (e.target.value !== 'book') {
       setSortBy('title');
     }
   };
   const handleLimitChange = (e) => {
+    setPage(1);
     setLimit(e.target.value);
   };
   const handleSortByChange = (e) => {
+    setPage(1);
     setSortBy(e.target.value);
   };
   return (

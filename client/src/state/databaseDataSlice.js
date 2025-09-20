@@ -53,7 +53,6 @@ export const sendToDatabase = createAsyncThunk(
               return { ...bookCreationResponse };
             } else {
               const bookDatabaseID = bookCreationResponse.saveAttemptItem.id;
-              console.log(book.genres);
 
               const genreLinkRes = await axios.post(
                 `${serverDomain}/genres/addLink`,
@@ -80,9 +79,11 @@ export const sendToDatabase = createAsyncThunk(
         const mediaPromises = sendData.map(async (item) => {
           //mediaData looks like {title, blockID, images:[{src, idx}]}
           //need {title, image_urls}
+
           const mediaData = {
             title: item.title,
             image_urls: item.images.map((item) => item.src),
+            spine_color: item.spine_color,
           };
 
           try {

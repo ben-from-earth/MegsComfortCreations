@@ -1,5 +1,5 @@
-import { useDispatch } from "react-redux";
-import { setChecks } from "@/state/collectorSlice";
+import { useDispatch } from 'react-redux';
+import { setChecks } from '@/state/collectorSlice';
 
 const MediaCheckboxes = ({ mediaTypes, setSearchData }) => {
   //setup connection to redux slice
@@ -8,12 +8,13 @@ const MediaCheckboxes = ({ mediaTypes, setSearchData }) => {
   return (
     <>
       <div className="m-6 flex flex-row content-center gap-5">
-        {mediaTypes.map(({ type, label }, idx) => (
+        {mediaTypes.map(({ type, label, show }, idx) => (
           <label
             key={type}
             className='font-["Just_Another_Hand"] text-[25px] tracking-wider'
           >
             <input
+              checked={show}
               className="m-[6px]"
               id={idx}
               type="checkbox"
@@ -21,7 +22,7 @@ const MediaCheckboxes = ({ mediaTypes, setSearchData }) => {
                 dispatch(setChecks(idx));
                 setSearchData((prev) => {
                   return prev.map((_, i) =>
-                    i === idx ? { ...prev[i], text: "" } : prev[i],
+                    i === idx ? { ...prev[i], text: '' } : prev[i],
                   );
                 });
               }}

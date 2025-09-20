@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DatabaseItemDisplay from './DatabaseItemDisplay';
 import PaginationInputs from './PaginationInputs';
 import axios from 'axios';
-import { titleRearrange } from '../MediaCollector/helpers/mediaCollectorHelpers';
+import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
+import DatabasePageContext from '@/context/DatabasePageContext';
 
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
@@ -21,6 +22,9 @@ const ShowDatabasePage = () => {
   const [page, setPage] = useState(1);
   const [titleSearch, setTitleSearch] = useState('');
 
+  useEffect(() => {
+    handleGetMedia();
+  }, [page, type, limit, sortBy, titleSearch]); //possible solution to constantly update list based on inputs
   const handleGetMedia = async () => {
     if (titleSearch.length > 0) {
       try {
@@ -57,23 +61,26 @@ const ShowDatabasePage = () => {
     }
   };
   return (
-    <div className="flex flex-col items-center">
-      <PaginationInputs
-        paginationFunctions={{
-          setType,
-          setLimit,
-          setSortBy,
-          setPage,
-          setTitleSearch,
-          handleGetMedia,
-        }}
-        paginationVariables={{ type, limit, sortBy, page }}
-      />
-      <DatabaseItemDisplay
-        databaseItems={databaseItems}
-        handleGetMedia={handleGetMedia}
-      />
-    </div>
+    <DatabasePageContext.Provider
+      value={{
+        page,
+        setPage,
+        databaseItems,
+        type,
+        setType,
+        limit,
+        setLimit,
+        sortBy,
+        setSortBy,
+        setTitleSearch,
+        handleGetMedia,
+      }}
+    >
+      <div className="flex flex-col items-center">
+        <PaginationInputs />
+        <DatabaseItemDisplay />
+      </div>
+    </DatabasePageContext.Provider>
   );
 };
 

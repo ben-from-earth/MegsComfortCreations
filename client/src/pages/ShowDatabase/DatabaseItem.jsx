@@ -56,17 +56,29 @@ const DatabaseItem = ({
       {image_urls.map((src, idx) => (
         <img
           key={idx}
-          className={type === 'album' ? 'h-[75px]' : 'w-15'}
+          className={type === 'album' ? 'h-30 rounded-sm' : 'w-24 rounded-sm'}
           src={src}
         ></img>
       ))}
       {type === 'book' ? (
-        <p className='font-["Just_Another_Hand"] text-2xl'>
-          {titleRearrange(title)} by {author} // {page_count} pages //{' '}
-          {pub_year}
-        </p>
+        <div className="flex flex-col">
+          <p className='font-["Just_Another_Hand"] text-3xl'>
+            {titleRearrange(title)}
+          </p>
+          <p className='font-["Just_Another_Hand"] text-2xl'>{author}</p>
+          <hr className="my-1 border-t border-black" />
+          <p className='font-["Just_Another_Hand"] text-xl'>
+            Pages: {page_count}
+          </p>
+
+          <p className='font-["Just_Another_Hand"] text-xl'>
+            Publication Date: {pub_year}
+          </p>
+        </div>
       ) : (
-        <p>{titleRearrange(title)}</p>
+        <p className='font-["Just_Another_Hand"] text-5xl'>
+          {titleRearrange(title)}
+        </p>
       )}
       <div className="ml-auto flex flex-col gap-2">
         <Button
