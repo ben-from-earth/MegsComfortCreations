@@ -5,6 +5,7 @@ import Select from '@mui/material/Select';
 import Button from '@/components/Button';
 import { useContext } from 'react';
 import DatabasePageContext from '@/context/DatabasePageContext';
+import GenreContext from '../../context/GenreContext';
 
 const PaginationInputs = () => {
   const {
@@ -16,9 +17,12 @@ const PaginationInputs = () => {
     setSortBy,
     page,
     setPage,
+    genre,
+    setGenre,
     setTitleSearch,
     handleGetMedia,
   } = useContext(DatabasePageContext);
+  const genres = useContext(GenreContext);
   let sortOptions;
   if (type === 'book') {
     sortOptions = [
@@ -37,6 +41,7 @@ const PaginationInputs = () => {
 
     if (e.target.value !== 'book') {
       setSortBy('title');
+      setGenre('');
     }
   };
   const handleLimitChange = (e) => {
@@ -46,6 +51,10 @@ const PaginationInputs = () => {
   const handleSortByChange = (e) => {
     setPage(1);
     setSortBy(e.target.value);
+  };
+  const handleGenreChange = (e) => {
+    setPage(1);
+    setGenre(e.target.value);
   };
   return (
     <div className="border-3 mt-6 flex w-fit items-center justify-between rounded-lg border-[var(--darkpink)] bg-[var(--lightpink)] p-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]">
@@ -95,6 +104,23 @@ const PaginationInputs = () => {
         >
           {sortOptions.map((option) => (
             <MenuItem value={option.value}>{option.label}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <FormControl sx={{ m: 1, minWidth: 100 }} size="small">
+        <InputLabel id="genre">Genre</InputLabel>
+        <Select
+          labelId="genre"
+          id="genre"
+          value={genre}
+          label="genre"
+          onChange={handleGenreChange}
+        >
+          <MenuItem value={''}>---</MenuItem>
+          <MenuItem value={'none'}>None</MenuItem>
+
+          {genres.map((option) => (
+            <MenuItem value={option}>{option}</MenuItem>
           ))}
         </Select>
       </FormControl>

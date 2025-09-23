@@ -296,4 +296,146 @@ router.delete('/', async (req, res, next) => {
   }
 });
 
+router.put('/edit/:type', async (req, res, next) => {
+  switch (req.params.type) {
+    case 'book':
+      try {
+        const validation = validate(req.body, bookCreateSchema);
+        if (!validation.valid) {
+          return next({
+            status: 400,
+            schemaErrors: validation.errors.map((e) => e.stack),
+            editAttemptItem: req.body,
+            type: req.params.type,
+          });
+        }
+        const book = await Book.edit(req.body);
+        if (!book) {
+          return next({
+            status: 400,
+            error: 'Media not found',
+            editAttemptItem: req.body,
+            type: req.params.type,
+            message:
+              'Edit requested on an item that does not exist in the database',
+            edited: false,
+          });
+        } else {
+          return res.status(200).json({
+            message: `${titleRearrange(req.body.title)} successfully edited.`,
+            editAttemptItem: book,
+            edited: true,
+            type: req.params.type,
+          });
+        }
+      } catch (err) {
+        const error = {
+          ...err,
+          editAttemptItem: req.body,
+          type: req.params.type,
+        };
+        return next(error);
+      }
+    case 'movie':
+      try {
+        const validation = validate(req.body, otherMediaCreateSchema);
+        if (!validation.valid) {
+          return next({
+            status: 400,
+            schemaErrors: validation.errors.map((e) => e.stack),
+            editAttemptItem: req.body,
+            type: req.params.type,
+          });
+        }
+        const movie = await Movie.edit(req.body);
+        if (!movie) {
+          return next({
+            status: 400,
+            error: 'Media not found',
+            editAttemptItem: req.body,
+            type: req.params.type,
+            message:
+              'Edit requested on an item that does not exist in the database',
+            edited: false,
+          });
+        } else {
+          return res.status(200).json({
+            message: `${titleRearrange(req.body.title)} successfully edited.`,
+            editAttemptItem: movie,
+            edited: true,
+            type: req.params.type,
+          });
+        }
+      } catch (err) {
+        return next(err);
+      }
+    case 'video_game':
+      try {
+        const validation = validate(req.body, otherMediaCreateSchema);
+        if (!validation.valid) {
+          return next({
+            status: 400,
+            schemaErrors: validation.errors.map((e) => e.stack),
+            editAttemptItem: req.body,
+            type: req.params.type,
+          });
+        }
+        const video_game = await Video_Game.edit(req.body);
+        if (!video_game) {
+          return next({
+            status: 400,
+            error: 'Media not found',
+            editAttemptItem: req.body,
+            type: req.params.type,
+            message:
+              'Edit requested on an item that does not exist in the database',
+            edited: false,
+          });
+        } else {
+          return res.status(200).json({
+            message: `${titleRearrange(req.body.title)} successfully edited.`,
+            editAttemptItem: video_game,
+            edited: true,
+            type: req.params.type,
+          });
+        }
+      } catch (err) {
+        return next(err);
+      }
+    case 'album':
+      try {
+        const validation = validate(req.body, otherMediaCreateSchema);
+        if (!validation.valid) {
+          return next({
+            status: 400,
+            schemaErrors: validation.errors.map((e) => e.stack),
+            editAttemptItem: req.body,
+            type: req.params.type,
+          });
+        }
+        const album = await Album.edit(req.body);
+        if (!album) {
+          return next({
+            status: 400,
+            error: 'Media not found',
+            editAttemptItem: req.body,
+            type: req.params.type,
+            message:
+              'Edit requested on an item that does not exist in the database',
+            edited: false,
+          });
+        } else {
+          return res.status(200).json({
+            message: `${titleRearrange(req.body.title)} successfully edited.`,
+            editAttemptItem: album,
+            edited: true,
+            type: req.params.type,
+          });
+        }
+      } catch (err) {
+        return next(err);
+      }
+  }
+});
+
 module.exports = router;

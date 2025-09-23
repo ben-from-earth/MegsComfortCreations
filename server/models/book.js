@@ -1,4 +1,4 @@
-const db = require("../database/db");
+const db = require('../database/db');
 
 const convertToNull = (v) => (v === undefined ? null : v);
 
@@ -46,12 +46,31 @@ class Book {
   static async findSome(type, offset, limit, sort) {
     const result = await db.query(
       `SELECT * 
-      FROM ${type + "s"}
+      FROM ${type + 's'}
       ORDER BY ${sort}
       LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
     return result.rows;
+  }
+
+  static async edit(data) {
+    const result = await db.query(
+      `UPDATE books
+      SET title = $1, author = $2, page_count = $3, pub_year = $4, image_urls = $5, spine_color = $6
+      WHERE id=$7
+      RETURNING *`,
+      [
+        data.title,
+        data.author,
+        data.page_count,
+        data.pub_year,
+        data.image_urls,
+        data.spine_color,
+        data.id,
+      ]
+    );
+    return result.rows[0];
   }
 }
 

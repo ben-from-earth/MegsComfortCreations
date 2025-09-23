@@ -23,6 +23,16 @@ class Album {
     );
     return result.rows;
   }
+  static async edit(data) {
+    const result = await db.query(
+      `UPDATE albums
+      SET title=$1, image_urls=$2
+      WHERE id=$3
+      RETURNING *`,
+      [data.title, data.image_urls, data.id]
+    );
+    return result.rows[0];
+  }
 }
 
 module.exports = Album;

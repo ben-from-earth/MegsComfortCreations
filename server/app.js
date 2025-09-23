@@ -46,6 +46,9 @@ app.use((err, req, res, next) => {
   if (err.error === 'Media not found') {
     errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
+    if (err.edited === false) {
+      errorResponse.edited = false;
+    }
   } else if (err.error === 'Open Library Error') {
     errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
@@ -59,16 +62,16 @@ app.use((err, req, res, next) => {
     for (let error of err.schemaErrors) {
       if (error.includes('instance requires property')) {
         const missingField = error.split('"')[1];
-        missingFields.push(`Save request missing ${missingField}`);
+        missingFields.push(`Save/Edit request missing ${missingField}`);
       } else if (error.includes('is not of a type(s)')) {
         const wrongTypeField = error.split(' ')[0].split('.')[1];
         wrongTypes.push(`${wrongTypeField} is of wrong type`);
       } else if (error.includes('does not meet minimum length')) {
         const field = error.split(' ')[0].split('.')[1];
-        missingFields.push(`Save request missing ${field}`);
+        missingFields.push(`Save/Edit request missing ${field}`);
       }
     }
-    errorResponse.message = 'Schema violation(s) during save request';
+    errorResponse.message = 'Schema violation(s) during save/edit request';
     errorResponse.saved = false;
     errorResponse.saveAttemptItem = err.saveAttemptItem;
 

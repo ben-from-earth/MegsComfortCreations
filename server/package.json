@@ -19,7 +19,8 @@
     "file-type": "^21.0.0",
     "jsonschema": "^1.5.0",
     "pg": "^8.16.3",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

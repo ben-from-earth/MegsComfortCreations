@@ -69,7 +69,7 @@ export const collectBlockInformation = createAsyncThunk(
           { bookID: id },
         );
         const genreSearchData = genreSearchRes.data;
-        const databaseGenres = genreSearchData.payload;
+        const databaseGenres = genreSearchData.genres;
 
         //return all the block info and designate isDatabase to be true
         return {

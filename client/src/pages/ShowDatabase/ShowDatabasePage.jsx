@@ -21,10 +21,11 @@ const ShowDatabasePage = () => {
   const [sortBy, setSortBy] = useState('title');
   const [page, setPage] = useState(1);
   const [titleSearch, setTitleSearch] = useState('');
+  const [genre, setGenre] = useState('');
 
   useEffect(() => {
     handleGetMedia();
-  }, [page, type, limit, sortBy, titleSearch]); //possible solution to constantly update list based on inputs
+  }, [page, type, limit, sortBy, titleSearch, genre]);
   const handleGetMedia = async () => {
     if (titleSearch.length > 0) {
       try {
@@ -43,20 +44,51 @@ const ShowDatabasePage = () => {
         console.log(`Server Error getting database items:`, err);
       }
     } else {
-      try {
-        const res = await axios.get(
-          `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}`,
-        );
-        const databaseResults = res.data;
-        setDatabaseItems({
-          type,
-          items: databaseResults.paginatedList,
-          total: databaseResults.total,
-          min: (page - 1) * limit + 1,
-          max: page * limit,
-        });
-      } catch (err) {
-        console.log(`Server Error getting database items:`, err);
+      if (type !== 'book' || genre === '') {
+        try {
+          const res = await axios.get(
+            `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}`,
+          );
+          const databaseResults = res.data;
+
+          setDatabaseItems({
+            type,
+            items: databaseResults.paginatedList,
+            total: databaseResults.total,
+            min: (page - 1) * limit + 1,
+            max: page * limit,
+          });
+        } catch (err) {
+          console.log(`Server Error getting database items:`, err);
+        }
+      } else {
+        if (genre === 'none') {
+          const res = await axios.get(
+            `${serverDomain}/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}`,
+          );
+          const databaseResults = res.data;
+
+          setDatabaseItems({
+            type,
+            items: databaseResults.paginatedList,
+            total: databaseResults.total,
+            min: (page - 1) * limit + 1,
+            max: page * limit,
+          });
+        } else {
+          const res = await axios.get(
+            `${serverDomain}/genres?genre=${genre}&sort=${sortBy}&limit=${limit}&page=${page}`,
+          );
+          const databaseResults = res.data;
+
+          setDatabaseItems({
+            type,
+            items: databaseResults.paginatedList,
+            total: databaseResults.total,
+            min: (page - 1) * limit + 1,
+            max: page * limit,
+          });
+        }
       }
     }
   };
@@ -72,6 +104,8 @@ const ShowDatabasePage = () => {
         setLimit,
         sortBy,
         setSortBy,
+        genre,
+        setGenre,
         setTitleSearch,
         handleGetMedia,
       }}

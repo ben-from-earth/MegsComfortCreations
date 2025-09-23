@@ -3,6 +3,7 @@ process.env.NODE_ENV = 'test';
 const request = require('supertest');
 const app = require('../app');
 const db = require('../database/db');
+const { randomUUID } = require('crypto');
 
 describe('Connection to database succesful', () => {
   test('can query the database', async () => {
@@ -10,6 +11,14 @@ describe('Connection to database succesful', () => {
     expect(result.rows[0].result).toBe(2);
   });
 });
+
+const otherMedias = ['movie', 'video_game', 'album'];
+const saveIDs = {
+  bookID: '',
+  movieID: '',
+  video_gameID: '',
+  albumID: '',
+};
 
 const testBookReq = {
   title: 'Dune',
@@ -22,26 +31,33 @@ const testBookReq = {
 
 const testOtherMediaReq = {
   title: 'Media Title',
+  spine_color: '#f25b26',
+  image_urls: ['http://testurl.com'],
+};
+
+const bookData = {
+  title: 'Book Title',
+  author: 'Book Author',
+  page_count: 100,
+  pub_year: 2025,
+  spine_color: '#ca2f24ff',
+  image_urls: ['http://testurl.com'],
+};
+const otherData = {
+  title: 'Other Title',
+  spine_color: '#ca2f24ff',
   image_urls: ['http://testurl.com'],
 };
 
 beforeAll(async function () {
-  const data = {
-    title: 'Ready Player One',
-    author: 'Ernest Cline',
-    page_count: 300,
-    pub_year: 2015,
-    spine_color: '#ca2f24ff',
-    image_urls: ['http://testurl.com'],
-  };
-  const result = await db.query(
+  const bookResult = await db.query(
     `INSERT INTO books (
             title,
             author,
             page_count,
             pub_year,
-            image_urls,
-            spine_color 
+            spine_color,
+            image_urls             
       ) VALUES ($1, $2, $3, $4, $5, $6) 
       RETURNING 
             id,
@@ -49,17 +65,63 @@ beforeAll(async function () {
             author,
             page_count,
             pub_year,
-            image_urls,
-            spine_color`,
+            spine_color,
+            image_urls`,
     [
-      data.title,
-      data.author,
-      data.page_count,
-      data.pub_year,
-      data.image_urls,
-      data.spine_color,
+      bookData.title,
+      bookData.author,
+      bookData.page_count,
+      bookData.pub_year,
+      bookData.spine_color,
+      bookData.image_urls,
     ]
   );
+
+  saveIDs.bookID = bookResult.rows[0].id;
+
+  const movieResult = await db.query(
+    `INSERT INTO movies (
+            title,
+            spine_color,
+            image_urls 
+      ) VALUES ($1, $2, $3) 
+      RETURNING 
+            id,
+            title,
+            spine_color,
+            image_urls`,
+    [otherData.title, otherData.spine_color, otherData.image_urls]
+  );
+
+  saveIDs.movieID = movieResult.rows[0].id;
+
+  const VGResult = await db.query(
+    `INSERT INTO video_games (
+            title,
+            image_urls,
+            spine_color 
+      ) VALUES ($1, $2, $3) 
+      RETURNING 
+            id,
+            image_urls,
+            spine_color`,
+    [otherData.title, otherData.image_urls, otherData.spine_color]
+  );
+
+  saveIDs.video_gameID = VGResult.rows[0].id;
+
+  const albumResult = await db.query(
+    `INSERT INTO albums (
+            title,
+            image_urls
+      ) VALUES ($1, $2) 
+      RETURNING 
+            id,
+            image_urls`,
+    [otherData.title, otherData.image_urls]
+  );
+
+  saveIDs.albumID = albumResult.rows[0].id;
 });
 
 describe('Test saving book to database', () => {
@@ -134,10 +196,10 @@ describe('Test saving book to database', () => {
       '/database?type=book&sort=title&limit=1&page=2'
     );
     expect(res.body.message).toEqual('Successful database gather');
-    expect(res.body.paginatedList[0].title).toEqual('Ready Player One');
+    expect(res.body.paginatedList[0].title).toEqual('Dune');
   });
 });
-const otherMedias = ['movie', 'album', 'video_game'];
+
 for (let media of otherMedias) {
   describe(`Test saving ${media}s to database`, () => {
     test(`Attempt database save of ${media} with proper inputs`, async () => {
@@ -154,6 +216,7 @@ for (let media of otherMedias) {
     test(`Missing required field and wrong type when attempting to save a ${media} to database`, async () => {
       const missingFieldsReq = {
         title: 1234,
+        spine_color: '#f25b26',
       };
       const res = await request(app)
         .post(`/database/save/${media}`)
@@ -172,6 +235,7 @@ for (let media of otherMedias) {
       const missingImagesReq = {
         title: 'Title',
         image_urls: [],
+        spine_color: '#f25b26',
       };
       const res = await request(app)
         .post(`/database/save/${media}`)
@@ -188,12 +252,12 @@ for (let media of otherMedias) {
 describe('Test finding media items by title', () => {
   test('Attempt find book by title, non-common capitalization', async () => {
     const res = await request(app).get(
-      '/database/search?type=book&title=ReADy PlaYeR ONE'
+      '/database/search?type=book&title=BoOk TiTle'
     );
     const foundMediaList = res.body.foundMediaList;
     const message = res.body.message;
     expect(message).toEqual(
-      'Successfully found 1 book(s) with title Ready Player One'
+      'Successfully found 1 book(s) with title Book Title'
     );
     expect(res.statusCode).toEqual(200);
     expect(foundMediaList[0].id).toBeDefined();
@@ -240,6 +304,88 @@ describe('Test database deletion', () => {
     );
     expect(res.statusCode).toEqual(400);
   });
+});
+
+describe('Test edit of database item', () => {
+  const medias = ['book', 'movie', 'video_game', 'album'];
+  for (let media of medias) {
+    test(`Test edit of ${media}`, async () => {
+      const id = saveIDs[`${media}ID`];
+      if (media === 'book') {
+        bookData.title = 'Book Title Edited';
+        bookData.id = id;
+        const bookRes = await request(app)
+          .put(`/database/edit/${media}`)
+          .send(bookData);
+        expect(bookRes.body.editAttemptItem.title).toEqual('Book Title Edited');
+        expect(bookRes.body.edited).toEqual(true);
+      } else {
+        otherData.title = 'Other Title Edited';
+        otherData.id = id;
+        const otherRes = await request(app)
+          .put(`/database/edit/${media}`)
+          .send(otherData);
+        expect(otherRes.body.editAttemptItem.title).toEqual(
+          'Other Title Edited'
+        );
+        expect(otherRes.body.edited).toEqual(true);
+      }
+    });
+
+    test(`Test edit of non existent media item`, async () => {
+      const id = randomUUID();
+      if (media === 'book') {
+        bookData.title = 'Book Title Edited';
+        bookData.id = id;
+        const bookRes = await request(app)
+          .put(`/database/edit/${media}`)
+          .send(bookData);
+        expect(bookRes.body.message).toEqual(
+          'Edit requested on an item that does not exist in the database'
+        );
+        expect(bookRes.body.edited).toEqual(false);
+      } else {
+        otherData.title = 'Other Title Edited';
+        otherData.id = id;
+        const otherRes = await request(app)
+          .put(`/database/edit/${media}`)
+          .send(otherData);
+        expect(otherRes.body.message).toEqual(
+          'Edit requested on an item that does not exist in the database'
+        );
+        expect(otherRes.body.edited).toEqual(false);
+      }
+    });
+
+    test(`Test edit with improper inputs`, async () => {
+      const id = saveIDs[`${media}ID`];
+      if (media === 'book') {
+        bookData.title = 123;
+        bookData.id = id;
+        const bookRes = await request(app)
+          .put(`/database/edit/${media}`)
+          .send(bookData);
+        expect(bookRes.body.message).toEqual(
+          'Schema violation(s) during save request'
+        );
+        //possibly update to handle this
+        //expect(bookRes.body.edited).toEqual(false);
+        expect(bookRes.body.errors[0]).toEqual(`title is of wrong type`);
+      } else {
+        otherData.title = 123;
+        otherData.id = id;
+        const otherRes = await request(app)
+          .put(`/database/edit/${media}`)
+          .send(otherData);
+        expect(otherRes.body.message).toEqual(
+          'Schema violation(s) during save request'
+        );
+        //possibly update to handle this
+        // expect(otherRes.body.edited).toEqual(false);
+        expect(otherRes.body.errors[0]).toEqual(`title is of wrong type`);
+      }
+    });
+  }
 });
 
 afterAll(async function () {

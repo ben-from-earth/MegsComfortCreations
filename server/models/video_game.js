@@ -26,6 +26,16 @@ class Video_Game {
     );
     return result.rows;
   }
+  static async edit(data) {
+    const result = await db.query(
+      `UPDATE video_games
+      SET title=$1, image_urls=$2, spine_color=$3
+      WHERE id=$4
+      RETURNING *`,
+      [data.title, data.image_urls, data.spine_color, data.id]
+    );
+    return result.rows[0];
+  }
 }
 
 module.exports = Video_Game;

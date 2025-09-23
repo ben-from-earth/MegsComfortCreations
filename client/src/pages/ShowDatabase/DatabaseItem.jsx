@@ -1,19 +1,20 @@
 import Button from '@/components/Button';
 import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
 import AreYouSure from '@/components/AreYouSure';
-import { useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 //axios
 import axios from 'axios';
+import EditDatabaseBlock from '@/pages/ShowDatabase/EditDatabaseBlock';
 
 //server domain for axios requests
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
-const DatabaseItem = ({
-  info: { title, author, page_count, pub_year, spine_color, image_urls },
+const DatabaseItem = memo(function DatabaseItem({
+  info: { id, title, author, page_count, pub_year, spine_color, image_urls },
   type,
   handleGetMedia,
-}) => {
+}) {
   //classes based on type
   const typeClasses = {
     book: 'bg-[#98ab88] border-[#3d770d]',
@@ -23,6 +24,18 @@ const DatabaseItem = ({
   };
 
   const [areYouSure, setAreYouSure] = useState(false);
+  const [edit, setEdit] = useState(false);
+  const [genres, setGenres] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      const genreRes = await axios.post(`${serverDomain}/genres/getFromBook`, {
+        bookID: id,
+      });
+
+      setGenres(genreRes.data.genres);
+    })();
+  }, [edit]);
 
   const onDelete = async () => {
     try {
@@ -38,9 +51,10 @@ const DatabaseItem = ({
     setAreYouSure(false);
   };
 
-  const onEdit = (title) => {
-    console.log(`Let's edit ${title}`);
-  };
+  const list = new Intl.ListFormat('en', {
+    style: 'long',
+    type: 'conjunction',
+  });
 
   return (
     <div
@@ -51,6 +65,24 @@ const DatabaseItem = ({
           setAreYouSure={setAreYouSure}
           onDelete={onDelete}
           title={title}
+        />
+      )}
+      {edit && (
+        <EditDatabaseBlock
+          info={{
+            type,
+            images: image_urls,
+            blockInfo: {
+              title,
+              author,
+              pub_year,
+              page_count,
+              spine_color,
+              initialGenres: [...genres],
+            },
+            id,
+            setEdit,
+          }}
         />
       )}
       {image_urls.map((src, idx) => (
@@ -74,6 +106,9 @@ const DatabaseItem = ({
           <p className='font-["Just_Another_Hand"] text-xl'>
             Publication Date: {pub_year}
           </p>
+          <p className='font-["Just_Another_Hand"] text-xl'>
+            Genres: {list.format(genres)}
+          </p>
         </div>
       ) : (
         <p className='font-["Just_Another_Hand"] text-5xl'>
@@ -85,7 +120,7 @@ const DatabaseItem = ({
           label={'Edit'}
           width={75}
           fontSize={24}
-          onClick={() => onEdit(title)}
+          onClick={() => setEdit(true)}
         />
         <Button
           label={'Delete'}
@@ -96,6 +131,6 @@ const DatabaseItem = ({
       </div>
     </div>
   );
-};
+});
 
 export default DatabaseItem;

@@ -45,7 +45,7 @@ const MyTextArea = ({ name, label, type, blockID, value }) => {
         {label}:
       </label>
       <textarea
-        className="w-full content-center whitespace-nowrap rounded-sm bg-white pl-2 text-black"
+        className="w-2xs content-center rounded-sm bg-white pl-2 text-black"
         name={name}
         defaultValue={value}
         onChange={(e) => {
@@ -184,6 +184,16 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     }
   };
 
+  //if genre is clicked we add it to the data associated with the block and remove if unchecked
+  const handleGenreClick = (genreText, checked) => {
+    const type = 'book';
+    if (checked) {
+      dispatch(addToDatabaseData({ blockID, type, genreText }));
+    } else {
+      dispatch(removeFromDatabaseData({ blockID, type, genreText }));
+    }
+  };
+
   //classes based on type
   const typeClasses = {
     book: 'bg-[#98ab88] border-[#3d770d]',
@@ -289,7 +299,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         <GenreCheckboxes
           genres={genres}
           databaseGenres={databaseGenres}
-          blockID={blockID}
+          handleGenreClick={handleGenreClick}
         />
       ) : (
         <></>

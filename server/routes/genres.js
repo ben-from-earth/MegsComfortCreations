@@ -1,42 +1,93 @@
-const express = require("express");
+const express = require('express');
 const router = new express.Router();
 
-const Genre = require("../models/genre");
+const Genre = require('../models/genre');
 
-router.get("/getAll", async (req, res, next) => {
+router.get('/getAll', async (req, res, next) => {
   try {
     const genres = await Genre.getAllGenres();
-    return res.status(200).json({ message: "success", payload: genres });
+    return res.status(200).json({ message: 'success', payload: genres });
   } catch (err) {
     return next(err);
   }
 });
 
-router.post("/getFromBook", async (req, res, next) => {
+router.post('/getFromBook', async (req, res, next) => {
   try {
     const bookID = req.body.bookID;
     const genres = await Genre.getFromBook(bookID);
     return res
       .status(200)
-      .json({ message: "Successfully grabbed genres", payload: genres });
+      .json({ message: 'Successfully grabbed genres', genres });
   } catch (err) {
     return next(err);
   }
 });
 
-router.post("/addlink", async (req, res, next) => {
+router.post('/addlink', async (req, res, next) => {
   const bookID = req.body.bookID;
   const genres = req.body.genres;
-  let response = [];
+  let responses = [];
   for (let genre of genres) {
     try {
       await Genre.link(genre, bookID);
-      response.push({ message: "Successful genre link", genre, bookID });
+      responses.push({ message: 'Successful genre link', genre, bookID });
     } catch (err) {
       return next(err);
     }
   }
-  return res.status(201).json({ responses: response });
+  return res.status(201).json({ responses });
+});
+
+router.post('/unlink', async (req, res, next) => {
+  const bookID = req.body.bookID;
+  let responses = [];
+  try {
+    await Genre.unlink(bookID);
+    responses.push({ message: 'Successful genre link removal', bookID });
+  } catch (err) {
+    return next(err);
+  }
+
+  return res.status(200).json({ responses });
+});
+
+router.get('/', async (req, res, next) => {
+  const genre = req.query.genre;
+
+  //All of these options are handled by the front end so errors will be prevented before the request.
+  const limit = Number(req.query.limit);
+  const page = Number(req.query.page) || 1;
+  const sort = req.query.sort;
+
+  const offset = (page - 1) * limit;
+  try {
+    const genreRes = await Genre.getBooksWithGenre(genre, sort, offset, limit);
+    return res.status(200).json({
+      message: `Successful database gather`,
+      paginatedList: genreRes.books,
+      total: genreRes.total,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+router.get('/nogenres', async (req, res, next) => {
+  const limit = Number(req.query.limit);
+  const page = Number(req.query.page) || 1;
+  const sort = req.query.sort;
+
+  const offset = (page - 1) * limit;
+  try {
+    const genreRes = await Genre.getNoGenreBooks(sort, offset, limit);
+    return res.status(200).json({
+      message: `Successful database gather`,
+      paginatedList: genreRes.books,
+      total: genreRes.total,
+    });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 module.exports = router;

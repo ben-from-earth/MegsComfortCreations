@@ -8,11 +8,11 @@ const PageChooser = () => {
   const { min, max, total } = databaseItems;
   const numPages = Math.ceil(total / (max - min + 1));
   return (
-    <div>
-      <p>
+    <div className="flex w-full">
+      <p className="mr-auto pt-0.5">
         Showing {Math.min(min, total)}-{Math.min(max, total)} of {total}
       </p>
-      <div className="absolute right-2 top-1 flex gap-2">
+      <div className="ml-auto flex gap-2">
         <Button
           label={'<- Prev Page'}
           disabled={page === 1 || total === 0}

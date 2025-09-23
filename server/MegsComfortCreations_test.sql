@@ -20,12 +20,14 @@ CREATE TABLE books (
 CREATE TABLE movies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL UNIQUE,
+    spine_color TEXT NOT NULL,
     image_urls TEXT[]
 );
 
 CREATE TABLE video_games (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL UNIQUE,
+    spine_color TEXT NOT NULL,
     image_urls TEXT[]
 );
 
