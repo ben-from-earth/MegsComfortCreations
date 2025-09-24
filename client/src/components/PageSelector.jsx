@@ -1,11 +1,16 @@
 import Button from '@/components/Button';
 import { useContext } from 'react';
+
+//Get all functions used in the database display page
 import DatabasePageContext from '@/context/DatabasePageContext';
 
-const PageChooser = () => {
-  const { databaseItems, page, setPage, handleGetMedia } =
-    useContext(DatabasePageContext);
-  const { min, max, total } = databaseItems;
+const PageSelector = () => {
+  const {
+    databaseItems: { min, max, total },
+    page,
+    setPage,
+    handleGetMedia,
+  } = useContext(DatabasePageContext);
   const numPages = Math.ceil(total / (max - min + 1));
   return (
     <div className="flex w-full">
@@ -34,4 +39,4 @@ const PageChooser = () => {
   );
 };
 
-export default PageChooser;
+export default PageSelector;

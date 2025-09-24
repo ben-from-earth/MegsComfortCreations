@@ -1,3 +1,7 @@
+//react
+import { useDispatch } from 'react-redux';
+import { memo, useContext, useEffect, useState } from 'react';
+
 //import icons and items from Material UI
 import BookIcon from '@mui/icons-material/BookTwoTone';
 import MovieIcon from '@mui/icons-material/LocalMoviesTwoTone';
@@ -6,62 +10,23 @@ import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-//react imports
-import { useDispatch } from 'react-redux';
-import { memo, useContext, useEffect, useState } from 'react';
-
 //necessary imports from database state slice
 import {
   addToDatabaseData,
   populateDatabaseData,
   removeFromDatabaseData,
-  updateDatabaseData,
 } from '@/state/databaseDataSlice';
 
 //necessary imports from png state slice
-import {
-  addToPNGCollectionList,
-  removeFromPNGCollectionList,
-} from '@/state/pngCollectionSlice';
+import { addToPNGCollectionList } from '@/state/pngCollectionSlice';
 
 //genres from context provider to populate genre list based on what genres are in the database
 import GenreContext from '@/context/GenreContext';
 
 //components
-import GenreCheckboxes from './GenreCheckboxes';
-
-// setup component text area for each data field in the block
-const MyTextArea = ({ name, label, type, blockID, value }) => {
-  const dispatch = useDispatch();
-
-  const labelClass =
-    type === 'book'
-      ? 'w-25 content-center text-right font-["Just_Another_Hand"] text-3xl'
-      : 'w-15 content-center text-right font-["Just_Another_Hand"] text-3xl';
-
-  return (
-    <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 p-2">
-      <label className={labelClass} htmlFor={name}>
-        {label}:
-      </label>
-      <textarea
-        className="w-2xs content-center rounded-sm bg-white pl-2 text-black"
-        name={name}
-        defaultValue={value}
-        onChange={(e) => {
-          dispatch(
-            updateDatabaseData({
-              blockID,
-              type,
-              name,
-              newText: e.target.value,
-            }),
-          );
-        }}
-      ></textarea>
-    </div>
-  );
-};
+import GenreCheckboxes from '@/pages/MediaCollector/GenreCheckboxes';
+import CCBImages from '@/pages/MediaCollector/CCBImages';
+import MyTextArea from '@/components/MyTextArea';
 
 //setup memo so block doesnt rerender during other actions
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
@@ -86,35 +51,21 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   //establish variables for icons
   const icons = {
-    book: (
-      <BookIcon sx={{ position: 'absolute', bottom: '4px', left: '4px' }} />
-    ),
-    movie: (
-      <MovieIcon sx={{ position: 'absolute', bottom: '4px', left: '4px' }} />
-    ),
+    book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
+    movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
     video_game: (
-      <VideoGameIcon
-        sx={{ position: 'absolute', bottom: '4px', left: '4px' }}
-      />
+      <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
     ),
-    album: (
-      <AlbumIcon sx={{ position: 'absolute', bottom: '4px', left: '4px' }} />
-    ),
+    album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
   };
 
   //set local state for spine color
   const [color, setColor] = useState(spine_color);
 
-  //set up a local state to an array with an index for each image slot (current: 3) and set to false
-  //this is for click tracking and the "selected" style and setting the image as a block datapoint
-  const [clicked, setClicked] = useState(() =>
-    Array(images.length).fill(false),
-  );
-
   //get genres for checkbox population
   const genres = useContext(GenreContext);
 
-  //populated database add with following information added for book
+  //extra information used for books only
   const bookSpecificDatabasePayload = {
     author,
     pub_year,
@@ -122,6 +73,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     genres: [],
   };
 
+  //set up the data paylod for population off send to database state
   const databasePayload = {
     type,
     data: {
@@ -132,7 +84,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     },
   };
 
-  //on mount, populate the database data (in the state) with the block information
+  //on mount, populate the database data (in the state) with the block information if the information is not already from the database
+  //If the block is populated from the database, add the image to the png collection list
   useEffect(() => {
     if (!isDatabase) {
       dispatch(populateDatabaseData(databasePayload));
@@ -143,31 +96,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
-  // function for handling an image click
-  //this adds the image url to the database data (in the state) or removes it if its there already
-  const handleClick = (blockID, type, idx, src) => {
-    const next = !clicked[idx];
-    setClicked((prev) =>
-      prev.map((b, itemIndex) => (itemIndex === idx ? next : b)),
-    );
-    if (next) {
-      dispatch(
-        addToDatabaseData({
-          type,
-          src,
-          idx,
-          blockID,
-        }),
-      );
-      dispatch(addToPNGCollectionList({ url: src, type, spine_color: color }));
-    } else {
-      dispatch(removeFromDatabaseData({ blockID, type, idx }));
-      dispatch(removeFromPNGCollectionList({ url: src }));
-    }
-  };
-
-  //div under the covers to pick a color for the spine.
-  //this is used in png creation and is required for the database row
+  //div to pick a color for the spine.
+  //this is used in png creation and is required for the database row of books, movies, and video games
   const handleColorPick = async (blockID, type) => {
     if (!window.EyeDropper) {
       console.log('EyeDropper API not supported in this browser');
@@ -194,17 +124,17 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     }
   };
 
-  //classes based on type
+  //styling of the block itself based on type
   const typeClasses = {
     book: 'bg-[#98ab88] border-[#3d770d]',
     movie: 'bg-[#323b43] border-black text-white',
-    album: 'bg-[#7fa5a3] border-[#d49a97]',
+    album: 'bg-[#7fa5a3] border-[#354544]',
     video_game: 'bg-[#98ab88] border-[#4e8885]',
   };
 
   return (
     <div
-      className={`relative m-2.5 flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${typeClasses[type]}`}
+      className={`min-w-xs relative m-2.5 flex h-fit flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${typeClasses[type]}`}
     >
       {isDatabase && (
         <p className='p-1.25 absolute right-1 top-1 m-0 rounded-sm border-2 border-black bg-gray-700 font-["Just_Another_Hand"] text-2xl tracking-wider text-white'>
@@ -214,42 +144,26 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       {icons[type]}
       <IconButton
         aria-label="delete"
-        sx={{ position: 'absolute', bottom: '4px', right: '4px', padding: '0' }}
+        sx={{
+          position: 'absolute',
+          bottom: '4px',
+          right: '4px',
+          padding: '0',
+          color: type === 'movie' ? 'white' : '',
+        }}
         onClick={() =>
           handleDeleteBlock({ blockID, type, deleteBlock: true, urls: images })
         }
       >
         <DeleteIcon />
       </IconButton>
-      <div className="gap-7.5 m-2.5 mb-0 flex flex-row items-center">
-        {images.map((src, idx) => (
-          <div
-            className="relative z-10 overflow-hidden rounded-sm"
-            key={src}
-            onClick={() => {
-              if (!isDatabase) {
-                handleClick(blockID, type, idx, src);
-              }
-            }}
-          >
-            <img
-              className={
-                type === 'album'
-                  ? 'w-21 block cursor-pointer object-cover outline-2'
-                  : 'w-21 h-31 block cursor-pointer'
-              }
-              src={src}
-            ></img>
-            <div
-              className={`pointer-events-none absolute inset-0 flex content-center items-center bg-[rgba(0,200,0,0.5)] ${clicked[idx] ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <p className='-rotate-65 -translate-x-1 font-["Just_Another_Hand"] text-5xl font-bold tracking-wider text-[rgb(0,77,0)]'>
-                Selected
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <CCBImages
+        images={images}
+        isDatabase={isDatabase}
+        blockID={blockID}
+        type={type}
+        color={color}
+      />
       {type !== 'album' ? (
         <div
           className="h-5 w-1/2 cursor-pointer"

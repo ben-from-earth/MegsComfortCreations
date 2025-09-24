@@ -1,11 +1,12 @@
-import { createSlice } from "@reduxjs/toolkit";
+//redux
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   pngCollectionList: [],
 };
 
 export const pngCollectionSlice = createSlice({
-  name: "pngCollection",
+  name: 'pngCollection',
   initialState,
   reducers: {
     addToPNGCollectionList: (state, action) => {
@@ -19,7 +20,7 @@ export const pngCollectionSlice = createSlice({
     removeFromPNGCollectionList: (state, action) => {
       //action.payload = {url}
       state.pngCollectionList = state.pngCollectionList.filter(
-        (image) => image.url !== action.payload.url
+        (image) => image.url !== action.payload.url,
       );
     },
     clearPNGCollectionList: (state) => {

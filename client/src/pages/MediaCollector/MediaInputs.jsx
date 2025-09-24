@@ -1,5 +1,8 @@
 import { TextField } from '@mui/material';
 
+//This component is mainly the data collection of the app.
+//Based on which media checkboxes are checked, the text area will show.
+//Inputs are a comma seperated list of the wanted titles (books require title / author list)
 const MediaInputs = ({ mediaTypes, setSearchData }) => {
   return (
     <>
@@ -12,7 +15,7 @@ const MediaInputs = ({ mediaTypes, setSearchData }) => {
           .map(({ type, label }) => (
             <TextField
               className="w-90 rounded-sm bg-white"
-              id="outlined-multiline-static"
+              id={`outlined-multiline-static ${label}`}
               multiline
               key={type}
               label={`${label} Titles`}

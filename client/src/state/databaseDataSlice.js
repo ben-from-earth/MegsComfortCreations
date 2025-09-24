@@ -1,14 +1,14 @@
-//library imports
-import axios from 'axios';
-
-//redux imports
+//redux
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-//imports from collector state slice
-import { medias } from './collectorSlice';
+//axios
+import axios from 'axios';
 
-//import helper function for title rearranging
-import { titleRearrange } from '../pages/MediaCollector/helpers/mediaCollectorHelpers';
+//imports from collector state slice
+import { medias } from '@/state/collectorSlice';
+
+//helpers
+import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
 
 const initialState = medias.map(({ type, label }) => ({
   type,
@@ -49,7 +49,7 @@ export const sendToDatabase = createAsyncThunk(
             );
 
             const bookCreationResponse = bookSaveRes.data;
-            if (bookCreationResponse.saved === false) {
+            if (bookCreationResponse.actionCompleted === false) {
               return { ...bookCreationResponse };
             } else {
               const bookDatabaseID = bookCreationResponse.saveAttemptItem.id;
@@ -79,9 +79,10 @@ export const sendToDatabase = createAsyncThunk(
         const mediaPromises = sendData.map(async (item) => {
           //mediaData looks like {title, blockID, images:[{src, idx}]}
           //need {title, image_urls}
+          const title = titleRearrange(item.title);
 
           const mediaData = {
-            title: item.title,
+            title,
             image_urls: item.images.map((item) => item.src),
             spine_color: item.spine_color,
           };

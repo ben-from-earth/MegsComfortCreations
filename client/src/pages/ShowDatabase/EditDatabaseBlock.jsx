@@ -1,11 +1,11 @@
+//react
+import { memo, useContext, useState } from 'react';
+
 //import icons and items from Material UI
 import BookIcon from '@mui/icons-material/BookTwoTone';
 import MovieIcon from '@mui/icons-material/LocalMoviesTwoTone';
 import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
 import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
-
-//react imports
-import { memo, useContext, useState } from 'react';
 
 //genres from context provider to populate genre list based on what genres are in the database
 import GenreContext from '@/context/GenreContext';
@@ -14,11 +14,15 @@ import GenreContext from '@/context/GenreContext';
 import GenreCheckboxes from '@/pages/MediaCollector/GenreCheckboxes';
 import Button from '@/components/Button';
 import axios from 'axios';
-import DatabasePageContext from '../../context/DatabasePageContext';
+import DatabasePageContext from '@/context/DatabasePageContext';
 
+//helpers
+import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
+
+//server domain for axios requests
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
-// setup component text area for each data field in the block
+// setup component text area for each data field in the block. Minimal implementation of MyTextArea used in Collected Covers Block
 const MyTextArea = ({ name, label, type, value, setDatabaseData }) => {
   const labelClass =
     type === 'book'
@@ -78,24 +82,15 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
 
   const [databaseGenres, setDatabaseGenres] = useState([...initialGenres]);
   const [color, setColor] = useState(spine_color);
-  const [genreRemoved, setGenreRemoved] = useState(false);
 
   //establish variables for icons
   const icons = {
-    book: (
-      <BookIcon sx={{ position: 'absolute', bottom: '4px', left: '4px' }} />
-    ),
-    movie: (
-      <MovieIcon sx={{ position: 'absolute', bottom: '4px', left: '4px' }} />
-    ),
+    book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
+    movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
     video_game: (
-      <VideoGameIcon
-        sx={{ position: 'absolute', bottom: '4px', left: '4px' }}
-      />
+      <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
     ),
-    album: (
-      <AlbumIcon sx={{ position: 'absolute', bottom: '4px', left: '4px' }} />
-    ),
+    album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
   };
 
   //get genres for checkbox population
@@ -126,37 +121,59 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       setDatabaseGenres((prev) => [...prev, genreText]);
     } else {
       setDatabaseGenres((prev) => prev.filter((genre) => genre !== genreText));
-      if (initialGenres.includes(genreText)) setGenreRemoved(true);
     }
   };
 
   const handleEditSubmit = async () => {
-    console.log(databaseData);
     const res = await axios.put(
       `${serverDomain}/database/edit/${type}`,
       databaseData,
       { validateStatus: (status) => status < 500 },
     );
-    console.log(res.data);
 
-    if (!res.data.saved) {
+    if (!res.data.actionCompleted) {
       setEdit(false);
     }
-    if (res.data.edited === true) {
-      if (genreRemoved) {
-        const res = await axios.post(`${serverDomain}/genres/unlink`, {
-          bookID: id,
-        });
+    if (res.data.actionCompleted === true) {
+      const newGenres = databaseGenres;
+      const linkGenres = [];
+      const unlinkGenres = [];
+
+      //get new added genres and link them
+      for (let genre of newGenres) {
+        if (!initialGenres.includes(genre)) {
+          linkGenres.push(genre);
+        }
+      }
+      try {
+        const genreLinkRes = await axios.post(
+          `${serverDomain}/genres/addLink`,
+          {
+            bookID: id,
+            genres: linkGenres,
+          },
+        );
+      } catch (err) {
+        console.log('Genre link error');
       }
 
-      const genreLinkRes = await axios.post(
-        `${serverDomain}/genres/addLink`,
-        {
-          bookID: id,
-          genres: databaseGenres,
-        },
-        { validateStatus: (status) => status < 500 },
-      );
+      //remove link to any genres that were removed
+      for (let genre of initialGenres) {
+        if (!newGenres.includes(genre)) {
+          unlinkGenres.push(genre);
+        }
+      }
+      try {
+        const genreUnlinkRes = await axios.post(
+          `${serverDomain}/genres/unlink`,
+          {
+            bookID: id,
+            genres: unlinkGenres,
+          },
+        );
+      } catch (err) {
+        console.log('Genre unlink error');
+      }
 
       handleGetMedia();
       setEdit(false);
@@ -167,16 +184,16 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   const typeClasses = {
     book: 'bg-[#98ab88] border-[#3d770d]',
     movie: 'bg-[#323b43] border-black text-white',
-    album: 'bg-[#7fa5a3] border-[#d49a97]',
+    album: 'bg-[#7fa5a3] border-[#354544]',
     video_game: 'bg-[#98ab88] border-[#4e8885]',
   };
 
   return (
     <div className='z-100 border-3 fixed left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center justify-center gap-1 rounded-md border-[var(--darkpink)] bg-[var(--lightpink)] p-2 font-["Just_Another_Hand"] text-2xl tracking-wider text-black'>
-      <h1>Editing: {title}</h1>
+      <h1>Editing: {titleRearrange(title)}</h1>
 
       <div
-        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 ${typeClasses[type]}`}
+        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 ${typeClasses[type]} mb-1`}
       >
         {icons[type]}
         <div className="gap-7.5 m-2.5 mb-0 flex flex-row items-center">
@@ -207,7 +224,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
           name="title"
           label="Title"
           type={type}
-          value={title || ''}
+          value={titleRearrange(title) || ''}
           setDatabaseData={setDatabaseData}
         />
         {type === 'book' ? (

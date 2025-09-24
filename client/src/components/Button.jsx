@@ -1,5 +1,7 @@
 import { twMerge } from 'tailwind-merge';
 
+//Button component for use around the app
+
 const Button = ({
   onClick,
   label,

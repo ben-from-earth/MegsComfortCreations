@@ -1,10 +1,20 @@
+//react
 import { useEffect, useState } from 'react';
-import DatabaseItemDisplay from './DatabaseItemDisplay';
-import PaginationInputs from './PaginationInputs';
+
+//components
+import DatabaseItemDisplay from '@/pages/ShowDatabase/DatabaseItemDisplay';
+import PaginationInputs from '@/pages/ShowDatabase/PaginationInputs';
+
+//axios
 import axios from 'axios';
+
+//helpers
 import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
+
+//context
 import DatabasePageContext from '@/context/DatabasePageContext';
 
+//server domain for axios requests
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 const ShowDatabasePage = () => {
@@ -22,10 +32,11 @@ const ShowDatabasePage = () => {
   const [page, setPage] = useState(1);
   const [titleSearch, setTitleSearch] = useState('');
   const [genre, setGenre] = useState('');
+  const [ascDesc, setAscDesc] = useState('asc');
 
   useEffect(() => {
     handleGetMedia();
-  }, [page, type, limit, sortBy, titleSearch, genre]);
+  }, [page, type, limit, sortBy, titleSearch, genre, ascDesc]);
   const handleGetMedia = async () => {
     if (titleSearch.length > 0) {
       try {
@@ -47,7 +58,7 @@ const ShowDatabasePage = () => {
       if (type !== 'book' || genre === '') {
         try {
           const res = await axios.get(
-            `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}`,
+            `${serverDomain}/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 
@@ -64,7 +75,7 @@ const ShowDatabasePage = () => {
       } else {
         if (genre === 'none') {
           const res = await axios.get(
-            `${serverDomain}/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}`,
+            `${serverDomain}/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 
@@ -77,7 +88,7 @@ const ShowDatabasePage = () => {
           });
         } else {
           const res = await axios.get(
-            `${serverDomain}/genres?genre=${genre}&sort=${sortBy}&limit=${limit}&page=${page}`,
+            `${serverDomain}/genres?genre=${genre}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 
@@ -106,6 +117,8 @@ const ShowDatabasePage = () => {
         setSortBy,
         genre,
         setGenre,
+        ascDesc,
+        setAscDesc,
         setTitleSearch,
         handleGetMedia,
       }}

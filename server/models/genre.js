@@ -35,16 +35,19 @@ class Genre {
     return genreLinkResult;
   }
 
-  static async unlink(bookID) {
+  static async unlink(bookID, genre) {
     const genreUnLinkResult = await db.query(
-      `DELETE FROM genres_books
-      WHERE book_id = $1`,
-      [bookID]
+      `DELETE FROM genres_books gb
+        USING genres g
+        WHERE gb.book_id = $1
+        AND g.genre = $2
+        AND gb.genre_id = g.id::text`,
+      [bookID, genre]
     );
     return genreUnLinkResult;
   }
 
-  static async getFromBook(bookID) {
+  static async getForBook(bookID) {
     const result = await db.query(
       `SELECT g.genre
       FROM genres AS g
@@ -57,14 +60,14 @@ class Genre {
     return genres;
   }
 
-  static async getNoGenreBooks(sort, offset, limit) {
+  static async getNoGenreBooks(sort, offset, limit, ascDesc) {
     const result = await db.query(
       `SELECT b.*
       FROM books AS b
       LEFT JOIN genres_books AS gb
       ON gb.book_id = b.id::text
       WHERE gb.book_id IS NULL
-      ORDER BY ${sort}
+      ORDER BY ${sort} ${ascDesc}
       LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
@@ -80,7 +83,7 @@ class Genre {
     return { books: result.rows, total: parseInt(totalRes.rows[0].count, 10) };
   }
 
-  static async getBooksWithGenre(genre, sort, offset, limit) {
+  static async getBooksWithGenre(genre, sort, offset, limit, ascDesc) {
     const result = await db.query(
       `SELECT DISTINCT b.*
       FROM books AS b
@@ -89,7 +92,7 @@ class Genre {
       JOIN genres AS g
       ON g.id::text = gb.genre_id
       WHERE g.genre = $1
-      ORDER BY ${sort}
+      ORDER BY ${sort} ${ascDesc}
       LIMIT $2 OFFSET $3
       `,
       [genre, limit, offset]

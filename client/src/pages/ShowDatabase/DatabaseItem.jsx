@@ -1,35 +1,45 @@
-import Button from '@/components/Button';
+//react
+import { memo, useContext, useEffect, useState } from 'react';
+
+//helpers
 import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
-import AreYouSure from '@/components/AreYouSure';
-import { memo, useEffect, useState } from 'react';
 
 //axios
 import axios from 'axios';
+
+//necessary components
+import AreYouSure from '@/components/AreYouSure';
+import Button from '@/components/Button';
 import EditDatabaseBlock from '@/pages/ShowDatabase/EditDatabaseBlock';
+import DatabasePageContext from '@/context/DatabasePageContext';
 
 //server domain for axios requests
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 const DatabaseItem = memo(function DatabaseItem({
   info: { id, title, author, page_count, pub_year, spine_color, image_urls },
-  type,
-  handleGetMedia,
 }) {
   //classes based on type
   const typeClasses = {
     book: 'bg-[#98ab88] border-[#3d770d]',
     movie: 'bg-[#323b43] border-black text-white',
-    album: 'bg-[#7fa5a3] border-[#d49a97]',
+    album: 'bg-[#7fa5a3] border-[#354544]',
     video_game: 'bg-[#98ab88] border-[#4e8885]',
   };
 
+  // get necessary information from context
+  const { type, handleGetMedia } = useContext(DatabasePageContext);
+
+  //set up local state
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
   const [genres, setGenres] = useState([]);
+  const [deleteError, setDeleteError] = useState('');
 
+  //on mount, get the genres related to the displayed book and make sure to update if the item is edited
   useEffect(() => {
     (async () => {
-      const genreRes = await axios.post(`${serverDomain}/genres/getFromBook`, {
+      const genreRes = await axios.post(`${serverDomain}/genres/getForBook`, {
         bookID: id,
       });
 
@@ -37,13 +47,23 @@ const DatabaseItem = memo(function DatabaseItem({
     })();
   }, [edit]);
 
+  //handle deletion of the media from the database
   const onDelete = async () => {
     try {
-      const res = await axios.delete(
+      const deleteRes = await axios.delete(
         `${serverDomain}/database?title=${title}&type=${type}`,
       );
-      if (res.data.errors) setDeleteError(res.data.message);
-      handleGetMedia();
+
+      //need to remove links to this book ID if a book is deleted
+      const removeGenreLinksRes = await axios.post(
+        `${serverDomain}/genres/removeAllLinksForBook`,
+        { bookID: id },
+      );
+      if (deleteRes.data.errors || removeGenreLinksRes.data.errors) {
+        setDeleteError(res.data.message);
+      } else {
+        handleGetMedia();
+      }
     } catch (error) {
       setDeleteError('There was an error deleting, try again.');
     }
@@ -51,6 +71,7 @@ const DatabaseItem = memo(function DatabaseItem({
     setAreYouSure(false);
   };
 
+  //small helper for displaying list of genres
   const list = new Intl.ListFormat('en', {
     style: 'long',
     type: 'conjunction',
@@ -58,13 +79,14 @@ const DatabaseItem = memo(function DatabaseItem({
 
   return (
     <div
-      className={`mr-auto box-border flex w-full items-center justify-start gap-5 rounded-sm border-2 p-2 ${typeClasses[type]}`}
+      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${typeClasses[type]}`}
     >
       {areYouSure && (
         <AreYouSure
           setAreYouSure={setAreYouSure}
           onDelete={onDelete}
           title={title}
+          deleteError={deleteError}
         />
       )}
       {edit && (
@@ -85,10 +107,23 @@ const DatabaseItem = memo(function DatabaseItem({
           }}
         />
       )}
+      {type !== 'album' ? (
+        <div
+          className={`h-36 w-6 rounded-sm`}
+          style={{ backgroundColor: spine_color }}
+        ></div>
+      ) : (
+        <></>
+      )}
+
       {image_urls.map((src, idx) => (
         <img
           key={idx}
-          className={type === 'album' ? 'h-30 rounded-sm' : 'w-24 rounded-sm'}
+          className={
+            type === 'album'
+              ? 'ml-2 mr-7 h-36 w-36 rounded-sm'
+              : 'ml-2 mr-7 h-36 w-24 rounded-sm'
+          }
           src={src}
         ></img>
       ))}
@@ -111,7 +146,7 @@ const DatabaseItem = memo(function DatabaseItem({
           </p>
         </div>
       ) : (
-        <p className='font-["Just_Another_Hand"] text-5xl'>
+        <p className='font-["Just_Another_Hand"] text-4xl'>
           {titleRearrange(title)}
         </p>
       )}

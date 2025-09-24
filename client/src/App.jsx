@@ -1,5 +1,5 @@
 //package imports
-import axios from "axios";
+import axios from 'axios';
 
 //react router modules
 import {
@@ -7,21 +7,21 @@ import {
   createRoutesFromElements,
   Route,
   RouterProvider,
-} from "react-router";
+} from 'react-router';
 
 //layouts
-import RootLayout from "./layouts/RootLayout";
+import RootLayout from './layouts/RootLayout';
 
 // pages
-import HomePage from "./pages/Home/HomePage";
-import ShopPage from "./pages/Shop/ShopPage";
-import MegsRecs from "./pages/MegsRecs/MegsRecs";
-import NewsletterPage from "./pages/Newsletter/NewsletterPage";
-import ShowDatabasePage from "./pages/ShowDatabase/ShowDatabasePage";
-import MediaCollector from "./pages/MediaCollector/MediaCollector";
+import HomePage from './pages/Home/HomePage';
+import ShopPage from './pages/Shop/ShopPage';
+import MegsRecs from './pages/MegsRecs/MegsRecs';
+import NewsletterPage from './pages/Newsletter/NewsletterPage';
+import ShowDatabasePage from './pages/ShowDatabase/ShowDatabasePage';
+import MediaCollector from './pages/MediaCollector/MediaCollector';
 
 //Context
-import GenreContext from "./context/GenreContext";
+import GenreContext from './context/GenreContext';
 
 //server location import from .env
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
@@ -31,9 +31,9 @@ const genres = await (async () => {
   try {
     const res = await axios.get(`${serverDomain}/genres/getAll`);
     const collection = res.data;
-    return collection.payload?.map((item) => item.genre);
+    return collection.genres?.map((item) => item.genre);
   } catch (err) {
-    console.error("Could not fetch genres: Server down or not active");
+    console.error('Could not fetch genres: Server down or not active');
     return [];
   }
 })();

@@ -41,14 +41,11 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500);
-  let errorResponse = { errors: [], message: '' };
+  let errorResponse = { errors: [], message: '', actionCompleted: false };
 
   if (err.error === 'Media not found') {
     errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
-    if (err.edited === false) {
-      errorResponse.edited = false;
-    }
   } else if (err.error === 'Open Library Error') {
     errorResponse.errors.push(err.error);
     errorResponse.message = err.message;
@@ -72,7 +69,6 @@ app.use((err, req, res, next) => {
       }
     }
     errorResponse.message = 'Schema violation(s) during save/edit request';
-    errorResponse.saved = false;
     errorResponse.saveAttemptItem = err.saveAttemptItem;
 
     errorResponse.errors = [...missingFields, ...wrongTypes];
@@ -88,7 +84,6 @@ app.use((err, req, res, next) => {
     }
 
     errorResponse.message = errorDetail;
-    errorResponse.saved = false;
     errorResponse.saveAttemptItem = err.saveAttemptItem;
   } else {
     errorResponse.errors.push(err.error);

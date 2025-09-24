@@ -13,13 +13,14 @@ import axios from 'axios';
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 // necessary components
-import MediaInputs from './MediaInputs';
-import MediaCheckboxes from './MediaCheckboxes';
-import ButtonGroup from './ButtonGroup';
-import TitleBlockContainer from './TitleBlockContainer';
+import MediaInputs from '@/pages/MediaCollector/MediaInputs';
+import MediaCheckboxes from '@/pages/MediaCollector/MediaCheckboxes';
+import ButtonGroup from '@/pages/MediaCollector/ButtonGroup';
+import TitleBlockContainer from '@/pages/MediaCollector/TitleBlockContainer';
 import QueryCounter from '@/components/QueryCounter';
 import LoadingWidget from '@/components/LoadingWidget';
-import DatabaseSavedWidget from './DatabaseSavedWidget';
+import DatabaseSavedWidget from '@/pages/MediaCollector/DatabaseSavedWidget';
+import PNGFormatPicker from '@/pages/MediaCollector/PNGFormatPicker';
 
 //imports from the collector state slice
 import {
@@ -47,7 +48,6 @@ import {
   removeFromPNGCollectionList,
   selectPNGList,
 } from '@/state/pngCollectionSlice';
-import PNGFormatPicker from './PNGFormatPicker';
 
 const MediaCollector = () => {
   //setup connection to the redux slice and associated variables
@@ -128,13 +128,17 @@ const MediaCollector = () => {
     // on unmount/refresh: cancel thunks + mark cancelled
     return () => {
       cancelled = true;
-      tasks.forEach((t) => t.abort?.()); // RTK thunks support abort()
+      tasks.forEach((t) => t.abort?.());
     };
   }, [shouldFetch, dispatch]);
 
+  //Set of actions that set of Media Cover Collection
   const handleCollectClick = () => {
+    //clear database information and PNG collection list if any information persists so blocks can populate appropriately
     dispatch(clearDatabaseData());
     dispatch(clearPNGCollectionList());
+
+    //Set the collection list from the text areas
     dispatch(setCollectText({ searchData }));
 
     //count number of items for loading widget
@@ -145,17 +149,20 @@ const MediaCollector = () => {
       }
     });
     setLoadingMessage(`Gathering ${count} media covers`);
+
+    //tell UI were loading and to kick off fetch in the above useEffect
     dispatch(startLoad());
     dispatch(startFetch());
   };
 
+  //Send block information to the database and give responses to the Database Saved Widget to appropriately show successes and errors
   const handleDatabaseClick = async (databaseData) => {
     const responses = await dispatch(sendToDatabase({ databaseData }));
-    console.log('Server Responses:', responses.payload);
     setDatabaseSavedData(responses.payload);
-    setDatabaseSaved(true); //capturing database creation responses here. Keeping as log until handling it.
+    setDatabaseSaved(true);
   };
 
+  //Handle creation of PNG from all covers. This is the main finsihing product of the app
   const handlePNGClick = async () => {
     if (!pngTemplate) {
       setPNGError(true);
@@ -189,6 +196,7 @@ const MediaCollector = () => {
     }
   };
 
+  //Delete a block action for if any end up uneeded or user has any reason to not want to add information to database or PNG export.
   const handleDeleteBlock = ({ blockID, type, deleteBlock, urls }) => {
     setCollectedCoversBlocks((prev) =>
       prev.filter((block) => block.blockID !== blockID),

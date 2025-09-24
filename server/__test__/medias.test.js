@@ -140,9 +140,9 @@ describe('Test saving book to database', () => {
     const res = await request(app)
       .post('/database/save/book')
       .send(testBookReq);
-    const saved = res.body.saved;
+    const actionCompleted = res.body.actionCompleted;
     const message = res.body.message;
-    expect(saved).toEqual(false);
+    expect(actionCompleted).toEqual(false);
     expect(message).toEqual(
       'Key (title, author)=(Dune, Frank Herbert) already exists.'
     );
@@ -164,9 +164,9 @@ describe('Test saving book to database', () => {
       .send(missingFieldsReq);
     const message = res.body.message;
     const errors = res.body.errors;
-    expect(message).toEqual('Schema violation(s) during save request');
+    expect(message).toEqual('Schema violation(s) during save/edit request');
     expect(errors.length).toEqual(2);
-    expect(errors[0]).toEqual('Save request missing spine_color');
+    expect(errors[0]).toEqual('Save/Edit request missing spine_color');
     expect(errors[1]).toEqual('author is of wrong type');
 
     expect(res.statusCode).toEqual(400);
@@ -186,14 +186,14 @@ describe('Test saving book to database', () => {
       .send(missingImagesReq);
     const message = res.body.message;
     const errors = res.body.errors;
-    expect(message).toEqual('Schema violation(s) during save request');
-    expect(errors[0]).toEqual('Save request missing image_urls');
+    expect(message).toEqual('Schema violation(s) during save/edit request');
+    expect(errors[0]).toEqual('Save/Edit request missing image_urls');
     expect(res.statusCode).toEqual(400);
   });
 
   test('Attempt pagination retrieval of database items', async () => {
     const res = await request(app).get(
-      '/database?type=book&sort=title&limit=1&page=2'
+      '/database?type=book&sort=title&limit=1&page=2&ascDesc=asc'
     );
     expect(res.body.message).toEqual('Successful database gather');
     expect(res.body.paginatedList[0].title).toEqual('Dune');
@@ -223,9 +223,9 @@ for (let media of otherMedias) {
         .send(missingFieldsReq);
       const message = res.body.message;
       const errors = res.body.errors;
-      expect(message).toEqual('Schema violation(s) during save request');
+      expect(message).toEqual('Schema violation(s) during save/edit request');
       expect(errors.length).toEqual(2);
-      expect(errors[0]).toEqual('Save request missing image_urls');
+      expect(errors[0]).toEqual('Save/Edit request missing image_urls');
       expect(errors[1]).toEqual('title is of wrong type');
 
       expect(res.statusCode).toEqual(400);
@@ -242,8 +242,8 @@ for (let media of otherMedias) {
         .send(missingImagesReq);
       const message = res.body.message;
       const errors = res.body.errors;
-      expect(message).toEqual('Schema violation(s) during save request');
-      expect(errors[0]).toEqual('Save request missing image_urls');
+      expect(message).toEqual('Schema violation(s) during save/edit request');
+      expect(errors[0]).toEqual('Save/Edit request missing image_urls');
       expect(res.statusCode).toEqual(400);
     });
   });
@@ -318,7 +318,7 @@ describe('Test edit of database item', () => {
           .put(`/database/edit/${media}`)
           .send(bookData);
         expect(bookRes.body.editAttemptItem.title).toEqual('Book Title Edited');
-        expect(bookRes.body.edited).toEqual(true);
+        expect(bookRes.body.actionCompleted).toEqual(true);
       } else {
         otherData.title = 'Other Title Edited';
         otherData.id = id;
@@ -328,7 +328,7 @@ describe('Test edit of database item', () => {
         expect(otherRes.body.editAttemptItem.title).toEqual(
           'Other Title Edited'
         );
-        expect(otherRes.body.edited).toEqual(true);
+        expect(otherRes.body.actionCompleted).toEqual(true);
       }
     });
 
@@ -343,7 +343,7 @@ describe('Test edit of database item', () => {
         expect(bookRes.body.message).toEqual(
           'Edit requested on an item that does not exist in the database'
         );
-        expect(bookRes.body.edited).toEqual(false);
+        expect(bookRes.body.actionCompleted).toEqual(false);
       } else {
         otherData.title = 'Other Title Edited';
         otherData.id = id;
@@ -353,7 +353,7 @@ describe('Test edit of database item', () => {
         expect(otherRes.body.message).toEqual(
           'Edit requested on an item that does not exist in the database'
         );
-        expect(otherRes.body.edited).toEqual(false);
+        expect(otherRes.body.actionCompleted).toEqual(false);
       }
     });
 
@@ -366,10 +366,10 @@ describe('Test edit of database item', () => {
           .put(`/database/edit/${media}`)
           .send(bookData);
         expect(bookRes.body.message).toEqual(
-          'Schema violation(s) during save request'
+          'Schema violation(s) during save/edit request'
         );
         //possibly update to handle this
-        //expect(bookRes.body.edited).toEqual(false);
+        //expect(bookRes.body.actionCompleted).toEqual(false);
         expect(bookRes.body.errors[0]).toEqual(`title is of wrong type`);
       } else {
         otherData.title = 123;
@@ -378,10 +378,10 @@ describe('Test edit of database item', () => {
           .put(`/database/edit/${media}`)
           .send(otherData);
         expect(otherRes.body.message).toEqual(
-          'Schema violation(s) during save request'
+          'Schema violation(s) during save/edit request'
         );
         //possibly update to handle this
-        // expect(otherRes.body.edited).toEqual(false);
+        // expect(otherRes.body.actionCompleted).toEqual(false);
         expect(otherRes.body.errors[0]).toEqual(`title is of wrong type`);
       }
     });

@@ -1,5 +1,5 @@
-import CollectedCoversBlock from "./CollectedCoversBlock";
-import { memo } from "react";
+import CollectedCoversBlock from '@/pages/MediaCollector/CollectedCoversBlock';
+import { memo } from 'react';
 
 const TitleBlockContainer = memo(function ({ blocks, handleDeleteBlock }) {
   return (

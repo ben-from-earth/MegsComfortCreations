@@ -1,10 +1,16 @@
+//redux
 import { createAsyncThunk, createSlice, nanoid } from '@reduxjs/toolkit';
+
+//axios
 import axios from 'axios';
+
+//helpers
 import {
   titleRearrange,
   updateQueryCount,
-} from '../pages/MediaCollector/helpers/mediaCollectorHelpers';
+} from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
 
+//server domain for axios requests
 const serverDomain = import.meta.env.VITE_SERVER_DOMAIN;
 
 //set up media types and respective labels
@@ -65,7 +71,7 @@ export const collectBlockInformation = createAsyncThunk(
       if (type === 'book') {
         //get genres tied to the found book id
         const genreSearchRes = await axios.post(
-          `${serverDomain}/genres/getFromBook`,
+          `${serverDomain}/genres/getForBook`,
           { bookID: id },
         );
         const genreSearchData = genreSearchRes.data;

@@ -1,5 +1,5 @@
 import Button from '@/components/Button';
-import { titleRearrange } from './helpers/mediaCollectorHelpers';
+import { titleRearrange } from '@/pages/MediaCollector/helpers/mediaCollectorHelpers';
 
 const DatabaseSavedWidget = ({ data, close }) => {
   return (
@@ -8,7 +8,7 @@ const DatabaseSavedWidget = ({ data, close }) => {
       <ol className="list-decimal">
         {data.map((item, idx) => (
           <li key={idx}>
-            {!item.saved ? (
+            {!item.actionCompleted ? (
               <>
                 {`Error saving ${
                   item.saveAttemptItem.title

@@ -12,7 +12,6 @@ const Album = require('../models/album');
 const bookCreateSchema = require('../schemas/bookCreateSchema.json');
 const otherMediaCreateSchema = require('../schemas/otherMediaCreateSchema.json');
 
-//custom Error
 const db = require('../database/db');
 
 const { titleRearrange } = require('../helpers/mediaCollectorHelpers');
@@ -37,7 +36,7 @@ router.post('/save/:type', async (req, res, next) => {
             req.body.title
           )} successfully added to database.`,
           saveAttemptItem: book,
-          saved: true,
+          actionCompleted: true,
           type: req.params.type,
         });
       } catch (err) {
@@ -66,7 +65,7 @@ router.post('/save/:type', async (req, res, next) => {
             req.body.title
           )} successfully added to database.`,
           saveAttemptItem: movie,
-          saved: true,
+          actionCompleted: true,
           type: req.params.type,
         });
       } catch (err) {
@@ -89,7 +88,7 @@ router.post('/save/:type', async (req, res, next) => {
             req.body.title
           )} successfully added to database.`,
           saveAttemptItem: video_game,
-          saved: true,
+          actionCompleted: true,
           type: req.params.type,
         });
       } catch (err) {
@@ -112,7 +111,7 @@ router.post('/save/:type', async (req, res, next) => {
             req.body.title
           )} successfully added to database.`,
           saveAttemptItem: album,
-          saved: true,
+          actionCompleted: true,
           type: req.params.type,
         });
       } catch (err) {
@@ -203,13 +202,14 @@ router.get('/', async (req, res, next) => {
   const page = Number(req.query.page) || 1;
   const type = req.query.type;
   const sort = req.query.sort;
+  const ascDesc = req.query.ascDesc;
 
   const offset = (page - 1) * limit;
   try {
     const result = await db.query(
       `SELECT * 
           FROM ${type + 's'}
-          ORDER BY ${sort}
+          ORDER BY ${sort} ${ascDesc}
           LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
@@ -318,13 +318,13 @@ router.put('/edit/:type', async (req, res, next) => {
             type: req.params.type,
             message:
               'Edit requested on an item that does not exist in the database',
-            edited: false,
+            actionCompleted: false,
           });
         } else {
           return res.status(200).json({
             message: `${titleRearrange(req.body.title)} successfully edited.`,
             editAttemptItem: book,
-            edited: true,
+            actionCompleted: true,
             type: req.params.type,
           });
         }
@@ -356,13 +356,13 @@ router.put('/edit/:type', async (req, res, next) => {
             type: req.params.type,
             message:
               'Edit requested on an item that does not exist in the database',
-            edited: false,
+            actionCompleted: false,
           });
         } else {
           return res.status(200).json({
             message: `${titleRearrange(req.body.title)} successfully edited.`,
             editAttemptItem: movie,
-            edited: true,
+            actionCompleted: true,
             type: req.params.type,
           });
         }
@@ -389,13 +389,13 @@ router.put('/edit/:type', async (req, res, next) => {
             type: req.params.type,
             message:
               'Edit requested on an item that does not exist in the database',
-            edited: false,
+            actionCompleted: false,
           });
         } else {
           return res.status(200).json({
             message: `${titleRearrange(req.body.title)} successfully edited.`,
             editAttemptItem: video_game,
-            edited: true,
+            actionCompleted: true,
             type: req.params.type,
           });
         }
@@ -422,13 +422,13 @@ router.put('/edit/:type', async (req, res, next) => {
             type: req.params.type,
             message:
               'Edit requested on an item that does not exist in the database',
-            edited: false,
+            actionCompleted: false,
           });
         } else {
           return res.status(200).json({
             message: `${titleRearrange(req.body.title)} successfully edited.`,
             editAttemptItem: album,
-            edited: true,
+            actionCompleted: true,
             type: req.params.type,
           });
         }

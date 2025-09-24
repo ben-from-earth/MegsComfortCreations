@@ -2,23 +2,25 @@ const express = require('express');
 const router = new express.Router();
 
 const Genre = require('../models/genre');
+const db = require('../database/db');
 
 router.get('/getAll', async (req, res, next) => {
   try {
     const genres = await Genre.getAllGenres();
-    return res.status(200).json({ message: 'success', payload: genres });
+    return res.status(200).json({ message: 'success', genres });
   } catch (err) {
     return next(err);
   }
 });
 
-router.post('/getFromBook', async (req, res, next) => {
+router.post('/getForBook', async (req, res, next) => {
   try {
     const bookID = req.body.bookID;
-    const genres = await Genre.getFromBook(bookID);
-    return res
-      .status(200)
-      .json({ message: 'Successfully grabbed genres', genres });
+    const genres = await Genre.getForBook(bookID);
+    return res.status(200).json({
+      message: `Successfully grabbed genres for bookID ${bookID}`,
+      genres,
+    });
   } catch (err) {
     return next(err);
   }
@@ -41,14 +43,16 @@ router.post('/addlink', async (req, res, next) => {
 
 router.post('/unlink', async (req, res, next) => {
   const bookID = req.body.bookID;
+  const genres = req.body.genres;
   let responses = [];
-  try {
-    await Genre.unlink(bookID);
-    responses.push({ message: 'Successful genre link removal', bookID });
-  } catch (err) {
-    return next(err);
+  for (let genre of genres) {
+    try {
+      await Genre.unlink(bookID, genre);
+      responses.push({ message: `Successfully removed genre: ${genre}` });
+    } catch (err) {
+      return next(err);
+    }
   }
-
   return res.status(200).json({ responses });
 });
 
@@ -59,10 +63,17 @@ router.get('/', async (req, res, next) => {
   const limit = Number(req.query.limit);
   const page = Number(req.query.page) || 1;
   const sort = req.query.sort;
+  const ascDesc = req.query.ascDesc;
 
   const offset = (page - 1) * limit;
   try {
-    const genreRes = await Genre.getBooksWithGenre(genre, sort, offset, limit);
+    const genreRes = await Genre.getBooksWithGenre(
+      genre,
+      sort,
+      offset,
+      limit,
+      ascDesc
+    );
     return res.status(200).json({
       message: `Successful database gather`,
       paginatedList: genreRes.books,
@@ -76,10 +87,11 @@ router.get('/nogenres', async (req, res, next) => {
   const limit = Number(req.query.limit);
   const page = Number(req.query.page) || 1;
   const sort = req.query.sort;
+  const ascDesc = req.query.ascDesc;
 
   const offset = (page - 1) * limit;
   try {
-    const genreRes = await Genre.getNoGenreBooks(sort, offset, limit);
+    const genreRes = await Genre.getNoGenreBooks(sort, offset, limit, ascDesc);
     return res.status(200).json({
       message: `Successful database gather`,
       paginatedList: genreRes.books,
@@ -87,6 +99,23 @@ router.get('/nogenres', async (req, res, next) => {
     });
   } catch (err) {
     return next(err);
+  }
+});
+
+router.post('/removeAllLinksForBook', async (req, res, next) => {
+  const bookID = req.body.bookID;
+  try {
+    await db.query(
+      `DELETE FROM genres_books
+      WHERE book_id = $1`,
+      [bookID]
+    );
+    res.status(200).json({
+      actionCompleted: true,
+      message: `All genre links removed for bookID ${bookID}`,
+    });
+  } catch (err) {
+    next(err);
   }
 });
 

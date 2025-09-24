@@ -1,11 +1,18 @@
+//react
+import { useContext } from 'react';
+
+//import icons and items from Material UI
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
+
+//necessary components
 import Button from '@/components/Button';
-import { useContext } from 'react';
+
+//context
 import DatabasePageContext from '@/context/DatabasePageContext';
-import GenreContext from '../../context/GenreContext';
+import GenreContext from '@/context/GenreContext';
 
 const PaginationInputs = () => {
   const {
@@ -19,6 +26,8 @@ const PaginationInputs = () => {
     setPage,
     genre,
     setGenre,
+    ascDesc,
+    setAscDesc,
     setTitleSearch,
     handleGetMedia,
   } = useContext(DatabasePageContext);
@@ -55,6 +64,10 @@ const PaginationInputs = () => {
   const handleGenreChange = (e) => {
     setPage(1);
     setGenre(e.target.value);
+  };
+  const handleAscDescChange = (e) => {
+    setPage(1);
+    setAscDesc(e.target.value);
   };
   return (
     <div className="border-3 mt-6 flex w-fit items-center justify-between rounded-lg border-[var(--darkpink)] bg-[var(--lightpink)] p-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]">
@@ -122,6 +135,19 @@ const PaginationInputs = () => {
           {genres.map((option) => (
             <MenuItem value={option}>{option}</MenuItem>
           ))}
+        </Select>
+      </FormControl>
+      <FormControl sx={{ m: 1, minWidth: 100 }} size="small">
+        <InputLabel id="ascDesc">Asc/Desc</InputLabel>
+        <Select
+          labelId="ascDesc"
+          id="ascDesc"
+          value={ascDesc}
+          label="ascDesc"
+          onChange={handleAscDescChange}
+        >
+          <MenuItem value={'asc'}>Ascending</MenuItem>
+          <MenuItem value={'desc'}>Descending</MenuItem>
         </Select>
       </FormControl>
       <Button

@@ -67,7 +67,7 @@ INSERT INTO genres (
     ('Horror'),
     ('Science Fiction'),
     ('Classic Literature'),
-    ('Memoirs'),
+    ('Memoir'),
     ('History'),
     ('Philosophy'),
-    ('Anthologies');
+    ('Anthology');
