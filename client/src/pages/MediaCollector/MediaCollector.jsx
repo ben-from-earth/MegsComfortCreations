@@ -174,7 +174,7 @@ const MediaCollector = () => {
 
     try {
       const res = await axios.post(
-        `${serverDomain}/print-png`,
+        `${serverDomain}/png/create`,
         {
           template: pngTemplate,
           images: pngCollectionList,

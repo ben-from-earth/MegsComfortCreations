@@ -9,20 +9,28 @@ router.get('/getAll', async (req, res, next) => {
     const genres = await Genre.getAllGenres();
     return res.status(200).json({ message: 'success', genres });
   } catch (err) {
-    return next(err);
+    return next({
+      status: 400,
+      error: 'Genre Error',
+      message: 'Error connecting to the database and/or genre table',
+    });
   }
 });
 
-router.post('/getForBook', async (req, res, next) => {
+router.get('/getForBook', async (req, res, next) => {
   try {
-    const bookID = req.body.bookID;
+    const bookID = req.query.bookID;
     const genres = await Genre.getForBook(bookID);
     return res.status(200).json({
       message: `Successfully grabbed genres for bookID ${bookID}`,
       genres,
     });
   } catch (err) {
-    return next(err);
+    return next({
+      status: 400,
+      error: 'Genre Error',
+      message: 'Error connecting to the database and/or genre table',
+    });
   }
 });
 
@@ -35,7 +43,11 @@ router.post('/addlink', async (req, res, next) => {
       await Genre.link(genre, bookID);
       responses.push({ message: 'Successful genre link', genre, bookID });
     } catch (err) {
-      return next(err);
+      return next({
+        status: 400,
+        error: 'Genre Error',
+        message: 'Error connecting to the database and/or genre table',
+      });
     }
   }
   return res.status(201).json({ responses });
@@ -50,7 +62,11 @@ router.post('/unlink', async (req, res, next) => {
       await Genre.unlink(bookID, genre);
       responses.push({ message: `Successfully removed genre: ${genre}` });
     } catch (err) {
-      return next(err);
+      return next({
+        status: 400,
+        error: 'Genre Error',
+        message: 'Error connecting to the database and/or genre table',
+      });
     }
   }
   return res.status(200).json({ responses });
@@ -80,10 +96,14 @@ router.get('/', async (req, res, next) => {
       total: genreRes.total,
     });
   } catch (err) {
-    return next(err);
+    return next({
+      status: 400,
+      error: 'Genre Error',
+      message: 'Error connecting to the database and/or genre table',
+    });
   }
 });
-router.get('/nogenres', async (req, res, next) => {
+router.get('/noGenres', async (req, res, next) => {
   const limit = Number(req.query.limit);
   const page = Number(req.query.page) || 1;
   const sort = req.query.sort;
@@ -98,24 +118,40 @@ router.get('/nogenres', async (req, res, next) => {
       total: genreRes.total,
     });
   } catch (err) {
-    return next(err);
+    return next({
+      status: 400,
+      error: 'Genre Error',
+      message: 'Error connecting to the database and/or genre table',
+    });
   }
 });
 
-router.post('/removeAllLinksForBook', async (req, res, next) => {
-  const bookID = req.body.bookID;
+router.get('/removeAllLinksForBook', async (req, res, next) => {
+  const bookID = req.query.bookID;
   try {
-    await db.query(
+    const results = await db.query(
       `DELETE FROM genres_books
       WHERE book_id = $1`,
       [bookID]
     );
-    res.status(200).json({
-      actionCompleted: true,
-      message: `All genre links removed for bookID ${bookID}`,
-    });
+    console.log(results.rowCount);
+    if (results.rowCount === 0) {
+      res.status(200).json({
+        actionCompleted: true,
+        message: `There were already no genre links for bookID: ${bookID}`,
+      });
+    } else {
+      res.status(200).json({
+        actionCompleted: true,
+        message: `All genre links removed for bookID ${bookID}`,
+      });
+    }
   } catch (err) {
-    next(err);
+    next({
+      status: 400,
+      error: 'Genre Error',
+      message: 'Error connecting to the database and/or genre table',
+    });
   }
 });
 

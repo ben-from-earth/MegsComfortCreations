@@ -42,7 +42,7 @@ describe('Get genres requests', () => {
   });
 
   test('Get genres for bookID', async () => {
-    const res = await request(app).post('/genres/getForBook').send({ bookID });
+    const res = await request(app).get(`/genres/getForBook?bookID=${bookID}`);
     expect(res.body.message).toEqual(
       `Successfully grabbed genres for bookID ${bookID}`
     );
@@ -80,17 +80,17 @@ describe('Get genres requests', () => {
 
 describe('Handle Proper delete of a book', () => {
   test('Delete all links for a given bookID', async () => {
-    const res = await request(app)
-      .post('/genres/removeAllLinksForBook')
-      .send({ bookID });
+    const res = await request(app).get(
+      `/genres/removeAllLinksForBook?bookID=${bookID}`
+    );
     expect(res.body.message).toEqual(
       `All genre links removed for bookID ${bookID}`
     );
     expect(res.body.actionCompleted).toEqual(true);
 
-    const checkRes = await request(app)
-      .post('/genres/getForBook')
-      .send({ bookID });
+    const checkRes = await request(app).get(
+      `/genres/getForBook?bookID=${bookID}`
+    );
     expect(checkRes.body.genres.length).toEqual(0);
   });
 });

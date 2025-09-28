@@ -24,11 +24,13 @@ router.post('/openlibrary', async (req, res, next) => {
     const doc = data?.docs?.[0];
     if (!doc) {
       res.json({ title, author });
+    } else {
+      const {
+        first_publish_year: pub_year,
+        number_of_pages_median: page_count,
+      } = doc;
+      res.status(200).json({ title, author, pub_year, page_count });
     }
-
-    const { first_publish_year: pub_year, number_of_pages_median: page_count } =
-      doc;
-    res.status(200).json({ title, author, pub_year, page_count });
   } catch {
     next({
       status: 400,

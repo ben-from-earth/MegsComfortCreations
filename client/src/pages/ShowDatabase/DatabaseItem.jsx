@@ -39,9 +39,9 @@ const DatabaseItem = memo(function DatabaseItem({
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
   useEffect(() => {
     (async () => {
-      const genreRes = await axios.post(`${serverDomain}/genres/getForBook`, {
-        bookID: id,
-      });
+      const genreRes = await axios.get(
+        `${serverDomain}/genres/getForBook?bookID=${id}`,
+      );
 
       setGenres(genreRes.data.genres);
     })();
@@ -55,9 +55,8 @@ const DatabaseItem = memo(function DatabaseItem({
       );
 
       //need to remove links to this book ID if a book is deleted
-      const removeGenreLinksRes = await axios.post(
-        `${serverDomain}/genres/removeAllLinksForBook`,
-        { bookID: id },
+      const removeGenreLinksRes = await axios.get(
+        `${serverDomain}/genres/removeAllLinksForBook?bookID=${id}`,
       );
       if (deleteRes.data.errors || removeGenreLinksRes.data.errors) {
         setDeleteError(res.data.message);

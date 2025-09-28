@@ -14,8 +14,9 @@ class Genre {
     return result.rows[0];
   }
   static async getAllGenres() {
-    const result = await db.query(`SELECT genre FROM genres`);
-    return result.rows;
+    const dbRes = await db.query(`SELECT genre FROM genres`);
+    const result = dbRes.rows.map((genre) => genre.genre);
+    return result;
   }
 
   static async link(genre, bookID) {

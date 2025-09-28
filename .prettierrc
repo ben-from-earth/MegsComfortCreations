@@ -6,6 +6,14 @@
       "options": {
         "plugins": ["prettier-plugin-tailwindcss"]
       }
+    },
+    {
+      "files": "*.md",
+      "options": {
+        "tabWidth": 4,
+        "useTabs": true,
+        "embeddedLanguageFormatting": "off"
+      }
     }
   ]
 }

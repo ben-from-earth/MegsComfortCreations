@@ -31,7 +31,7 @@ const genres = await (async () => {
   try {
     const res = await axios.get(`${serverDomain}/genres/getAll`);
     const collection = res.data;
-    return collection.genres?.map((item) => item.genre);
+    return collection.genres;
   } catch (err) {
     console.error('Could not fetch genres: Server down or not active');
     return [];

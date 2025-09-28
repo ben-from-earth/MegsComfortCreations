@@ -136,17 +136,28 @@ describe('Test saving book to database', () => {
     expect(res.statusCode).toEqual(201);
   });
 
-  test('Attempt database save of existing title/author combo', async () => {
-    const res = await request(app)
-      .post('/database/save/book')
-      .send(testBookReq);
-    const actionCompleted = res.body.actionCompleted;
-    const message = res.body.message;
-    expect(actionCompleted).toEqual(false);
-    expect(message).toEqual(
-      'Key (title, author)=(Dune, Frank Herbert) already exists.'
-    );
-    expect(res.statusCode).toEqual(400);
+  test('Attempt 100 database saves of existing title/author combo', async () => {
+    const responses = [];
+    for (let i = 0; i <= 100; i++) {
+      const res = await request(app)
+        .post('/database/save/book')
+        .send(testBookReq);
+      responses.push(res.body);
+    }
+    expect(
+      responses
+        .map((response) => response.actionCompleted)
+        .every((ac) => ac === false)
+    ).toEqual(true);
+    expect(
+      responses
+        .map((response) => response.message)
+        .every(
+          (message) =>
+            message ===
+            'Key (title, author)=(Dune, Frank Herbert) already exists.'
+        )
+    ).toEqual(true);
   });
 
   test('Missing required field and wrong type when attempting to save a book to database', async () => {
@@ -302,7 +313,7 @@ describe('Test database deletion', () => {
     expect(message).toEqual(
       `No item with title:${title} in the ${media} database exists`
     );
-    expect(res.statusCode).toEqual(400);
+    expect(res.statusCode).toEqual(404);
   });
 });
 

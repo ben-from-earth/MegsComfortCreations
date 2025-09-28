@@ -30,6 +30,7 @@ export const sendToDatabase = createAsyncThunk(
           //need {title, author, page_count, pub_year, image_urls, spine_color}
 
           //Do a bit of syntax rearranging to books starting with A, An, or The
+
           const title = titleRearrange(book.title);
 
           const bookData = {

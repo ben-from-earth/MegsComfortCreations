@@ -1,7 +1,75 @@
 # Meg's Comfort Creations
 
-This is a tool built with Vite + React for the Etsy Shop Meg's Comfort Creations
+A Vite + React tool for the Etsy Shop Meg's Comfort Creations
+Visit the Shop: [Etsy Link](https://www.etsy.com/shop/megscomfortcreations)
 
-You can visit the shop here: https://www.etsy.com/shop/megscomfortcreations
+This tool streamlines the tedious process of gathering product cover images and laying them out into a single PNG.
+The PNG is then used with a Cricut to cut out allthe cover images for in-store products.
+The goal is simple: reduce the time from image collection to cutout as much as possible and store information about the item itself for possible use later on.
 
-You can view the documentation at: (WIP)
+## Table of Contents
+
+1.  [Features](#features)
+2.  [Prerequisites](#prerequisites)
+3.  [Installation](#installation)
+4.  [Usage](#usage)
+5.  [Project Structure](#project-structure)
+6.  [Environment Variables](#environment-variables-required)
+7.  [Contributing](#contributing)
+
+## Features
+
+1. Collects media cover images programatically
+2. Generate a single PNG for cricut cutting
+3. Stores media information (specifically for books) for future workflows
+
+## Prerequisites
+
+1. Node.js - 18 or later
+2. npm - 8 or later
+
+## Installation
+
+1. Clone to repository
+    ```bash
+    git clone https://github.com/ben-from-earth/MegsComfortCreations.git
+    cd MegsComfortCreations
+    ```
+2. Install dependencies: The code is broken into client and server folders, so to install all dependencies:
+    1. (in main directory) cd client && npm install
+    2. (in main directory) cd server && npm install
+
+## Usage
+
+To run the project, use the following command in the root:
+
+```bash
+npm start
+```
+
+## Project Structure
+
+MegsComfortCreations/
+
+    package.json # root scripts (runs clinet + server concurrently)
+    client/ # Vite/React app
+        package.json
+    server/ #API/server code
+        package.json
+
+## Environment Variables Required
+
+1. client/
+    1. VITE_SERVER_DOMAIN - The code is set up to run on localhost:3001, but this can be whatever you want. Just make sure that the client folder has a .env for this variable
+2. root
+    1. This tool requires a profile related to Google's search API. Follow Google documentation for setup, but access to the Search API requires the following:
+        1. GOOGLE_SEARCH_API_KEY = long string given once profile is created
+        2. GOOGLE_SEARCH_CX = long string given once profile is created
+    2. This tool is build on PostgreSQL for database functionality you will need:
+        1. PG_USERNAME - PostrgreSQL username
+        2. PG_PASSWORD - PostrgreSQL password
+        3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
+
+## Contributing
+
+Questions, ideas, or interested in collaborating? Email me at benknox480@gmail.com.

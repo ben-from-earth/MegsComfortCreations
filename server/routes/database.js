@@ -29,6 +29,7 @@ router.post('/save/:type', async (req, res, next) => {
             type: req.params.type,
           });
         }
+
         const book = await Book.create(req.body);
         //book.id will give in database id
         return res.status(201).json({
@@ -120,79 +121,6 @@ router.post('/save/:type', async (req, res, next) => {
   }
 });
 
-router.get('/search', async (req, res, next) => {
-  switch (req.query.type) {
-    case 'book':
-      try {
-        const bookList = await Book.find(req.query.title);
-        if (bookList.length === 0) {
-          return next({
-            status: 404,
-            error: 'Media not found',
-            message: `No book in database with title ${req.query.title}`,
-          });
-        }
-        return res.status(200).json({
-          message: `Successfully found ${bookList.length} book(s) with title ${bookList[0].title}`,
-          foundMediaList: bookList,
-        });
-      } catch (err) {
-        return next(err);
-      }
-    case 'movie':
-      try {
-        const movieList = await Movie.find(req.query.title);
-        if (movieList.length === 0) {
-          return next({
-            status: 404,
-            error: 'Media not found',
-            message: `No movie in database with title ${req.query.title}`,
-          });
-        }
-        return res.status(200).json({
-          message: `Successfully found ${movieList.length} movie(s) with title ${movieList[0].title}`,
-          foundMediaList: movieList,
-        });
-      } catch (err) {
-        return next(err);
-      }
-    case 'video_game':
-      try {
-        const VGList = await Video_Game.find(req.query.title);
-        if (VGList.length === 0) {
-          return next({
-            status: 404,
-            error: 'Media not found',
-            message: `No video game in database with title ${req.query.title}`,
-          });
-        }
-        return res.status(200).json({
-          message: `Successfully found ${VGList.length} video game(s) with title ${VGList[0].title}`,
-          foundMediaList: VGList,
-        });
-      } catch (err) {
-        return next(err);
-      }
-    case 'album':
-      try {
-        const albumList = await Album.find(req.query.title);
-        if (albumList.length === 0) {
-          return next({
-            status: 404,
-            error: 'Media not found',
-            message: `No album in database with title ${req.query.title}`,
-          });
-        }
-        return res.status(200).json({
-          message: `Successfully found ${albumList.length} album(s) with title ${albumList[0].title}`,
-          foundMediaList: albumList,
-        });
-      } catch (err) {
-        return next(err);
-      }
-  }
-});
-
 router.get('/', async (req, res, next) => {
   // /database?type=movie&limit=5&page=2
   // SELECT * FROM movies ORDER BY title LIMIT 5 OFFSET 5
@@ -235,13 +163,13 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/titleSearch', async (req, res, next) => {
-  // /database/titleSearch?type=movie&title=Finding Nemo
+router.get('/search', async (req, res, next) => {
+  // /database/search?type=movie&title=Finding Nemo
   // SELECT * FROM movies WHERE title ILIKE $1 || '%' ORDER BY title
 
   //All of these options are handled by the front end so errors will be prevented before the request.
   const type = req.query.type;
-  const title = req.query.title;
+  const title = titleRearrange(req.query.title);
   try {
     const result = await db.query(
       `SELECT * 
@@ -251,11 +179,22 @@ router.get('/titleSearch', async (req, res, next) => {
       [title]
     );
     const titleSearchResponse = result.rows;
-    return res.status(200).json({
-      message: `Successful database gather`,
-      titleSearchResponse,
-      total: titleSearchResponse.length,
-    });
+    const total = titleSearchResponse.length;
+    if (total === 0) {
+      return next({
+        status: 404,
+        error: 'Media not found',
+        message: `No ${type} in database with title ${title}`,
+      });
+    } else {
+      return res.status(200).json({
+        message: `Successfully found ${total} ${type}(s) with title ${titleRearrange(
+          titleSearchResponse[0].title
+        )}`,
+        foundMediaList: titleSearchResponse,
+        total,
+      });
+    }
   } catch (error) {
     return next({
       status: 400,
@@ -278,7 +217,7 @@ router.delete('/', async (req, res, next) => {
 
     if (deleteRes.rowCount === 0) {
       next({
-        status: 400,
+        status: 404,
         error: 'Non-existent deletion request',
         message: `No item with title:${title} in the ${type} database exists`,
       });
@@ -312,7 +251,7 @@ router.put('/edit/:type', async (req, res, next) => {
         const book = await Book.edit(req.body);
         if (!book) {
           return next({
-            status: 400,
+            status: 404,
             error: 'Media not found',
             editAttemptItem: req.body,
             type: req.params.type,
@@ -350,7 +289,7 @@ router.put('/edit/:type', async (req, res, next) => {
         const movie = await Movie.edit(req.body);
         if (!movie) {
           return next({
-            status: 400,
+            status: 404,
             error: 'Media not found',
             editAttemptItem: req.body,
             type: req.params.type,
@@ -383,7 +322,7 @@ router.put('/edit/:type', async (req, res, next) => {
         const video_game = await Video_Game.edit(req.body);
         if (!video_game) {
           return next({
-            status: 400,
+            status: 404,
             error: 'Media not found',
             editAttemptItem: req.body,
             type: req.params.type,
@@ -416,7 +355,7 @@ router.put('/edit/:type', async (req, res, next) => {
         const album = await Album.edit(req.body);
         if (!album) {
           return next({
-            status: 400,
+            status: 404,
             error: 'Media not found',
             editAttemptItem: req.body,
             type: req.params.type,

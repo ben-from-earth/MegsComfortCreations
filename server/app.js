@@ -1,11 +1,15 @@
 const express = require('express');
 const cors = require('cors');
-const outputPNG = require('./helpers/outputPNG');
+
+//documentation
+const swaggerUi = require('swagger-ui-express');
+const { openapiSpec } = require('./documentation/swagger');
 
 //get routes
 const databaseRoutes = require('./routes/database');
 const genresRoutes = require('./routes/genres');
 const getOnlineDataRoutes = require('./routes/getOnlineData');
+const pngRoutes = require('./routes/png');
 
 const app = express();
 
@@ -18,19 +22,21 @@ app.use(
 );
 
 app.use(express.json());
+
+app.use(
+  '/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(openapiSpec, {
+    swaggerOptions: {
+      supportedSubmitMethods: ['get'],
+    },
+  })
+);
+
 app.use('/database', databaseRoutes);
 app.use('/genres', genresRoutes);
 app.use('/getOnlineData', getOnlineDataRoutes);
-
-app.post('/print-png', async (req, res) => {
-  //req body: {template, images: [array of image blocks]}
-  //image blocks: {url: "url.com", spine_color: "#ffffffff", type}
-  const template = req.body.template;
-  const images = req.body.images;
-  const png = await outputPNG({ template, images });
-  res.setHeader('Content-Type', 'image/png');
-  res.send(png);
-});
+app.use('/png', pngRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({

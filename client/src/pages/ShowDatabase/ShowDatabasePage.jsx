@@ -41,12 +41,12 @@ const ShowDatabasePage = () => {
     if (titleSearch.length > 0) {
       try {
         const res = await axios.get(
-          `${serverDomain}/database/titleSearch?type=${type}&title=${titleRearrange(titleSearch)}`,
+          `${serverDomain}/database/search?type=${type}&title=${titleRearrange(titleSearch)}`,
         );
         const databaseResults = res.data;
         setDatabaseItems({
           type,
-          items: databaseResults.titleSearchResponse,
+          items: databaseResults.foundMediaList,
           total: databaseResults.total,
           min: 1,
           max: databaseResults.total,
@@ -75,7 +75,7 @@ const ShowDatabasePage = () => {
       } else {
         if (genre === 'none') {
           const res = await axios.get(
-            `${serverDomain}/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
+            `${serverDomain}/genres/noGenres?sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 

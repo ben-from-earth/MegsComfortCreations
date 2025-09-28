@@ -70,9 +70,8 @@ export const collectBlockInformation = createAsyncThunk(
 
       if (type === 'book') {
         //get genres tied to the found book id
-        const genreSearchRes = await axios.post(
-          `${serverDomain}/genres/getForBook`,
-          { bookID: id },
+        const genreSearchRes = await axios.get(
+          `${serverDomain}/genres/getForBook?bookID=${id}`,
         );
         const genreSearchData = genreSearchRes.data;
         const databaseGenres = genreSearchData.genres;
