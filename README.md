@@ -51,13 +51,14 @@ npm start
 ```
 
 ## Project Structure
-
+```text
 MegsComfortCreations/
 ├── package.json        # root scripts (runs client + server concurrently)
 ├── client/             # Vite/React app
 │   └── package.json
 └── server/             # API/server code
     └── package.json
+```
 
 ## Environment Variables Required
 
