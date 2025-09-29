@@ -84,4 +84,4 @@ Questions, ideas, or interested in collaborating? Email me at benknox480@gmail.c
 1. Build out other pages (Home, NewsLetter, About the Shop, etc.) to turn into full shop website
 2. Login/out and auth
 3. Handling of multiple images per database item and using Google Cloud Storage for actual images instead of just holding urls
-4.
+4. Update project to NextJS
