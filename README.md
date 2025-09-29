@@ -37,8 +37,10 @@ The goal is simple: reduce the time from image collection to cutout as much as p
     cd MegsComfortCreations
     ```
 2. Install dependencies: The code is broken into client and server folders, so to install all dependencies:
-    1. (in main directory) cd client && npm install
-    2. (in main directory) cd server && npm install
+    1. (in main directory)
+       ```bash
+       npm install && cd client && npm install && cd ../server && npm install
+       ```
 
 ## Usage
 
