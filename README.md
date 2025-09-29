@@ -66,10 +66,12 @@ MegsComfortCreations/
     1. This tool requires a profile related to Google's search API. Follow Google documentation for setup, but access to the Search API requires the following:
         1. GOOGLE_SEARCH_API_KEY = long string given once profile is created
         2. GOOGLE_SEARCH_CX = long string given once profile is created
+        3. email me at address below for these if just testing/checking out the app
     2. This tool is build on PostgreSQL for database functionality you will need:
         1. PG_USERNAME - PostrgreSQL username
         2. PG_PASSWORD - PostrgreSQL password
         3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
+        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases: psql < [file.sql]
 
 ## Route Documentation
 
@@ -81,7 +83,9 @@ Questions, ideas, or interested in collaborating? Email me at benknox480@gmail.c
 
 ## Further Study
 
-1. Build out other pages (Home, NewsLetter, About the Shop, etc.) to turn into full shop website
+1. Build out other pages (Home, Shop, Meg's Recs, Newsletter, etc.) to turn into full shop website
 2. Login/out and auth
 3. Handling of multiple images per database item and using Google Cloud Storage for actual images instead of just holding urls
 4. Update project to NextJS
+5. More clear indication of where errors exist in MediaCollector Collected Cover Blocks
+    1. i.e. red background if missing images, title, etc.

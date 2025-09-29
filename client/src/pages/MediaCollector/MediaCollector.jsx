@@ -175,22 +175,55 @@ const MediaCollector = () => {
     try {
       const res = await axios.post(
         `${serverDomain}/png/create`,
+        { template: pngTemplate, images: pngCollectionList },
         {
-          template: pngTemplate,
-          images: pngCollectionList,
+          responseType: 'blob',
+          // Accept both, let the server decide
+          headers: { Accept: 'image/png, application/zip' },
+          // Optional: increase timeout for large zips
+          timeout: 120000,
         },
-        { responseType: 'blob', headers: { Accept: 'image/png' } },
       );
 
-      const blob = res.data;
+      // Determine filename & extension
+      const contentType = (res.headers['content-type'] || '').toLowerCase();
+      const contentDisp = res.headers['content-disposition'] || '';
+
+      // Try to parse a filename from Content-Disposition
+      let filename = (() => {
+        const m = /filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i.exec(
+          contentDisp,
+        );
+        return m ? decodeURIComponent(m[1]) : null;
+      })();
+
+      // Fallback filename by MIME
+      if (!filename) {
+        const ext = contentType.includes('zip')
+          ? 'zip'
+          : contentType.includes('png')
+            ? 'png'
+            : 'bin';
+        filename = `MCC_PNG_export.${ext}`;
+      }
+
+      // Create object URL and trigger download
+      const blob = res.data; // already a Blob because responseType: 'blob'
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'MCC_PNG_export.png';
+      a.download = filename;
+      // In case the browser blocks a.click() without it being in DOM:
+      document.body.appendChild(a);
       a.click();
-      dispatch(finishedLoad());
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
-      throw new Error(`Server Error ${err}`);
+      // Surface message if server returned JSON error but axios treated as blob
+      // (axios throws for non-2xx; this is just a friendly message)
+      console.error('Download failed:', err);
+      throw new Error(`Server Error: ${err?.message || err}`);
     } finally {
       dispatch(finishedLoad());
     }
