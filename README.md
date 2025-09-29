@@ -15,7 +15,8 @@ The goal is simple: reduce the time from image collection to cutout as much as p
 4.  [Usage](#usage)
 5.  [Project Structure](#project-structure)
 6.  [Environment Variables](#environment-variables-required)
-7.  [Contributing](#contributing)
+7.  [Route Documentation](#route-documentation)
+8.  [Contributing](#contributing)
 
 ## Features
 
@@ -70,6 +71,17 @@ MegsComfortCreations/
         2. PG_PASSWORD - PostrgreSQL password
         3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
 
+## Route Documentation
+
+Route documentation can be found by hitting localhost:3001/docs, and the write up is found at server/documentation
+
 ## Contributing
 
 Questions, ideas, or interested in collaborating? Email me at benknox480@gmail.com.
+
+## Further Study
+
+1. Build out other pages (Home, NewsLetter, About the Shop, etc.) to turn into full shop website
+2. Login/out and auth
+3. Handling of multiple images per database item and using Google Cloud Storage for actual images instead of just holding urls
+4.
