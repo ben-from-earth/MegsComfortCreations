@@ -52,12 +52,34 @@ npm start
 
 ## Project Structure
 ```text
-MegsComfortCreations/
-├── package.json        # root scripts (runs client + server concurrently)
-├── client/             # Vite/React app
-│   └── package.json
-└── server/             # API/server code
-    └── package.json
+.
+├── client
+│   ├── src
+│   ├── index.html
+│   ├── jsconfig.json
+│   ├── package-lock.json
+│   ├── package.json
+│   └── vite.config.js
+├── public
+├── server
+│   ├── __test__
+│   ├── database
+│   ├── documentation
+│   ├── helpers
+│   ├── models
+│   ├── routes
+│   ├── schemas
+│   ├── MegsComfortCreations.sql
+│   ├── MegsComfortCreations_test.sql
+│   ├── app.js
+│   ├── package-lock.json
+│   ├── package.json
+│   └── server.js
+├── README.md
+├── eslint.config.js
+├── package-lock.json
+└── package.json
+
 ```
 
 ## Environment Variables Required
