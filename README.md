@@ -95,7 +95,7 @@ npm start
         1. PG_USERNAME - PostrgreSQL username
         2. PG_PASSWORD - PostrgreSQL password
         3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
-        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases: psql < [file.sql]
+        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases in the server directory: ```bash psql < [file.sql]```
 
 ## Route Documentation
 
