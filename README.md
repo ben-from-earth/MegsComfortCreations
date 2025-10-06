@@ -37,8 +37,10 @@ The goal is simple: reduce the time from image collection to cutout as much as p
     cd MegsComfortCreations
     ```
 2. Install dependencies: The code is broken into client and server folders, so to install all dependencies:
-    1. (in main directory) cd client && npm install
-    2. (in main directory) cd server && npm install
+    1. (in main directory)
+       ```bash
+       npm install && cd client && npm install && cd ../server && npm install
+       ```
 
 ## Usage
 
@@ -49,14 +51,36 @@ npm start
 ```
 
 ## Project Structure
+```text
+.
+├── client
+│   ├── src
+│   ├── index.html
+│   ├── jsconfig.json
+│   ├── package-lock.json
+│   ├── package.json
+│   └── vite.config.js
+├── public
+├── server
+│   ├── __test__
+│   ├── database
+│   ├── documentation
+│   ├── helpers
+│   ├── models
+│   ├── routes
+│   ├── schemas
+│   ├── MegsComfortCreations.sql
+│   ├── MegsComfortCreations_test.sql
+│   ├── app.js
+│   ├── package-lock.json
+│   ├── package.json
+│   └── server.js
+├── README.md
+├── eslint.config.js
+├── package-lock.json
+└── package.json
 
-MegsComfortCreations/
-
-    package.json # root scripts (runs clinet + server concurrently)
-    client/ # Vite/React app
-        package.json
-    server/ #API/server code
-        package.json
+```
 
 ## Environment Variables Required
 
@@ -71,7 +95,7 @@ MegsComfortCreations/
         1. PG_USERNAME - PostrgreSQL username
         2. PG_PASSWORD - PostrgreSQL password
         3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
-        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases: psql < [file.sql]
+        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases in the server directory: ```bash psql < [file.sql]```
 
 ## Route Documentation
 
