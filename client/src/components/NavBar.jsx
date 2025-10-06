@@ -18,7 +18,7 @@ const NavBar = () => {
         </NavLink>
 
         <NavLink
-          to="MediaCollector"
+          to="/"
           className={({ isActive }) =>
             `${navlinkClass} ${isActive ? `bg-[var(--darkpink)]` : `bg-[var(--lightpink)]`}`
           }
