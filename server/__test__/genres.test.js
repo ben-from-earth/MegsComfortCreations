@@ -3,7 +3,6 @@ process.env.NODE_ENV = 'test';
 const request = require('supertest');
 const app = require('../app');
 const db = require('../database/db');
-const { randomUUID } = require('crypto');
 
 describe('Connection to database succesful', () => {
   test('can query the database', async () => {
@@ -12,7 +11,45 @@ describe('Connection to database succesful', () => {
   });
 });
 
-const bookID = randomUUID();
+const bookData = {
+  title: 'Genre Test Title',
+  author: 'Book Author',
+  page_count: 100,
+  pub_year: 2025,
+  spine_color: '#ca2f24ff',
+  image_urls: ['http://testurl.com'],
+};
+let bookID;
+beforeAll(async function () {
+  const bookResult = await db.query(
+    `INSERT INTO books (
+            title,
+            author,
+            page_count,
+            pub_year,
+            spine_color,
+            image_urls             
+      ) VALUES ($1, $2, $3, $4, $5, $6) 
+      RETURNING 
+            id,
+            title,
+            author,
+            page_count,
+            pub_year,
+            spine_color,
+            image_urls`,
+    [
+      bookData.title,
+      bookData.author,
+      bookData.page_count,
+      bookData.pub_year,
+      bookData.spine_color,
+      bookData.image_urls,
+    ]
+  );
+
+  bookID = bookResult.rows[0].id;
+});
 
 describe('Link/unlink book to genre', () => {
   test('Link bookID with Science Fiction and Fantasy', async () => {
@@ -51,47 +88,13 @@ describe('Get genres requests', () => {
   });
 
   test('Get all books with Science Fiction as a genre', async () => {
-    const testBookReq = {
-      title: 'Genre Test',
-      author: 'author',
-      page_count: 100,
-      pub_year: 2025,
-      spine_color: '#f25b26',
-      image_urls: ['http://testurl.com'],
-    };
-    //add book to database with Science Fiction link
-    const bookSaveRes = await request(app)
-      .post('/database/save/book')
-      .send(testBookReq);
-    const newBookID = bookSaveRes.body.saveAttemptItem.id;
-
-    const scifiLinkRes = await request(app)
-      .post('/genres/addLink')
-      .send({ bookID: newBookID, genres: ['Science Fiction'] });
-
     const res = await request(app).get(
       '/genres?genre=Science Fiction&sort=title&limit=3&page=1&ascDesc=asc'
     );
+
     expect(res.body.message).toEqual(`Successful database gather`);
     expect(res.body.total).toEqual(1);
-    expect(res.body.paginatedList[0].title).toEqual('Genre Test');
-  });
-});
-
-describe('Handle Proper delete of a book', () => {
-  test('Delete all links for a given bookID', async () => {
-    const res = await request(app).get(
-      `/genres/removeAllLinksForBook?bookID=${bookID}`
-    );
-    expect(res.body.message).toEqual(
-      `All genre links removed for bookID ${bookID}`
-    );
-    expect(res.body.actionCompleted).toEqual(true);
-
-    const checkRes = await request(app).get(
-      `/genres/getForBook?bookID=${bookID}`
-    );
-    expect(checkRes.body.genres.length).toEqual(0);
+    expect(res.body.paginatedList[0].title).toEqual('Genre Test Title');
   });
 });
 

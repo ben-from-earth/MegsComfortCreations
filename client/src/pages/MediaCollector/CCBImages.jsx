@@ -3,11 +3,11 @@ import { useDispatch } from 'react-redux';
 import {
   addToDatabaseData,
   removeFromDatabaseData,
-} from '../../state/databaseDataSlice';
+} from '@/state/databaseDataSlice';
 import {
   addToPNGCollectionList,
   removeFromPNGCollectionList,
-} from '../../state/pngCollectionSlice';
+} from '@/state/pngCollectionSlice';
 
 const CCBImages = ({ images, isDatabase, blockID, type, color }) => {
   //setup connection to redux slice

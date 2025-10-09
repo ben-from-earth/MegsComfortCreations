@@ -53,12 +53,7 @@ const DatabaseItem = memo(function DatabaseItem({
       const deleteRes = await axios.delete(
         `${serverDomain}/database?title=${title}&type=${type}`,
       );
-
-      //need to remove links to this book ID if a book is deleted
-      const removeGenreLinksRes = await axios.get(
-        `${serverDomain}/genres/removeAllLinksForBook?bookID=${id}`,
-      );
-      if (deleteRes.data.errors || removeGenreLinksRes.data.errors) {
+      if (deleteRes.data.errors) {
         setDeleteError(res.data.message);
       } else {
         handleGetMedia();

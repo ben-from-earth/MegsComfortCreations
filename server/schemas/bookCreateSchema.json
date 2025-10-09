@@ -7,7 +7,7 @@
   "required": ["title", "author", "spine_color", "image_urls"],
   "properties": {
     "title": {
-      "$id": "#/properties/title",
+      "$id": "../properties/title",
       "type": "string",
       "title": "The Title Schema",
       "minLength": 1,
@@ -16,7 +16,7 @@
       "pattern": "^(.*)$"
     },
     "author": {
-      "$id": "#/properties/author",
+      "$id": "../properties/author",
       "type": "string",
       "title": "The Author Schema",
       "minLength": 1,
@@ -25,21 +25,21 @@
       "pattern": "^(.*)$"
     },
     "page_count": {
-      "$id": "#/properties/page_count",
+      "$id": "../properties/page_count",
       "type": "number",
       "title": "The Page Count Schema",
       "default": 0,
       "examples": [450]
     },
     "pub_year": {
-      "$id": "#/properties/pub_year",
+      "$id": "../properties/pub_year",
       "type": "number",
       "title": "The Publication Year Schema",
       "default": 0,
       "examples": [1965]
     },
     "spine_color": {
-      "$id": "#/properties/spine_color",
+      "$id": "../properties/spine_color",
       "type": "string",
       "title": "The Spine Color Schema",
       "minLength": 1,
@@ -48,7 +48,7 @@
       "pattern": "^(.*)$"
     },
     "image_urls": {
-      "$id": "#/properties/image_urls",
+      "$id": "../properties/image_urls",
       "type": "array",
       "title": "The Image URL Schema",
       "minItems": 1,

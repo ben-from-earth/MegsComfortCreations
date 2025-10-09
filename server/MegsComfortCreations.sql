@@ -6,6 +6,14 @@ CREATE DATABASE megscomfortcreations;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL 
+);
+
 CREATE TABLE books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
@@ -34,6 +42,7 @@ CREATE TABLE video_games (
 CREATE TABLE albums (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL UNIQUE,
+    spine_color TEXT NOT NULL,
     image_urls TEXT[]
 );
 
@@ -44,8 +53,10 @@ CREATE TABLE genres (
 
 CREATE TABLE genres_books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    book_id TEXT NOT NULL,
-    genre_id TEXT NOT NULL
+    book_id  UUID NOT NULL,
+    genre_id UUID NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books(id)  ON DELETE CASCADE,
+    FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
 );
 
 INSERT INTO genres (

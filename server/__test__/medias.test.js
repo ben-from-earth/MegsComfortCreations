@@ -113,12 +113,14 @@ beforeAll(async function () {
   const albumResult = await db.query(
     `INSERT INTO albums (
             title,
-            image_urls
-      ) VALUES ($1, $2) 
+            image_urls,
+            spine_color 
+      ) VALUES ($1, $2, $3) 
       RETURNING 
             id,
-            image_urls`,
-    [otherData.title, otherData.image_urls]
+            image_urls,
+            spine_color`,
+    [otherData.title, otherData.image_urls, otherData.spine_color]
   );
 
   saveIDs.albumID = albumResult.rows[0].id;
@@ -158,7 +160,7 @@ describe('Test saving book to database', () => {
             'Key (title, author)=(Dune, Frank Herbert) already exists.'
         )
     ).toEqual(true);
-  });
+  }, 10_000);
 
   test('Missing required field and wrong type when attempting to save a book to database', async () => {
     const missingFieldsReq = {

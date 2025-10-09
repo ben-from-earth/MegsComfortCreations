@@ -19,7 +19,6 @@ const genresAddLink = require('./genreRoutes/genresAddLink');
 const genresUnlink = require('./genreRoutes/genresUnlink');
 const genresPagination = require('./genreRoutes/genresPagination');
 const genresNoGenres = require('./genreRoutes/genresNoGenres');
-const genresRemoveAllLinks = require('./genreRoutes/genresRemoveAllLinks');
 
 //png routes
 const pngCreate = require('./pngRoutes/pngCreate');
@@ -76,7 +75,6 @@ const definition = {
     '/genres/unlink': genresUnlink,
     '/genres': genresPagination,
     '/genres/noGenres': genresNoGenres,
-    '/genres/removeAllLinksForBook': genresRemoveAllLinks,
     '/png/create': pngCreate,
     '/getOnlineData/openlibrary': onlineOpenLibrary,
     '/getOnlineData/mediacovers': onlineMediaCovers,

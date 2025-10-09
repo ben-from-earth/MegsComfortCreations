@@ -7,7 +7,7 @@
   "required": ["title", "image_urls", "spine_color"],
   "properties": {
     "title": {
-      "$id": "#/properties/title",
+      "$id": "../properties/title",
       "type": "string",
       "title": "The Title Schema",
       "default": "",
@@ -15,7 +15,7 @@
       "pattern": "^(.*)$"
     },
     "image_urls": {
-      "$id": "#/properties/image_urls",
+      "$id": "../properties/image_urls",
       "type": "array",
       "title": "The Image URL Schema",
       "minItems": 1,
@@ -27,7 +27,7 @@
       }
     },
     "spine_color": {
-      "$id": "#/properties/spine_color",
+      "$id": "../properties/spine_color",
       "type": "string",
       "title": "The Spine Color Schema",
       "default": "",

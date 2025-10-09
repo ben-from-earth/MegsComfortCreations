@@ -38,9 +38,9 @@ The goal is simple: reduce the time from image collection to cutout as much as p
     ```
 2. Install dependencies: The code is broken into client and server folders, so to install all dependencies:
     1. (in main directory)
-       ```bash
-       npm install && cd client && npm install && cd ../server && npm install
-       ```
+        ```bash
+        npm install && cd client && npm install && cd ../server && npm install
+        ```
 
 ## Usage
 
@@ -51,6 +51,7 @@ npm start
 ```
 
 ## Project Structure
+
 ```text
 .
 ├── client
@@ -84,6 +85,8 @@ npm start
 
 ## Environment Variables Required
 
+Please see .env.example files in both /client and /server for full required file. Description of items is shown below.
+
 1. client/
     1. VITE_SERVER_DOMAIN - The code is set up to run on localhost:3001, but this can be whatever you want. Just make sure that the client folder has a .env for this variable
 2. root
@@ -95,7 +98,7 @@ npm start
         1. PG_USERNAME - PostrgreSQL username
         2. PG_PASSWORD - PostrgreSQL password
         3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
-        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases in the server directory: ```bash psql < [file.sql]```
+        4. Create the main (/server/MegsComfortCreations.sql) and test (/server/MegsComfortCreations_test.sql) databases in the server directory: `bash psql < [file.sql]`
 
 ## Route Documentation
 

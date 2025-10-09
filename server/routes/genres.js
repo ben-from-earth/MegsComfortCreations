@@ -21,6 +21,7 @@ router.get('/getForBook', async (req, res, next) => {
   try {
     const bookID = req.query.bookID;
     const genres = await Genre.getForBook(bookID);
+
     return res.status(200).json({
       message: `Successfully grabbed genres for bookID ${bookID}`,
       genres,
@@ -119,35 +120,6 @@ router.get('/noGenres', async (req, res, next) => {
     });
   } catch (err) {
     return next({
-      status: 400,
-      error: 'Genre Error',
-      message: 'Error connecting to the database and/or genre table',
-    });
-  }
-});
-
-router.get('/removeAllLinksForBook', async (req, res, next) => {
-  const bookID = req.query.bookID;
-  try {
-    const results = await db.query(
-      `DELETE FROM genres_books
-      WHERE book_id = $1`,
-      [bookID]
-    );
-    console.log(results.rowCount);
-    if (results.rowCount === 0) {
-      res.status(200).json({
-        actionCompleted: true,
-        message: `There were already no genre links for bookID: ${bookID}`,
-      });
-    } else {
-      res.status(200).json({
-        actionCompleted: true,
-        message: `All genre links removed for bookID ${bookID}`,
-      });
-    }
-  } catch (err) {
-    next({
       status: 400,
       error: 'Genre Error',
       message: 'Error connecting to the database and/or genre table',

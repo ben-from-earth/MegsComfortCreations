@@ -5,13 +5,15 @@ class Album {
     const result = await db.query(
       `INSERT INTO albums (
             title,
-            image_urls 
-      ) VALUES ($1, $2) 
+            image_urls,
+            spine_color 
+      ) VALUES ($1, $2, $3) 
       RETURNING 
             id,
             title,
-            image_urls`,
-      [data.title, data.image_urls]
+            image_urls,
+            spine_color`,
+      [data.title, data.image_urls, data.spine_color]
     );
     return result.rows[0];
   }

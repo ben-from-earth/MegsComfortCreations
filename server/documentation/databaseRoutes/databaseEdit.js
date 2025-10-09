@@ -22,8 +22,8 @@ const databaseEdit = {
         'application/json': {
           schema: {
             oneOf: [
-              { $ref: '#/components/schemas/Book' },
-              { $ref: '#/components/schemas/OtherMedia' },
+              { $ref: '../components/schemas/Book' },
+              { $ref: '../components/schemas/OtherMedia' },
             ],
           },
           examples: {

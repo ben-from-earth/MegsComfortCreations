@@ -42,7 +42,7 @@ class Genre {
         USING genres g
         WHERE gb.book_id = $1
         AND g.genre = $2
-        AND gb.genre_id = g.id::text`,
+        AND gb.genre_id = g.id`,
       [bookID, genre]
     );
     return genreUnLinkResult;
@@ -52,10 +52,11 @@ class Genre {
     const result = await db.query(
       `SELECT g.genre
       FROM genres AS g
-      JOIN genres_books AS g_b ON g_b.genre_id::uuid = g.id
+      JOIN genres_books AS g_b ON g_b.genre_id = g.id
       WHERE g_b.book_id = $1`,
       [bookID]
     );
+
     const genres = result.rows.map((row) => row.genre);
 
     return genres;
@@ -66,7 +67,7 @@ class Genre {
       `SELECT b.*
       FROM books AS b
       LEFT JOIN genres_books AS gb
-      ON gb.book_id = b.id::text
+      ON gb.book_id = b.id
       WHERE gb.book_id IS NULL
       ORDER BY ${sort} ${ascDesc}
       LIMIT $1 OFFSET $2`,
@@ -77,7 +78,7 @@ class Genre {
       `SELECT COUNT(*) 
           FROM books AS b
       LEFT JOIN genres_books AS gb
-      ON gb.book_id = b.id::text
+      ON gb.book_id = b.id
       WHERE gb.book_id IS NULL`
     );
 
@@ -89,9 +90,9 @@ class Genre {
       `SELECT DISTINCT b.*
       FROM books AS b
       JOIN genres_books AS gb
-      ON gb.book_id = b.id::text
+      ON gb.book_id = b.id
       JOIN genres AS g
-      ON g.id::text = gb.genre_id
+      ON g.id = gb.genre_id
       WHERE g.genre = $1
       ORDER BY ${sort} ${ascDesc}
       LIMIT $2 OFFSET $3
@@ -103,9 +104,9 @@ class Genre {
       `SELECT COUNT(*) 
           FROM books AS b
       JOIN genres_books AS gb
-      ON gb.book_id = b.id::text
+      ON gb.book_id = b.id
       JOIN genres AS g
-      ON g.id::text = gb.genre_id
+      ON g.id = gb.genre_id
       WHERE g.genre = $1`,
       [genre]
     );
