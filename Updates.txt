@@ -1,0 +1,7 @@
+1. Currently database is set up for unique titles for otherMedia.
+1a. Deletion request currently deletes all rows with the same title. (database route DELETE())
+
+2. Currently not Displaying deletion errors only logging (DatabaseItem)
+
+3. Currently not displaying genre link/unlink errors only logging (EditDatabaseBlock)
+

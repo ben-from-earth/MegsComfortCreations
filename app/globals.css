@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+@import 'swagger-ui-react/swagger-ui.css';
+
+@theme {
+  --color-lightpink: #f4d8d8;
+  --color-darkpink: #e1b3b5;
+  --color-peach: #f9d4b4;
+  --color-green: #a8b7a0;
+}
+
+.MediaInputs > :nth-child(2n + 1):nth-last-child(1) {
+  grid-column: span 2;
+  justify-self: center;
+}
+
+body {
+  background-color: var(--color-lightpink);
+}
