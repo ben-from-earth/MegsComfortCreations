@@ -98,8 +98,6 @@ const ItemForm: React.FC<{
   );
 };
 
-// ---- Page component ----
-
 const LoginPage: React.FC = () => {
   const [loginError, setLoginError] = useState(false);
   const router = useRouter();
@@ -109,7 +107,7 @@ const LoginPage: React.FC = () => {
 
     const res = await axios.post(
       // If using Next API routes:
-      '/api/auth/login',
+      `/api/auth/login`,
       // If using external server, use `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}/auth/login`
       {
         email: values.email,

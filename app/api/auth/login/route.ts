@@ -7,6 +7,7 @@ import { createToken, handleErrors, MAX_AGE_SECONDS } from '../_utils';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log('Login body:', body);
     const { email, password } = body;
 
     const user = await User.login(email);
