@@ -29,7 +29,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { type: MediaType } },
+  { params }: { params: Promise<{ type: MediaType }> },
 ) {
   const { type } = await params;
   const body: postSavedMediaItem = await req.json();
