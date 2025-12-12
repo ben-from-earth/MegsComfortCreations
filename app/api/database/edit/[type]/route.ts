@@ -21,7 +21,6 @@ import {
   SchemaViolationError,
 } from '@/app/api/api-Errors';
 import {
-  MediaType,
   postSavedMediaItem,
   SuccessfulMediaSaveEditResponse,
 } from '@/lib/interfaces/globalInterfaces';
@@ -29,7 +28,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ type: MediaType }> },
+  { params }: { params: Promise<{ type: string }> },
 ) {
   const { type } = await params;
   const body: postSavedMediaItem = await req.json();
