@@ -126,6 +126,7 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    console.log('LOGIN success, navigating to /profile now');
     router.replace('/profile');
   };
 
