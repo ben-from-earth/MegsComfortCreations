@@ -34,7 +34,7 @@ import { DatabaseError } from 'pg';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { type: MediaType } },
+  { params }: { params: Promise<{ type: string }> },
 ): Promise<
   | NextResponse<SuccessfulMediaSaveEditResponse>
   | NextResponse<DatabaseSaveEditErrorResponse>

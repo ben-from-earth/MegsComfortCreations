@@ -28,9 +28,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { type: string } },
+  { params }: { params: Promise<{ type: string }> },
 ) {
-  const { type } = params;
+  const { type } = await params;
   const body: postSavedMediaItem = await req.json();
   switch (type) {
     case 'book':
