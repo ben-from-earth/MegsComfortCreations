@@ -9,6 +9,24 @@ import { Template } from '@/lib/helpers/outputPNG';
 import { ApiError } from '@/app/api/api-Errors';
 import { NextRequest, NextResponse } from 'next/server';
 
+const ALLOWED_ORIGIN =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  'https://megs-comfort-creations.vercel.app';
+
+function withCorsHeaders(res: NextResponse) {
+  res.headers.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  res.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  res.headers.set('Vary', 'Origin');
+  return res;
+}
+
+export async function OPTIONS() {
+  // Preflight response
+  const res = new NextResponse(null, { status: 204 });
+  return withCorsHeaders(res);
+}
+
 export async function POST(req: NextRequest) {
   try {
     //req body: {template, images: [array of image blocks]}
