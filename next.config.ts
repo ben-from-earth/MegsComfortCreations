@@ -2,11 +2,11 @@
 const nextConfig = {
   async headers() {
     const allowedOrigin =
-      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'https://megs-comfort-creations.vercel.app';
 
     return [
       {
-        // Apply these headers to all API routes
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Origin', value: allowedOrigin },
