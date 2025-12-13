@@ -10,7 +10,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Bring in Next's recommended configs via compat
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
+
+  // Global ignores (flat config style)
   {
     ignores: [
       'node_modules/**',
@@ -19,14 +22,13 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
     ],
-    overrides: [
-      {
-        files: ['@/app/mediacollector/CBBImages.tsx'],
-        rules: {
-          '@next/next/no-img-element': 'off',
-        },
-      },
-    ],
+  },
+
+  {
+    files: ['src/app/mediacollector/CBBImages.tsx'],
+    rules: {
+      '@next/next/no-img-element': 'off',
+    },
   },
 ];
 
