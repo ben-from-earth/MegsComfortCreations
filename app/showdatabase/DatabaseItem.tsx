@@ -37,16 +37,32 @@ const DatabaseItem = memo(function DatabaseItem({
   const [genres, setGenres] = useState<string[]>([]);
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
+  type GenreResponse = { message: string; genres: string[] };
+
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
   useEffect(() => {
-    (async () => {
-      const genreRes = await axios.get<
-        { message: string; genres: string[] } | ErrorResponse
-      >(`api/genres/getforbook?bookID=${id}`);
+    let cancelled = false;
 
-      if ('error' in genreRes.data === false) setGenres(genreRes.data.genres);
-    })();
-  }, [edit]);
+    const fetchGenres = async () => {
+      try {
+        const { data } = await axios.get<GenreResponse | ErrorResponse>(
+          `api/genres/getforbook?bookID=${id}`,
+        );
+
+        if (!('error' in data) && !cancelled) {
+          setGenres(data.genres);
+        }
+      } catch (err) {
+        console.error('[fetchGenres] failed', err);
+      }
+    };
+
+    fetchGenres();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, edit]);
 
   //handle deletion of the media from the database
   const onDelete = async () => {
@@ -61,7 +77,7 @@ const DatabaseItem = memo(function DatabaseItem({
       } else {
         handleGetMedia();
       }
-    } catch (error) {
+    } catch {
       console.log('There was an error deleting, try again.');
       //   setDeleteError('There was an error deleting, try again.');
     }

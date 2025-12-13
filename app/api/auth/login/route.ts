@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     });
 
     return res;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
     return handleErrors({ error });
   }

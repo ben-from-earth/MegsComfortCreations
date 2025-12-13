@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         'Cache-Control': 'no-store',
       },
     });
-  } catch (error) {
+  } catch {
     return new ApiError(
       400,
       'PNG Creation Error',

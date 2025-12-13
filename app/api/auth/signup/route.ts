@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const { email, password, first_name, last_name } = body;
 
-    const validation = validate(body, userCreateSchema as any);
+    const validation = validate(body, userCreateSchema);
     if (!validation.valid) {
       return handleErrors({ error: 'Validation Error', validation });
     }
@@ -50,14 +50,17 @@ export async function POST(req: NextRequest) {
     });
 
     return res;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
 
+    // Narrow to something with an optional `code` field
+    const e = error as { code?: number | string };
+
     // Map DB duplicate error to our handler shape
-    if (error?.code === 23505) {
-      return handleErrors({ error });
+    if (e.code === 23505 || e.code === '23505') {
+      return handleErrors({ error: e });
     }
 
-    return handleErrors({ error });
+    return handleErrors({ error: e });
   }
 }

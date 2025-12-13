@@ -21,8 +21,8 @@ export default function AreYouSure({
   return (
     <div className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex h-1/4 w-1/4 -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center justify-center gap-10 rounded-md border-3 p-2 text-2xl tracking-wider text-black">
       <p className="text-center">
-        Are you sure you want to delete "
-        {title ? titleRearrange(title) : '[Missing Title]'}"?
+        Are you sure you want to delete
+        {title ? titleRearrange(title) : '[Missing Title]'}?
       </p>
       <div className="flex gap-2">
         <Button

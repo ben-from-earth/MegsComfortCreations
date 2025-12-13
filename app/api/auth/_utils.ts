@@ -47,7 +47,7 @@ type DuplicateError = {
 };
 
 type GenericError = {
-  error: any;
+  error: unknown;
   email?: string;
 };
 
