@@ -1,5 +1,29 @@
-import type { NextConfig } from 'next';
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  async headers() {
+    const allowedOrigin =
+      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-const nextConfig: NextConfig = {};
+    return [
+      {
+        // Apply these headers to all API routes
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: allowedOrigin },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value:
+              'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+          },
+        ],
+      },
+    ];
+  },
+};
 
-export default nextConfig;
+module.exports = nextConfig;
