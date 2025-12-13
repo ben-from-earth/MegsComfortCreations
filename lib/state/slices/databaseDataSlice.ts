@@ -114,7 +114,7 @@ export const sendToDatabase = createAsyncThunk(
             try {
               const otherMediaSaveRes = await axios.post<
                 SuccessfulMediaSaveEditResponse | DatabaseSaveEditErrorResponse
-              >(`api/database/save/${media.type}`, otherMediaData, {
+              >(`/api/database/save/${media.type}`, otherMediaData, {
                 validateStatus: (status) => status < 500,
               });
               const otherMediaCreationResponse = otherMediaSaveRes.data;

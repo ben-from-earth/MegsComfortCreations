@@ -55,7 +55,7 @@ export default function ShowDatabase() {
     if (titleSearch.length > 0) {
       try {
         const res = await axios.get<SuccessfulMediaSearchResponse>(
-          `api/database/search?type=${type}&title=${titleRearrange(titleSearch)}`,
+          `/api/database/search?type=${type}&title=${titleRearrange(titleSearch)}`,
         );
         const databaseResults = res.data;
         setDatabaseItems({
@@ -72,7 +72,7 @@ export default function ShowDatabase() {
       if (type !== 'book' || genre === '') {
         try {
           const res = await axios.get<SuccessfulPaginationResponse>(
-            `api/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
+            `/api/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 
@@ -89,7 +89,7 @@ export default function ShowDatabase() {
       } else {
         if (genre === 'none') {
           const res = await axios.get<SuccessfulPaginationResponse>(
-            `api/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
+            `/api/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 
@@ -102,7 +102,7 @@ export default function ShowDatabase() {
           });
         } else {
           const res = await axios.get<SuccessfulPaginationResponse>(
-            `api/genres?genre=${genre}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
+            `/api/genres?genre=${genre}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
           );
           const databaseResults = res.data;
 

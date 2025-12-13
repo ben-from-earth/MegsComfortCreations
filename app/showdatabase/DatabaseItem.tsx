@@ -46,7 +46,7 @@ const DatabaseItem = memo(function DatabaseItem({
     const fetchGenres = async () => {
       try {
         const { data } = await axios.get<GenreResponse | ErrorResponse>(
-          `api/genres/getforbook?bookID=${id}`,
+          `/api/genres/getforbook?bookID=${id}`,
         );
 
         if (!('error' in data) && !cancelled) {
@@ -68,7 +68,7 @@ const DatabaseItem = memo(function DatabaseItem({
   const onDelete = async () => {
     try {
       const deleteRes = await axios.delete<ErrorResponse | { message: string }>(
-        `api/database/delete?title=${title}&type=${type}`,
+        `/api/database/delete?title=${title}&type=${type}`,
       );
       const response = deleteRes.data;
       if ('error' in response) {

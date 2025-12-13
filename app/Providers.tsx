@@ -21,7 +21,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await axios.get<getAllResponse>(`api/genres/getall`);
+        const res = await axios.get<getAllResponse>(`/api/genres/getall`);
         const collection = res.data;
         setGenres(collection.genres);
       } catch {

@@ -82,7 +82,7 @@ export const collectBlockInformation = createAsyncThunk(
     const { title, author } = toCollectItem;
 
     //check database for existing data with same title.
-    const mediaSearchRes = await axios.get(`api/database/search`, {
+    const mediaSearchRes = await axios.get(`/api/database/search`, {
       params: { type, title: titleRearrange(title) },
       //accept 400 codes for error handling
       validateStatus: (status) => status < 500,
@@ -106,7 +106,7 @@ export const collectBlockInformation = createAsyncThunk(
       if (type === 'book') {
         //get genres tied to the found book id
         const genreSearchRes = await axios.get(
-          `api/genres/getforbook?bookID=${id}`,
+          `/api/genres/getforbook?bookID=${id}`,
         );
         const genreSearchData: { message: string; genres: string[] } =
           genreSearchRes.data;
@@ -144,7 +144,7 @@ export const collectBlockInformation = createAsyncThunk(
 
     //if the media wasnt in the database, collect cover images
     const imageSearchRes = await axios.post<{ images: string[] }>(
-      `api/getonlinedata/mediacovers`,
+      `/api/getonlinedata/mediacovers`,
       {
         title,
         author,
@@ -160,7 +160,7 @@ export const collectBlockInformation = createAsyncThunk(
       //if book, go to open library and get more data about the book
       const openLibraryRes = await axios.post<
         OpenLibrarySuccess | OpenLibraryError
-      >(`api/getonlinedata/openlibrary`, { title, author });
+      >(`/api/getonlinedata/openlibrary`, { title, author });
 
       const bookInformation = openLibraryRes.data;
 

@@ -165,7 +165,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       | ErrorResponse
       | SuccessfulMediaSaveEditResponse
       | DatabaseSaveEditErrorResponse
-    >(`api/database/edit/${type}`, databaseData, {
+    >(`/api/database/edit/${type}`, databaseData, {
       validateStatus: (status) => status < 500,
     });
 
@@ -185,7 +185,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
         }
       }
       try {
-        await axios.post(`api/genres/addlink`, {
+        await axios.post(`/api/genres/addlink`, {
           bookID: id,
           genres: linkGenres,
         });
@@ -200,7 +200,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
         }
       }
       try {
-        await axios.post(`api/genres/unlink`, {
+        await axios.post(`/api/genres/unlink`, {
           bookID: id,
           genres: unlinkGenres,
         });

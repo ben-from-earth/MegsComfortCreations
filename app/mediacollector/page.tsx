@@ -192,7 +192,7 @@ export default function MediaCollector() {
 
     try {
       const res = await axios.post<Blob | ErrorResponse>(
-        `api/png/create`,
+        `/api/png/create`,
         { template: pngTemplate, images: pngCollectionList },
         {
           responseType: 'blob',
