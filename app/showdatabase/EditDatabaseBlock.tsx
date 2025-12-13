@@ -140,7 +140,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       console.log('EyeDropper API not supported in this browser');
       return;
     }
-    const eyeDropper = new EyeDropper();
+    const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
       const spine_color = sRGBHex;
@@ -179,7 +179,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       const unlinkGenres: string[] = [];
 
       //get new added genres and link them
-      for (let genre of newGenres) {
+      for (const genre of newGenres) {
         if (!initialGenres.includes(genre)) {
           linkGenres.push(genre);
         }
@@ -189,12 +189,12 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
           bookID: id,
           genres: linkGenres,
         });
-      } catch (err) {
+      } catch {
         console.log('Genre link error');
       }
 
       //remove link to any genres that were removed
-      for (let genre of initialGenres) {
+      for (const genre of initialGenres) {
         if (!newGenres.includes(genre)) {
           unlinkGenres.push(genre);
         }
@@ -204,7 +204,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
           bookID: id,
           genres: unlinkGenres,
         });
-      } catch (err) {
+      } catch {
         console.log('Genre unlink error');
       }
 
