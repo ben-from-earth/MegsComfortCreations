@@ -123,7 +123,9 @@ export default function PaginationInputs() {
           onChange={handleSortByChange}
         >
           {sortOptions.map((option) => (
-            <MenuItem value={option.value}>{option.label}</MenuItem>
+            <MenuItem key={option.label} value={option.value}>
+              {option.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -140,7 +142,9 @@ export default function PaginationInputs() {
           <MenuItem value={'none'}>None</MenuItem>
 
           {genres.map((option) => (
-            <MenuItem value={option}>{option}</MenuItem>
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>

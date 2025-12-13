@@ -81,7 +81,7 @@ export const sendToDatabase = createAsyncThunk(
               const genreLinkResponse = genreLinkRes.data;
               return { ...bookCreationResponse, ...genreLinkResponse };
             }
-          } catch (error) {
+          } catch {
             const serverError: DatabaseSaveEditErrorResponse = {
               actionAttemptItem: bookData,
               type: media.type,
@@ -119,7 +119,7 @@ export const sendToDatabase = createAsyncThunk(
               });
               const otherMediaCreationResponse = otherMediaSaveRes.data;
               return otherMediaCreationResponse;
-            } catch (error) {
+            } catch {
               const serverError: DatabaseSaveEditErrorResponse = {
                 actionAttemptItem: otherMediaData,
                 type: media.type,

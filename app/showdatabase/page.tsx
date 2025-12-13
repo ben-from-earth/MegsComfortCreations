@@ -1,7 +1,7 @@
 'use client';
 
 // react, redux imports
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // library imports
 import axios from 'axios';
@@ -51,11 +51,7 @@ export default function ShowDatabase() {
   const [genre, setGenre] = useState('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
 
-  useEffect(() => {
-    handleGetMedia();
-  }, [page, type, limit, sortBy, titleSearch, genre, ascDesc]);
-
-  const handleGetMedia = async () => {
+  const handleGetMedia = useCallback(async () => {
     if (titleSearch.length > 0) {
       try {
         const res = await axios.get<SuccessfulMediaSearchResponse>(
@@ -120,7 +116,11 @@ export default function ShowDatabase() {
         }
       }
     }
-  };
+  }, [page, type, limit, sortBy, titleSearch, genre, ascDesc]);
+
+  useEffect(() => {
+    handleGetMedia();
+  }, [handleGetMedia]);
 
   const DatabasePageContextValue: DatabasePageContextValue = useMemo(
     () => ({
@@ -140,7 +140,7 @@ export default function ShowDatabase() {
       setTitleSearch,
       handleGetMedia,
     }),
-    [page, databaseItems, type, limit, sortBy, genre, ascDesc],
+    [handleGetMedia, page, databaseItems, type, limit, sortBy, genre, ascDesc],
   );
 
   return (

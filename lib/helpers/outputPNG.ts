@@ -170,12 +170,16 @@ export async function outputPNG({
 
   try {
     return await base.composite(overlays).png().toBuffer();
-  } catch (err: any) {
-    if (err && Array.isArray(err.errors)) {
-      for (const e of err.errors)
-        console.error('composite overlay error', e?.message || e);
+  } catch (err: unknown) {
+    const e = err as { errors?: { message?: string }[]; message?: string };
+
+    if (Array.isArray(e.errors)) {
+      for (const sub of e.errors) {
+        console.error('composite overlay error', sub?.message || sub);
+      }
     }
-    console.error('sharp composite error', err?.message || err);
+
+    console.error('sharp composite error', e.message || err);
     throw err;
   }
 }
@@ -502,7 +506,7 @@ async function sniffIsImage(
   buffer: Buffer,
 ): Promise<{ ok: boolean; mime?: string; ext?: string }> {
   const { fileTypeFromBuffer } = await import('file-type');
-  const ft = await fileTypeFromBuffer(buffer).catch(() => null as any);
+  const ft = await fileTypeFromBuffer(buffer).catch(() => null);
   if (ft?.mime?.startsWith('image/'))
     return { ok: true, mime: ft.mime, ext: ft.ext };
   const head = buffer.toString('utf8', 0, 256);
@@ -550,7 +554,7 @@ async function fetchImageBufferAxios(
       });
 
       const buffer = Buffer.from(res.data);
-      const ctype = (res.headers as any)['content-type'] as string | undefined;
+      const ctype = res.headers['content-type'] as string | undefined;
 
       if (isImageCtype(ctype)) return buffer;
 
@@ -561,14 +565,27 @@ async function fetchImageBufferAxios(
       }
 
       return buffer;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // Narrow/cast the error to the shape we expect from Axios
+      const e = err as {
+        response?: {
+          status?: number;
+          headers?: Record<string, string | undefined>;
+        };
+        config?: { url?: string };
+        message?: string;
+        code?: string | number;
+      };
+
       attempt++;
-      const status = err?.response?.status;
-      const ctype = err?.response?.headers?.['content-type'];
-      const urlLogged = err?.config?.url;
+      const status = e.response?.status;
+      const ctype = e.response?.headers?.['content-type'];
+      const urlLogged = e.config?.url;
+      const message = e.message || String(err);
+
       console.error(
-        `[fetchImageBufferAxios] attempt=${attempt} | message=${err?.message}` +
-          (err?.code ? ` | code=${err.code}` : '') +
+        `[fetchImageBufferAxios] attempt=${attempt} | message=${message}` +
+          (e.code ? ` | code=${e.code}` : '') +
           (status ? ` | status=${status}` : '') +
           (ctype ? ` | ctype=${ctype}` : '') +
           (urlLogged ? ` | url=${urlLogged}` : ''),
@@ -576,7 +593,7 @@ async function fetchImageBufferAxios(
 
       if (attempt > retries) {
         throw new Error(
-          `IMAGE_FETCH_FAILED after ${retries} retries: ${err?.code || ''} ${err?.message}`,
+          `IMAGE_FETCH_FAILED after ${retries} retries: ${e.code || ''} ${message}`,
         );
       }
 
@@ -604,8 +621,14 @@ async function makeBlock(
     try {
       const buf = await fetchImageBufferAxios(fill);
       pipe = sharp(buf).toColourspace('srgb').resize(w, h, { fit: 'fill' });
-    } catch (e: any) {
-      console.warn('[makeBlock] fetch failed, using placeholder:', e?.message);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+
+      console.warn(
+        '[makeBlock] fetch failed, using placeholder:',
+        err.message || String(e),
+      );
+
       pipe = sharp({
         create: {
           width: w,
