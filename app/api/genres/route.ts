@@ -3,8 +3,8 @@ import Genre from '@/lib/database/models/genre';
 
 // interfaces and types
 import { ApiError } from '@/app/api/api-Errors';
-import { postSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
 import { NextRequest, NextResponse } from 'next/server';
+import { BookRow } from '@/lib/interfaces/globalInterfaces';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   const offset = (page - 1) * limit;
   try {
-    const genreRes: { books: postSavedMediaItem[]; total: number } =
+    const genreRes: { books: BookRow[]; total: number } =
       await Genre.getBooksWithGenre(genre, sort, offset, limit, ascDesc);
     return NextResponse.json(
       {

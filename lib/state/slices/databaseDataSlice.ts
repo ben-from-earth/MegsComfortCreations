@@ -17,13 +17,13 @@ import {
   databaseSaveServerResponse,
   MediaLabel,
   MediaType,
-  presavedMediaItem,
+  PreSavedMediaItem,
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulMediaSaveEditResponse,
 } from '@/lib/interfaces/globalInterfaces';
 import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
 
-export interface databaseSliceData extends presavedMediaItem {
+export interface databaseSliceData extends PreSavedMediaItem {
   images: { src: string; idx: number }[];
 }
 export interface databaseDataPerType {
@@ -50,7 +50,7 @@ export const sendToDatabase = createAsyncThunk(
       if (media.type === 'book') {
         const bookPromises = sendData.map(async (book: databaseSliceData) => {
           const title = titleRearrange(book.title);
-          const bookData: presavedMediaItem = {
+          const bookData: PreSavedMediaItem = {
             title,
             author: book.author,
             page_count: book.page_count,
@@ -105,7 +105,7 @@ export const sendToDatabase = createAsyncThunk(
         const otherMediaPromises = sendData.map(
           async (otherMedia: databaseSliceData) => {
             const title = titleRearrange(otherMedia.title);
-            const otherMediaData: presavedMediaItem = {
+            const otherMediaData: PreSavedMediaItem = {
               title,
               image_urls: otherMedia.images.map((img) => img.src),
               spine_color: otherMedia.spine_color,

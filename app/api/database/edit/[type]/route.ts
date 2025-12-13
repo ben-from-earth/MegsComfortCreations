@@ -5,11 +5,10 @@ import { validate } from 'jsonschema';
 import bookCreateSchema from '@/lib/database/schemas/bookCreateSchema.json';
 import otherMediaCreateSchema from '@/lib/database/schemas/otherMediaCreateSchema.json';
 
-// models
-import Book from '@/lib/database/models/book';
-import Movie from '@/lib/database/models/movie';
-import Video_Game from '@/lib/database/models/video_game';
-import Album from '@/lib/database/models/album';
+// drizzle
+import { db } from '@/app/db/client'; // adjust to your actual db path
+import { books, movies, videoGames, albums } from '@/app/db/schema';
+import { eq } from 'drizzle-orm';
 
 // helpers
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
@@ -21,8 +20,12 @@ import {
   SchemaViolationError,
 } from '@/app/api/api-Errors';
 import {
-  postSavedMediaItem,
+  AlbumRow,
+  BookRow,
+  MovieRow,
+  PostSavedMediaItem,
   SuccessfulMediaSaveEditResponse,
+  VideoGameRow,
 } from '@/lib/interfaces/globalInterfaces';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -31,7 +34,8 @@ export async function PUT(
   { params }: { params: Promise<{ type: string }> },
 ) {
   const { type } = await params;
-  const body: postSavedMediaItem = await req.json();
+  const body: PostSavedMediaItem = await req.json();
+
   switch (type) {
     case 'book':
       try {
@@ -43,7 +47,26 @@ export async function PUT(
             type,
           );
         }
-        const book = await Book.edit(body);
+
+        // Prefer id if present, otherwise fall back to title-based match.
+        const whereExpr = body.id
+          ? eq(books.id, body.id as string)
+          : eq(books.title, body.title);
+
+        const [book] = await db
+          .update(books)
+          .set({
+            // Adjust these to your actual body keys as needed:
+            title: (body as BookRow).title,
+            author: (body as BookRow).author,
+            pageCount: (body as BookRow).pageCount,
+            pubYear: (body as BookRow).pubYear,
+            spineColor: (body as BookRow).spineColor,
+            imageUrls: (body as BookRow).imageUrls,
+          })
+          .where(whereExpr)
+          .returning();
+
         if (!book) {
           return NextResponse.json<DatabaseSaveEditErrorResponse>(
             {
@@ -61,7 +84,7 @@ export async function PUT(
             {
               message: `${titleRearrange(book.title)} successfully edited.`,
               actionAttemptItem: book,
-              type: type,
+              type,
             },
             { status: 200 },
           );
@@ -77,6 +100,7 @@ export async function PUT(
           ).format();
         }
       }
+
     case 'movie':
       try {
         const validation = validate(body, otherMediaCreateSchema);
@@ -87,7 +111,21 @@ export async function PUT(
             type,
           );
         }
-        const movie = await Movie.edit(body);
+
+        const whereExpr = body.id
+          ? eq(movies.id, body.id as string)
+          : eq(movies.title, body.title);
+
+        const [movie] = await db
+          .update(movies)
+          .set({
+            title: body.title,
+            spineColor: (body as MovieRow).spineColor,
+            imageUrls: (body as MovieRow).imageUrls,
+          })
+          .where(whereExpr)
+          .returning();
+
         if (!movie) {
           return NextResponse.json<DatabaseSaveEditErrorResponse>(
             {
@@ -105,7 +143,7 @@ export async function PUT(
             {
               message: `${titleRearrange(movie.title)} successfully edited.`,
               actionAttemptItem: movie,
-              type: type,
+              type,
             },
             { status: 200 },
           );
@@ -121,6 +159,7 @@ export async function PUT(
           ).format();
         }
       }
+
     case 'video_game':
       try {
         const validation = validate(body, otherMediaCreateSchema);
@@ -131,8 +170,22 @@ export async function PUT(
             type,
           );
         }
-        const video_game = await Video_Game.edit(body);
-        if (!video_game) {
+
+        const whereExpr = body.id
+          ? eq(videoGames.id, body.id as string)
+          : eq(videoGames.title, body.title);
+
+        const [videoGame] = await db
+          .update(videoGames)
+          .set({
+            title: body.title,
+            spineColor: (body as VideoGameRow).spineColor,
+            imageUrls: (body as VideoGameRow).imageUrls,
+          })
+          .where(whereExpr)
+          .returning();
+
+        if (!videoGame) {
           return NextResponse.json<DatabaseSaveEditErrorResponse>(
             {
               error: 'Media Not Found',
@@ -147,9 +200,9 @@ export async function PUT(
         } else {
           return NextResponse.json<SuccessfulMediaSaveEditResponse>(
             {
-              message: `${titleRearrange(video_game.title)} successfully edited.`,
-              actionAttemptItem: video_game,
-              type: type,
+              message: `${titleRearrange(videoGame.title)} successfully edited.`,
+              actionAttemptItem: videoGame,
+              type,
             },
             { status: 200 },
           );
@@ -165,6 +218,7 @@ export async function PUT(
           ).format();
         }
       }
+
     case 'album':
       try {
         const validation = validate(body, otherMediaCreateSchema);
@@ -175,7 +229,21 @@ export async function PUT(
             type,
           );
         }
-        const album = await Album.edit(body);
+
+        const whereExpr = body.id
+          ? eq(albums.id, body.id as string)
+          : eq(albums.title, body.title);
+
+        const [album] = await db
+          .update(albums)
+          .set({
+            title: body.title,
+            spineColor: (body as AlbumRow).spineColor,
+            imageUrls: (body as AlbumRow).imageUrls,
+          })
+          .where(whereExpr)
+          .returning();
+
         if (!album) {
           return NextResponse.json<DatabaseSaveEditErrorResponse>(
             {
@@ -193,7 +261,7 @@ export async function PUT(
             {
               message: `${titleRearrange(album.title)} successfully edited.`,
               actionAttemptItem: album,
-              type: type,
+              type,
             },
             { status: 200 },
           );
@@ -209,5 +277,12 @@ export async function PUT(
           ).format();
         }
       }
+
+    default:
+      return new ApiError(
+        400,
+        'Bad Request',
+        `Unsupported media type: ${type}`,
+      ).format();
   }
 }

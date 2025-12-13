@@ -55,7 +55,7 @@ import {
 
 //interfaces and types
 import {
-  databaseSaveServerResponse,
+  DatabaseSaveServerResponse,
   MediaType,
 } from '@/lib/interfaces/globalInterfaces';
 import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
@@ -85,7 +85,7 @@ export default function MediaCollector() {
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
   const [databaseSavedData, setDatabaseSavedData] =
-    useState<databaseSaveServerResponse>([]);
+    useState<DatabaseSaveServerResponse>([]);
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);

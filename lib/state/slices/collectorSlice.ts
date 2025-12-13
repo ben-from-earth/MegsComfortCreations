@@ -16,7 +16,7 @@ import { updateQueryCount } from '@/lib/helpers/updateQueryCount';
 // interfaces and types
 import { RootState } from '@/lib/state/store';
 import {
-  blockInfo,
+  BlockInfo,
   MediaLabel,
   MediaType,
   SuccessfulMediaSearchResponse,
@@ -41,7 +41,7 @@ interface InitialState {
 export interface collectedBlockInformation {
   type: MediaType;
   images: string[];
-  blockInfo: blockInfo;
+  BlockInfo: BlockInfo;
   blockID: string;
   isDatabase: boolean;
 }
@@ -116,7 +116,7 @@ export const collectBlockInformation = createAsyncThunk(
         return {
           type,
           images: image_urls,
-          blockInfo: {
+          BlockInfo: {
             title,
             author,
             pub_year,
@@ -133,7 +133,7 @@ export const collectBlockInformation = createAsyncThunk(
       return {
         type,
         images: image_urls,
-        blockInfo: {
+        BlockInfo: {
           title,
           spine_color,
         },
@@ -155,7 +155,7 @@ export const collectBlockInformation = createAsyncThunk(
     updateQueryCount();
     const imgArr = imageSearchRes.data.images;
 
-    let blockInfo: blockInfo;
+    let BlockInfo: BlockInfo;
     if (type === 'book') {
       //if book, go to open library and get more data about the book
       const openLibraryRes = await axios.post<
@@ -165,21 +165,21 @@ export const collectBlockInformation = createAsyncThunk(
       const bookInformation = openLibraryRes.data;
 
       if ('failedSearchData' in bookInformation) {
-        blockInfo = bookInformation.failedSearchData;
+        BlockInfo = bookInformation.failedSearchData;
       } else {
-        blockInfo = bookInformation;
+        BlockInfo = bookInformation;
       }
-      // blockInfo: { title, author, pub_year, page_count } || {title, author}
+      // BlockInfo: { title, author, pub_year, page_count } || {title, author}
     } else {
-      //Just submit title as blockInfo for non-books
+      //Just submit title as BlockInfo for non-books
       //Updates to data collection for other media types can be performed here if necessary in future update.
-      blockInfo = { title };
+      BlockInfo = { title };
     }
 
     const collectedBlockInformation: collectedBlockInformation = {
       type,
       images: imgArr,
-      blockInfo,
+      BlockInfo,
       blockID: nanoid(),
       isDatabase: false,
     };

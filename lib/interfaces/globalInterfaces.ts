@@ -1,44 +1,67 @@
+// drizzle types
+import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import { books, movies, videoGames, albums } from '@/app/db/schema';
+
 import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
 
 export type MediaType = 'book' | 'movie' | 'video_game' | 'album';
-
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
-export interface presavedMediaItem {
-  title: string;
-  spine_color: string;
+// 1. Map Drizzle row types
+export type BookRow = InferSelectModel<typeof books>;
+export type MovieRow = InferSelectModel<typeof movies>;
+export type VideoGameRow = InferSelectModel<typeof videoGames>;
+export type AlbumRow = InferSelectModel<typeof albums>;
+
+// 2. Extras that don’t live in the DB but you still want on responses
+interface MediaExtras {
   blockID?: string;
-  author?: string;
-  pub_year?: number;
-  page_count?: number;
   genres?: string[];
-  image_urls: string[];
 }
 
-export interface postSavedMediaItem extends presavedMediaItem {
-  id: string;
-}
+export type BookInsert = Omit<InferInsertModel<typeof books>, 'id'> &
+  MediaExtras;
+export type MovieInsert = Omit<InferInsertModel<typeof movies>, 'id'> &
+  MediaExtras;
+export type VideoGameInsert = Omit<InferInsertModel<typeof videoGames>, 'id'> &
+  MediaExtras;
+export type AlbumInsert = Omit<InferInsertModel<typeof albums>, 'id'> &
+  MediaExtras;
+
+// 3. “Pre-saved” (create/edit body) – based on INSERT types, no id
+//    You *can* keep title/spineColor etc. here if your JSON schema
+//    is slightly different from the DB, but this keeps you close to Drizzle.
+export type PreSavedMediaItem =
+  | BookInsert
+  | MovieInsert
+  | VideoGameInsert
+  | AlbumInsert;
+
+// 4. “Post-saved” (what comes back from DB) – based on SELECT types
+export type PostSavedMediaItem = BookRow | MovieRow | VideoGameRow | AlbumRow;
+
+// 5. Response shapes now use these types
 
 export interface SuccessfulMediaSearchResponse {
   message: string;
-  foundMediaList: postSavedMediaItem[];
+  foundMediaList: PostSavedMediaItem[];
   total: number;
 }
 
 export interface SuccessfulMediaSaveEditResponse {
   message: string;
-  actionAttemptItem: postSavedMediaItem;
+  actionAttemptItem: PostSavedMediaItem & MediaExtras;
   type: MediaType;
 }
 
 export interface SuccessfulPaginationResponse {
   message: string;
-  paginatedList: postSavedMediaItem[];
+  paginatedList: PostSavedMediaItem[];
   total: number;
 }
 
 export interface GenreLinkUnlinkRequest {
-  bookID: string;
+  bookID: string; // uuid (string in TS) from BookRow['id']
   genres: string[];
 }
 
@@ -48,24 +71,18 @@ export interface SuccessfulGenreLinkUnlinkResponse {
   bookID: string;
 }
 
-export interface blockInfo {
+// 6. Make this match your camelCase DB schema (or keep snake_case if your rows do)
+export interface BlockInfo {
   title: string;
   author?: string;
-  pub_year?: number;
-  page_count?: number;
-  spine_color?: string;
+  pubYear?: number;
+  pageCount?: number;
+  spineColor?: string;
   databaseGenres?: string[];
 }
 
-export interface Window {
-  EyeDropper?: {
-    new (): {
-      open: () => Promise<{ sRGBHex: string }>;
-    };
-  };
-}
-
-export type databaseSaveServerResponse = (
+// 7. Server response union
+export type DatabaseSaveServerResponse = (
   | DatabaseSaveEditErrorResponse
   | SuccessfulMediaSaveEditResponse
   | (SuccessfulMediaSaveEditResponse & {

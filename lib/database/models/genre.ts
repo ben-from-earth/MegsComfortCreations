@@ -1,8 +1,8 @@
 // database import
-import db from '@/lib/database/db';
+import { db } from '@/app/db/client';
 
 // interfaces and types
-import { postSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
+import { PostSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
 
 export default class Genre {
   static async getAllGenres() {
@@ -58,7 +58,7 @@ export default class Genre {
     limit: number,
     ascDesc: string,
   ) {
-    const result = await db.query<postSavedMediaItem>(
+    const result = await db.query<PostSavedMediaItem>(
       `SELECT b.*
       FROM books AS b
       LEFT JOIN genres_books AS gb
@@ -87,7 +87,7 @@ export default class Genre {
     limit: number,
     ascDesc: string,
   ) {
-    const result = await db.query<postSavedMediaItem>(
+    const result = await db.query<PostSavedMediaItem>(
       `SELECT DISTINCT b.*
       FROM books AS b
       JOIN genres_books AS gb

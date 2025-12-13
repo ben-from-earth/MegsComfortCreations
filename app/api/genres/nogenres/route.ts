@@ -4,7 +4,7 @@ import Genre from '@/lib/database/models/genre';
 // interfaces and types
 import { ApiError } from '@/app/api/api-Errors';
 import {
-  postSavedMediaItem,
+  PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from '@/lib/interfaces/globalInterfaces';
 import { NextRequest, NextResponse } from 'next/server';
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
-    const genreRes: { books: postSavedMediaItem[]; total: number } =
+    const genreRes: { books: PostSavedMediaItem[]; total: number } =
       await Genre.getNoGenreBooks(sort, offset, limit, ascDesc);
     return NextResponse.json<SuccessfulPaginationResponse>(
       {

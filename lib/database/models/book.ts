@@ -1,18 +1,18 @@
 // database import
-import db from '@/lib/database/db';
+import { db } from '@/app/db/client';
 
 // interfaces and types
 import {
   MediaType,
-  postSavedMediaItem,
-  presavedMediaItem,
+  PostSavedMediaItem,
+  PreSavedMediaItem,
 } from '@/lib/interfaces/globalInterfaces';
 
 const convertToNull = (v: number | undefined) => (v === undefined ? null : v);
 
 export default class Book {
-  static async create(data: presavedMediaItem) {
-    const result = await db.query<postSavedMediaItem>(
+  static async create(data: PreSavedMediaItem) {
+    const result = await db.query<PostSavedMediaItem>(
       `INSERT INTO books (
             title,
             author,
@@ -35,7 +35,7 @@ export default class Book {
   }
 
   static async find(title: string) {
-    const result = await db.query<postSavedMediaItem>(
+    const result = await db.query<PostSavedMediaItem>(
       `SELECT * 
      FROM books
      WHERE title ILIKE $1 || '%'
@@ -51,7 +51,7 @@ export default class Book {
     limit: number,
     sort: string,
   ) {
-    const result = await db.query<postSavedMediaItem>(
+    const result = await db.query<PostSavedMediaItem>(
       `SELECT * 
       FROM ${type + 's'}
       ORDER BY ${sort}
@@ -61,8 +61,8 @@ export default class Book {
     return result.rows;
   }
 
-  static async edit(data: postSavedMediaItem) {
-    const result = await db.query<postSavedMediaItem>(
+  static async edit(data: PostSavedMediaItem) {
+    const result = await db.query<PostSavedMediaItem>(
       `UPDATE books
       SET title = $1, author = $2, page_count = $3, pub_year = $4, image_urls = $5, spine_color = $6
       WHERE id=$7

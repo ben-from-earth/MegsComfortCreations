@@ -29,13 +29,13 @@ import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
 // interfaces and types
 import {
   MediaType,
-  presavedMediaItem,
+  PreSavedMediaItem,
 } from '@/lib/interfaces/globalInterfaces';
 import { collectedBlockInformation } from '@/lib/state/slices/collectorSlice';
 
 export interface databasePayload {
   type: MediaType;
-  data: presavedMediaItem;
+  data: PreSavedMediaItem;
 }
 
 export interface CollectedCoversBlockProps {
@@ -73,7 +73,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const {
     type,
     images,
-    blockInfo: {
+    BlockInfo: {
       title,
       author,
       pub_year,
@@ -117,9 +117,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     type,
     data: {
       title,
-      spine_color: color,
+      spineColor: color,
       blockID,
-      image_urls: [],
+      imageUrls: [],
       ...(type === 'book' ? bookSpecificDatabasePayload : {}),
     },
   };

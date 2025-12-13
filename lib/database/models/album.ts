@@ -1,15 +1,15 @@
 // database import
-import db from '@/lib/database/db';
+import { db } from '@/app/db/client';
 
 // interfaces and types
 import {
   MediaType,
-  postSavedMediaItem,
-  presavedMediaItem,
+  PostSavedMediaItem,
+  PreSavedMediaItem,
 } from '@/lib/interfaces/globalInterfaces';
 
 export default class Album {
-  static async create(data: presavedMediaItem) {
+  static async create(data: PreSavedMediaItem) {
     const result = await db.query(
       `INSERT INTO albums (
             title,
@@ -27,7 +27,7 @@ export default class Album {
   }
 
   static async find(title: string) {
-    const result = await db.query<postSavedMediaItem>(
+    const result = await db.query<PostSavedMediaItem>(
       `SELECT * 
      FROM albums
      WHERE title ILIKE $1 || '%'`,
@@ -42,7 +42,7 @@ export default class Album {
     limit: number,
     sort: string,
   ) {
-    const result = await db.query<postSavedMediaItem>(
+    const result = await db.query<PostSavedMediaItem>(
       `SELECT * 
       FROM ${type + 's'}
       ORDER BY ${sort}
@@ -52,7 +52,7 @@ export default class Album {
     return result.rows;
   }
 
-  static async edit(data: postSavedMediaItem) {
+  static async edit(data: PostSavedMediaItem) {
     const result = await db.query(
       `UPDATE albums
       SET title=$1, image_urls=$2, spine_color=$3
