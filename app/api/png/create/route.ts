@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 // helpers
 import { outputAuto } from '@/lib/helpers/outputPNG';
 

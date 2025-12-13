@@ -30,7 +30,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-redux": "^9.2.0",
-    "sharp": "^0.34.4",
+    "sharp": "^0.34.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.30.0",
     "tailwind-merge": "^3.3.1",
