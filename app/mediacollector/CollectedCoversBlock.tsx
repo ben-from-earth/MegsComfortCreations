@@ -143,7 +143,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       console.log('EyeDropper API not supported in this browser');
       return;
     }
-    const eyeDropper = new EyeDropper();
+    const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
       const spine_color = sRGBHex;
