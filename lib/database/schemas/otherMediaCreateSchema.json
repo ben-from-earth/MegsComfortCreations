@@ -4,7 +4,7 @@
   "$id": "http://example.com/root.json",
   "type": "object",
   "title": "The Other Media Create Schema",
-  "required": ["title", "image_urls", "spine_color"],
+  "required": ["title", "imageUrls", "spineColor"],
   "properties": {
     "title": {
       "$id": "../properties/title",
@@ -14,8 +14,8 @@
       "examples": ["La La Land"],
       "pattern": "^(.*)$"
     },
-    "image_urls": {
-      "$id": "../properties/image_urls",
+    "imageUrls": {
+      "$id": "../properties/imageUrls",
       "type": "array",
       "title": "The Image URL Schema",
       "minItems": 1,
@@ -26,8 +26,8 @@
         "pattern": "^(.*)$"
       }
     },
-    "spine_color": {
-      "$id": "../properties/spine_color",
+    "spineColor": {
+      "$id": "../properties/spineColor",
       "type": "string",
       "title": "The Spine Color Schema",
       "default": "",

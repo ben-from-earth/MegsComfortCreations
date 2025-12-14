@@ -1,6 +1,6 @@
 import {
   MediaType,
-  presavedMediaItem,
+  PreSavedMediaItem,
 } from '@/lib/interfaces/globalInterfaces';
 import { NextResponse } from 'next/server';
 
@@ -15,7 +15,7 @@ export interface SearchErrorResponse extends ErrorResponse {
 
 export interface DatabaseSaveEditErrorResponse extends ErrorResponse {
   errors: string[];
-  actionAttemptItem: presavedMediaItem;
+  actionAttemptItem: PreSavedMediaItem;
   type: MediaType;
 }
 
@@ -38,11 +38,11 @@ export class ApiError extends Error {
 }
 
 export class PGDatabaseError extends ApiError {
-  actionAttemptItem: presavedMediaItem;
+  actionAttemptItem: PreSavedMediaItem;
   type: MediaType;
   errorDetail: string;
   constructor(
-    actionAttemptItem: presavedMediaItem,
+    actionAttemptItem: PreSavedMediaItem,
     type: MediaType,
     errorDetail: string,
   ) {
@@ -73,11 +73,11 @@ export class PGDatabaseError extends ApiError {
 
 export class SchemaViolationError extends ApiError {
   schemaErrors: string[];
-  actionAttemptItem: presavedMediaItem;
+  actionAttemptItem: PreSavedMediaItem;
   type: MediaType;
   constructor(
     schemaErrors: string[],
-    actionAttemptItem: presavedMediaItem,
+    actionAttemptItem: PreSavedMediaItem,
     type: MediaType,
   ) {
     super(

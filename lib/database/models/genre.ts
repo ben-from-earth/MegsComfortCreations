@@ -1,55 +1,70 @@
 // database import
-import db from '@/lib/database/db';
+import { db } from '@/app/db/client';
 
 // interfaces and types
-import { postSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
+import { BookRow } from '@/lib/interfaces/globalInterfaces';
+import { books, genres, genresBooks } from '@/app/db/schema';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+
+const validSortKeys = ['title', 'pubYear', 'spineColor'] as const;
+type SortKey = (typeof validSortKeys)[number];
 
 export default class Genre {
-  static async getAllGenres() {
-    const dbRes = await db.query<{ genre: string }>(`SELECT genre FROM genres`);
-    const result: string[] = dbRes.rows.map((row) => row.genre);
-    return result;
+  static async getAllGenres(): Promise<string[]> {
+    const rows = await db.select({ genre: genres.genre }).from(genres);
+
+    return rows.map((row) => row.genre);
   }
 
   static async link(genre: string, bookID: string): Promise<void> {
-    const genreFind = await db.query<{ id: string; genre: string }>(
-      `SELECT id FROM genres
-      WHERE genre=$1`,
-      [genre],
-    );
+    // 1. Find genre id
+    const [genreRow] = await db
+      .select({ id: genres.id })
+      .from(genres)
+      .where(eq(genres.genre, genre));
 
-    const genreID = genreFind.rows[0].id;
-    await db.query(
-      `INSERT INTO genres_books (
-        book_id, genre_id
-      ) VALUES ($1, $2)`,
-      [bookID, genreID],
-    );
+    if (!genreRow) {
+      // previous raw SQL would just crash; you can throw a nicer error if you like
+      throw new Error(`Genre "${genre}" not found`);
+    }
+
+    // 2. Insert into join table
+    await db.insert(genresBooks).values({
+      bookId: bookID,
+      genreId: genreRow.id,
+    });
   }
 
   static async unlink(genre: string, bookID: string): Promise<void> {
-    await db.query(
-      `DELETE FROM genres_books gb
-        USING genres g
-        WHERE gb.book_id = $1
-        AND g.genre = $2
-        AND gb.genre_id = g.id`,
-      [bookID, genre],
-    );
+    // simplest: find genreId first, then delete that link
+    const [genreRow] = await db
+      .select({ id: genres.id })
+      .from(genres)
+      .where(eq(genres.genre, genre));
+
+    if (!genreRow) {
+      // nothing to unlink
+      return;
+    }
+
+    await db
+      .delete(genresBooks)
+      .where(
+        and(
+          eq(genresBooks.bookId, bookID),
+          eq(genresBooks.genreId, genreRow.id),
+        ),
+      );
   }
 
   static async getforbook(bookID: string): Promise<string[]> {
-    const result = await db.query<{ genre: string }>(
-      `SELECT g.genre
-      FROM genres AS g
-      JOIN genres_books AS g_b ON g_b.genre_id = g.id
-      WHERE g_b.book_id = $1`,
-      [bookID],
-    );
+    const rows = await db
+      .select({ genre: genres.genre })
+      .from(genres)
+      .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
+      .where(eq(genresBooks.bookId, bookID));
 
-    const genres = result.rows.map((row) => row.genre);
-
-    return genres;
+    return rows.map((row) => row.genre);
   }
 
   static async getNoGenreBooks(
@@ -57,27 +72,46 @@ export default class Genre {
     offset: number,
     limit: number,
     ascDesc: string,
-  ) {
-    const result = await db.query<postSavedMediaItem>(
-      `SELECT b.*
-      FROM books AS b
-      LEFT JOIN genres_books AS gb
-      ON gb.book_id = b.id
-      WHERE gb.book_id IS NULL
-      ORDER BY ${sort} ${ascDesc}
-      LIMIT $1 OFFSET $2`,
-      [limit, offset],
-    );
+  ): Promise<{ books: BookRow[]; total: number }> {
+    const sortKey = sort as SortKey;
+    const direction = ascDesc.toLowerCase() === 'desc' ? 'desc' : 'asc';
 
-    const totalRes = await db.query<{ count: string }>(
-      `SELECT COUNT(*) 
-          FROM books AS b
-      LEFT JOIN genres_books AS gb
-      ON gb.book_id = b.id
-      WHERE gb.book_id IS NULL`,
-    );
+    if (!validSortKeys.includes(sortKey)) {
+      throw new Error(
+        `Invalid sort key: ${sort}. Must be one of ${validSortKeys.join(', ')}`,
+      );
+    }
 
-    return { books: result.rows, total: parseInt(totalRes.rows[0].count, 10) };
+    // map sort key string to actual column
+    const sortColumn =
+      sortKey === 'title'
+        ? books.title
+        : sortKey === 'pubYear'
+          ? books.pubYear
+          : books.spineColor;
+
+    const orderByExpr =
+      direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
+
+    const rows = await db
+      .select({ book: books })
+      .from(books)
+      .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+      .where(isNull(genresBooks.bookId))
+      .orderBy(orderByExpr)
+      .limit(limit)
+      .offset(offset);
+
+    const [{ value: total }] = await db
+      .select({ value: sql<number>`count(*)` })
+      .from(books)
+      .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+      .where(isNull(genresBooks.bookId));
+
+    return {
+      books: rows.map((r) => r.book) as BookRow[],
+      total,
+    };
   }
 
   static async getBooksWithGenre(
@@ -86,31 +120,46 @@ export default class Genre {
     offset: number,
     limit: number,
     ascDesc: string,
-  ) {
-    const result = await db.query<postSavedMediaItem>(
-      `SELECT DISTINCT b.*
-      FROM books AS b
-      JOIN genres_books AS gb
-      ON gb.book_id = b.id
-      JOIN genres AS g
-      ON g.id = gb.genre_id
-      WHERE g.genre = $1
-      ORDER BY ${sort} ${ascDesc}
-      LIMIT $2 OFFSET $3
-      `,
-      [genre, limit, offset],
-    );
+  ): Promise<{ books: BookRow[]; total: number }> {
+    const sortKey = sort as SortKey;
+    const direction = ascDesc.toLowerCase() === 'desc' ? 'desc' : 'asc';
 
-    const totalRes = await db.query<{ count: string }>(
-      `SELECT COUNT(*) 
-          FROM books AS b
-      JOIN genres_books AS gb
-      ON gb.book_id = b.id
-      JOIN genres AS g
-      ON g.id = gb.genre_id
-      WHERE g.genre = $1`,
-      [genre],
-    );
-    return { books: result.rows, total: parseInt(totalRes.rows[0].count, 10) };
+    if (!validSortKeys.includes(sortKey)) {
+      throw new Error(
+        `Invalid sort key: ${sort}. Must be one of ${validSortKeys.join(', ')}`,
+      );
+    }
+
+    const sortColumn =
+      sortKey === 'title'
+        ? books.title
+        : sortKey === 'pubYear'
+          ? books.pubYear
+          : books.spineColor;
+
+    const orderByExpr =
+      direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
+
+    const rows = await db
+      .select({ book: books })
+      .from(books)
+      .innerJoin(genresBooks, eq(genresBooks.bookId, books.id))
+      .innerJoin(genres, eq(genres.id, genresBooks.genreId))
+      .where(eq(genres.genre, genre))
+      .orderBy(orderByExpr)
+      .limit(limit)
+      .offset(offset);
+
+    const [{ value: total }] = await db
+      .select({ value: sql<number>`count(*)` })
+      .from(books)
+      .innerJoin(genresBooks, eq(genresBooks.bookId, books.id))
+      .innerJoin(genres, eq(genres.id, genresBooks.genreId))
+      .where(eq(genres.genre, genre));
+
+    return {
+      books: rows.map((r) => r.book) as BookRow[],
+      total,
+    };
   }
 }

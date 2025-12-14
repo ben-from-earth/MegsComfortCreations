@@ -5,10 +5,10 @@ import Button from '@/app/components/Button';
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
 
 // interfaces and types
-import { databaseSaveServerResponse } from '@/lib/interfaces/globalInterfaces';
+import { DatabaseSaveServerResponse } from '@/lib/interfaces/globalInterfaces';
 
 export interface DatabaseSavedWidgetProps {
-  data: databaseSaveServerResponse;
+  data: DatabaseSaveServerResponse;
   close: () => void;
 }
 

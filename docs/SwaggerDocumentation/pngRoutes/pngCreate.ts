@@ -20,14 +20,14 @@ const pngCreate = {
                 description: 'Array of image blocks to render',
                 items: {
                   type: 'object',
-                  required: ['url', 'spine_color', 'type'],
+                  required: ['url', 'spineColor', 'type'],
                   properties: {
                     url: {
                       type: 'string',
                       format: 'uri',
                       description: 'Source image url',
                     },
-                    spine_color: {
+                    spineColor: {
                       type: 'string',
                       description: 'spine color hex code (e.g. #ffffff)',
                     },

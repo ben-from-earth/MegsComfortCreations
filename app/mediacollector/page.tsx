@@ -25,7 +25,7 @@ import TitleBlockContainer from '@/app/mediacollector/TitleBlockContainer';
 // imports from the collector state slice
 import {
   collectBlockInformation,
-  collectedBlockInformation,
+  CollectedBlockInformation,
   finishedFetch,
   finishedLoad,
   getFetchStatus,
@@ -40,7 +40,7 @@ import {
 // imports from the database state slice
 import {
   clearDatabaseData,
-  databaseDataPerType,
+  DatabaseDataPerType,
   removeFromDatabaseData,
   sendToDatabase,
 } from '@/lib/state/slices/databaseDataSlice';
@@ -55,7 +55,7 @@ import {
 
 //interfaces and types
 import {
-  databaseSaveServerResponse,
+  DatabaseSaveServerResponse,
   MediaType,
 } from '@/lib/interfaces/globalInterfaces';
 import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
@@ -71,7 +71,7 @@ export default function MediaCollector() {
 
   // setup states used throughout the component
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState<
-    collectedBlockInformation[]
+    CollectedBlockInformation[]
   >([]);
   const [searchData, setSearchData] = useState<
     { type: MediaType; titleSearchList: titleOutputObj[] }[]
@@ -85,7 +85,7 @@ export default function MediaCollector() {
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
   const [databaseSavedData, setDatabaseSavedData] =
-    useState<databaseSaveServerResponse>([]);
+    useState<DatabaseSaveServerResponse>([]);
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);
@@ -173,7 +173,7 @@ export default function MediaCollector() {
 
   //Send block information to the database and give responses to the Database Saved Widget to appropriately show successes and errors
   const handleDatabaseClick = async (
-    databaseData: databaseDataPerType[],
+    databaseData: DatabaseDataPerType[],
   ): Promise<void> => {
     const responses = await dispatch(sendToDatabase(databaseData)).unwrap();
     setDatabaseSavedData(responses);

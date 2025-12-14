@@ -1,15 +1,19 @@
-import db from '@/lib/database/db';
+import { db } from '@/app/db/client';
 import {
   MediaType,
-  postSavedMediaItem,
-  presavedMediaItem,
+  PostSavedMediaItem,
+  PreSavedMediaItem,
   SuccessfulMediaSaveEditResponse,
   SuccessfulMediaSearchResponse,
   SuccessfulPaginationResponse,
 } from '@/lib/interfaces/globalInterfaces';
+
 import { GET as databaseSearchGET } from '@/app/api/database/search/route';
 import { GET as paginationGET } from '@/app/api/database/route';
 import { DELETE } from '@/app/api/database/delete/route';
+import { POST } from '@/app/api/database/save/[type]/route';
+import { PUT } from '@/app/api/database/edit/[type]/route';
+
 import { NextRequest } from 'next/server';
 import {
   ApiError,
@@ -17,21 +21,25 @@ import {
   ErrorResponse,
   SearchErrorResponse,
 } from '../app/api/api-Errors';
-import { POST } from '@/app/api/database/save/[type]/route';
-import { PUT } from '@/app/api/database/edit/[type]/route';
 import { randomUUID } from 'crypto';
+
+// drizzle
+import { sql } from 'drizzle-orm';
+import { books, movies, videoGames, albums } from '@/lib/database/schema';
 
 const serverDomain = process.env.SERVER_BASE_URL;
 
 describe('Connection to database succesful', () => {
   test('can query the database', async () => {
-    const result = await db.query<{ result: number }>('SELECT 1 + 1 AS result');
-    expect(result.rows[0].result).toBe(2);
+    const result = await db.execute(sql`SELECT 1 + 1 AS result`);
+    // For node-postgres driver, execute() returns QueryResult with .rows
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((result as any).rows[0].result).toBe(2);
   });
 });
 
 const otherMedias: MediaType[] = ['movie', 'video_game', 'album'];
-const saveIDs = {
+const saveIDs: Record<string, string> = {
   bookID: '',
   movieID: '',
   video_gameID: '',
@@ -41,107 +49,84 @@ const saveIDs = {
 const testBookReq = {
   title: 'Dune',
   author: 'Frank Herbert',
-  page_count: 584,
-  pub_year: 1965,
-  spine_color: '#f25b26',
-  image_urls: ['http://testurl.com'],
+  pageCount: 584,
+  pubYear: 1965,
+  spineColor: '#f25b26',
+  imageUrls: ['http://testurl.com'],
 };
 
 const testOtherMediaReq = {
   title: 'Media Title',
-  spine_color: '#f25b26',
-  image_urls: ['http://testurl.com'],
+  spineColor: '#f25b26',
+  imageUrls: ['http://testurl.com'],
 };
 
-const bookData: presavedMediaItem & { id?: string } = {
+const bookData: PreSavedMediaItem & { id?: string } = {
   title: 'Book Title',
   author: 'Book Author',
-  page_count: 100,
-  pub_year: 2025,
-  spine_color: '#ca2f24ff',
-  image_urls: ['http://testurl.com'],
+  pageCount: 100,
+  pubYear: 2025,
+  spineColor: '#ca2f24ff',
+  imageUrls: ['http://testurl.com'],
 };
-const otherData: presavedMediaItem & { id?: string } = {
+
+const otherData: PreSavedMediaItem & { id?: string } = {
   title: 'Other Title',
-  spine_color: '#ca2f24ff',
-  image_urls: ['http://testurl.com'],
+  spineColor: '#ca2f24ff',
+  imageUrls: ['http://testurl.com'],
 };
 
-beforeAll(async function () {
-  const bookResult = await db.query<postSavedMediaItem>(
-    `INSERT INTO books (
-            title,
-            author,
-            page_count,
-            pub_year,
-            spine_color,
-            image_urls             
-      ) VALUES ($1, $2, $3, $4, $5, $6) 
-      RETURNING 
-            id,
-            title,
-            author,
-            page_count,
-            pub_year,
-            spine_color,
-            image_urls`,
-    [
-      bookData.title,
-      bookData.author,
-      bookData.page_count,
-      bookData.pub_year,
-      bookData.spine_color,
-      bookData.image_urls,
-    ],
-  );
+beforeAll(async () => {
+  // Insert book
+  const [bookResult] = await db
+    .insert(books)
+    .values({
+      title: bookData.title,
+      author: bookData.author!,
+      pageCount: bookData.pageCount!,
+      pubYear: bookData.pubYear!,
+      spineColor: bookData.spineColor!,
+      imageUrls: bookData.imageUrls,
+    })
+    .returning();
 
-  saveIDs.bookID = bookResult.rows[0].id;
+  saveIDs.bookID = bookResult.id;
 
-  const movieResult = await db.query<postSavedMediaItem>(
-    `INSERT INTO movies (
-            title,
-            spine_color,
-            image_urls 
-      ) VALUES ($1, $2, $3) 
-      RETURNING 
-            id,
-            title,
-            spine_color,
-            image_urls`,
-    [otherData.title, otherData.spine_color, otherData.image_urls],
-  );
+  // Insert movie
+  const [movieResult] = await db
+    .insert(movies)
+    .values({
+      title: otherData.title,
+      spineColor: otherData.spineColor!,
+      imageUrls: otherData.imageUrls,
+    })
+    .returning();
 
-  saveIDs.movieID = movieResult.rows[0].id;
+  saveIDs.movieID = movieResult.id;
 
-  const VGResult = await db.query<postSavedMediaItem>(
-    `INSERT INTO video_games (
-            title,
-            image_urls,
-            spine_color 
-      ) VALUES ($1, $2, $3) 
-      RETURNING 
-            id,
-            image_urls,
-            spine_color`,
-    [otherData.title, otherData.image_urls, otherData.spine_color],
-  );
+  // Insert video game
+  const [VGResult] = await db
+    .insert(videoGames)
+    .values({
+      title: otherData.title,
+      spineColor: otherData.spineColor!,
+      imageUrls: otherData.imageUrls,
+    })
+    .returning();
 
-  saveIDs.video_gameID = VGResult.rows[0].id;
+  saveIDs.video_gameID = VGResult.id;
 
-  const albumResult = await db.query<postSavedMediaItem>(
-    `INSERT INTO albums (
-            title,
-            image_urls,
-            spine_color 
-      ) VALUES ($1, $2, $3) 
-      RETURNING 
-            id,
-            image_urls,
-            spine_color`,
-    [otherData.title, otherData.image_urls, otherData.spine_color],
-  );
+  // Insert album
+  const [albumResult] = await db
+    .insert(albums)
+    .values({
+      title: otherData.title,
+      spineColor: otherData.spineColor!,
+      imageUrls: otherData.imageUrls,
+    })
+    .returning();
 
-  saveIDs.albumID = albumResult.rows[0].id;
+  saveIDs.albumID = albumResult.id;
 });
 
 describe('Test saving book to database', () => {
@@ -182,9 +167,9 @@ describe('Test saving book to database', () => {
     const missingFieldsReq = {
       title: 'Dune',
       author: 5,
-      page_count: 584,
-      pub_year: 1965,
-      image_urls: [
+      pageCount: 584,
+      pubYear: 1965,
+      imageUrls: [
         'https://m.media-amazon.com/images/I/81Ua99CURsL._UF894,1000_QL80_.jpg',
       ],
     };
@@ -200,7 +185,7 @@ describe('Test saving book to database', () => {
     const errors = responseBody.errors;
     expect(message).toEqual('Schema violation(s) during save/edit request');
     expect(errors.length).toEqual(2);
-    expect(errors[0]).toEqual('Save/Edit request missing spine_color');
+    expect(errors[0]).toEqual('Save/Edit request missing spineColor');
     expect(errors[1]).toEqual('author is of wrong type');
 
     expect(res.status).toEqual(422);
@@ -210,10 +195,10 @@ describe('Test saving book to database', () => {
     const missingImagesReq = {
       title: 'Title',
       author: 'Author',
-      page_count: 100,
-      pub_year: 2025,
-      spine_color: 'HexColor',
-      image_urls: [],
+      pageCount: 100,
+      pubYear: 2025,
+      spineColor: 'HexColor',
+      imageUrls: [],
     };
     const req = new NextRequest(`${serverDomain}/database/save`, {
       method: 'POST',
@@ -226,7 +211,7 @@ describe('Test saving book to database', () => {
     const message = responseBody.message;
     const errors = responseBody.errors;
     expect(message).toEqual('Schema violation(s) during save/edit request');
-    expect(errors[0]).toEqual('Save/Edit request missing image_urls');
+    expect(errors[0]).toEqual('Save/Edit request missing imageUrls');
     expect(res.status).toEqual(422);
   });
 
@@ -267,7 +252,7 @@ for (const media of otherMedias) {
     test(`Missing required field and wrong type when attempting to save a ${media} to database`, async () => {
       const missingFieldsReq = {
         title: 1234,
-        spine_color: '#f25b26',
+        spineColor: '#f25b26',
       };
       const req = new NextRequest(`${serverDomain}/database/save`, {
         method: 'POST',
@@ -283,7 +268,7 @@ for (const media of otherMedias) {
       const errors = responseBody.errors;
       expect(message).toEqual('Schema violation(s) during save/edit request');
       expect(errors.length).toEqual(2);
-      expect(errors[0]).toEqual('Save/Edit request missing image_urls');
+      expect(errors[0]).toEqual('Save/Edit request missing imageUrls');
       expect(errors[1]).toEqual('title is of wrong type');
 
       expect(res.status).toEqual(422);
@@ -292,8 +277,8 @@ for (const media of otherMedias) {
     test(`Attempt database save of ${media} with empty image array`, async () => {
       const missingImagesReq = {
         title: 'Title',
-        image_urls: [],
-        spine_color: '#f25b26',
+        imageUrls: [],
+        spineColor: '#f25b26',
       };
       const req = new NextRequest(`${serverDomain}/database/save`, {
         method: 'POST',
@@ -308,7 +293,7 @@ for (const media of otherMedias) {
       const message = responseBody.message;
       const errors = responseBody.errors;
       expect(message).toEqual('Schema violation(s) during save/edit request');
-      expect(errors[0]).toEqual('Save/Edit request missing image_urls');
+      expect(errors[0]).toEqual('Save/Edit request missing imageUrls');
       expect(res.status).toEqual(422);
     });
   });
@@ -362,7 +347,7 @@ describe('Test finding media items by title', () => {
 
 describe('Test database deletion', () => {
   const medias: MediaType[] = ['book', 'movie', 'video_game', 'album'];
-  for (let media of medias) {
+  for (const media of medias) {
     test(`Delete a ${media} from the database`, async () => {
       let title: string;
       if (media === 'book') {
@@ -402,15 +387,14 @@ describe('Test database deletion', () => {
     );
     expect(res.status).toEqual(404);
   });
-
-  //test deletion of an item that has a duplicate title in the database
 });
 
 describe('Test edit of database item', () => {
   const medias: MediaType[] = ['book', 'movie', 'video_game', 'album'];
-  for (let media of medias) {
+  for (const media of medias) {
     test(`Test edit of ${media}`, async () => {
       const id = saveIDs[`${media}ID`];
+
       if (media === 'book') {
         bookData.title = 'Book Title Edited';
         bookData.id = id;
@@ -451,6 +435,7 @@ describe('Test edit of database item', () => {
 
     test(`Test edit of non existent media item`, async () => {
       const id = randomUUID();
+
       if (media === 'book') {
         bookData.title = 'Book Title Edited';
         bookData.id = id;
@@ -489,10 +474,13 @@ describe('Test edit of database item', () => {
   }
 });
 
-afterAll(async function () {
-  await db.query('DELETE FROM books');
-  await db.query('DELETE FROM movies');
-  await db.query('DELETE FROM albums');
-  await db.query('DELETE FROM video_games');
-  await db.end();
+afterAll(async () => {
+  // Clean up with Drizzle
+  await db.delete(books);
+  await db.delete(movies);
+  await db.delete(albums);
+  await db.delete(videoGames);
+
+  // If you still have a raw pg.Pool, close it in your Jest global teardown
+  // where the pool is created, not via the Drizzle `db` instance.
 });

@@ -1,15 +1,14 @@
 // library imports
 import { validate } from 'jsonschema';
+import { DatabaseError } from 'pg';
 
 // schemas
 import bookCreateSchema from '@/lib/database/schemas/bookCreateSchema.json';
 import otherMediaCreateSchema from '@/lib/database/schemas/otherMediaCreateSchema.json';
 
-// models
-import Book from '@/lib/database/models/book';
-import Movie from '@/lib/database/models/movie';
-import Video_Game from '@/lib/database/models/video_game';
-import Album from '@/lib/database/models/album';
+// drizzle
+import { db } from '@/app/db/client'; // adjust path to your drizzle instance
+import { books, movies, videoGames, albums } from '@/app/db/schema';
 
 // helpers
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
@@ -17,9 +16,8 @@ import { titleRearrange } from '@/lib/helpers/titleRearrange';
 // interfaces and types
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  MediaType,
-  postSavedMediaItem,
-  presavedMediaItem,
+  BookInsert,
+  PreSavedMediaItem,
   SuccessfulMediaSaveEditResponse,
 } from '@/lib/interfaces/globalInterfaces';
 import {
@@ -30,8 +28,6 @@ import {
   SchemaViolationError,
 } from '@/app/api/api-Errors';
 
-import { DatabaseError } from 'pg';
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ type: string }> },
@@ -41,7 +37,7 @@ export async function POST(
   | NextResponse<ErrorResponse>
 > {
   const { type } = await params;
-  const body: presavedMediaItem = await req.json();
+  const body: PreSavedMediaItem = await req.json();
 
   switch (type) {
     case 'book':
@@ -54,14 +50,29 @@ export async function POST(
             type,
           );
         }
-        const book: postSavedMediaItem = await Book.create(body);
+
+        const [book] = await db
+          .insert(books)
+          .values({
+            title: (body as BookInsert).title,
+            author: (body as BookInsert).author,
+            pageCount: (body as BookInsert).pageCount ?? null,
+            pubYear: (body as BookInsert).pubYear ?? null,
+            spineColor: (body as BookInsert).spineColor,
+            imageUrls: (body as BookInsert).imageUrls,
+          })
+          .returning();
 
         return NextResponse.json<SuccessfulMediaSaveEditResponse>(
           {
             message: `${titleRearrange(
               body.title,
             )} successfully added to database.`,
-            actionAttemptItem: book,
+            actionAttemptItem: {
+              ...book,
+              genres: body.genres,
+              blockID: body.blockID,
+            },
             type,
           },
           { status: 201 },
@@ -73,14 +84,14 @@ export async function POST(
           if (error.code === '23505') {
             return new PGDatabaseError(body, type, error.detail!).format();
           }
-        } else {
-          return new ApiError(
-            400,
-            'Database Error',
-            'Database error during save attempt',
-          ).format();
         }
+        return new ApiError(
+          400,
+          'Database Error',
+          'Database error during save attempt',
+        ).format();
       }
+
     case 'movie':
       try {
         const validation = validate(body, otherMediaCreateSchema);
@@ -91,14 +102,25 @@ export async function POST(
             type,
           );
         }
-        const movie: postSavedMediaItem = await Movie.create(body);
+
+        const [movie] = await db
+          .insert(movies)
+          .values({
+            title: body.title,
+            spineColor: body.spineColor,
+            imageUrls: body.imageUrls,
+          })
+          .returning();
 
         return NextResponse.json<SuccessfulMediaSaveEditResponse>(
           {
             message: `${titleRearrange(
               body.title,
             )} successfully added to database.`,
-            actionAttemptItem: movie,
+            actionAttemptItem: {
+              ...movie,
+              blockID: body.blockID,
+            },
             type,
           },
           { status: 201 },
@@ -110,14 +132,14 @@ export async function POST(
           if (error.code === '23505') {
             return new PGDatabaseError(body, type, error.detail!).format();
           }
-        } else {
-          return new ApiError(
-            400,
-            'Database Error',
-            'Database error during save attempt',
-          ).format();
         }
+        return new ApiError(
+          400,
+          'Database Error',
+          'Database error during save attempt',
+        ).format();
       }
+
     case 'video_game':
       try {
         const validation = validate(body, otherMediaCreateSchema);
@@ -128,14 +150,25 @@ export async function POST(
             type,
           );
         }
-        const video_game: postSavedMediaItem = await Video_Game.create(body);
+
+        const [videoGame] = await db
+          .insert(videoGames)
+          .values({
+            title: body.title,
+            spineColor: body.spineColor,
+            imageUrls: body.imageUrls,
+          })
+          .returning();
 
         return NextResponse.json<SuccessfulMediaSaveEditResponse>(
           {
             message: `${titleRearrange(
               body.title,
             )} successfully added to database.`,
-            actionAttemptItem: video_game,
+            actionAttemptItem: {
+              ...videoGame,
+              blockID: body.blockID,
+            },
             type,
           },
           { status: 201 },
@@ -147,14 +180,14 @@ export async function POST(
           if (error.code === '23505') {
             return new PGDatabaseError(body, type, error.detail!).format();
           }
-        } else {
-          return new ApiError(
-            400,
-            'Database Error',
-            'Database error during save attempt',
-          ).format();
         }
+        return new ApiError(
+          400,
+          'Database Error',
+          'Database error during save attempt',
+        ).format();
       }
+
     case 'album':
       try {
         const validation = validate(body, otherMediaCreateSchema);
@@ -165,14 +198,25 @@ export async function POST(
             type,
           );
         }
-        const album: postSavedMediaItem = await Album.create(body);
+
+        const [album] = await db
+          .insert(albums)
+          .values({
+            title: body.title,
+            spineColor: body.spineColor,
+            imageUrls: body.imageUrls,
+          })
+          .returning();
 
         return NextResponse.json<SuccessfulMediaSaveEditResponse>(
           {
             message: `${titleRearrange(
               body.title,
             )} successfully added to database.`,
-            actionAttemptItem: album,
+            actionAttemptItem: {
+              ...album,
+              blockID: body.blockID,
+            },
             type,
           },
           { status: 201 },
@@ -184,16 +228,15 @@ export async function POST(
           if (error.code === '23505') {
             return new PGDatabaseError(body, type, error.detail!).format();
           }
-        } else {
-          return new ApiError(
-            400,
-            'Database Error',
-            'Database error during save attempt',
-          ).format();
         }
+        return new ApiError(
+          400,
+          'Database Error',
+          'Database error during save attempt',
+        ).format();
       }
+
     default:
-      // handle unsupported type
       return new ApiError(
         400,
         'Unsupported type',

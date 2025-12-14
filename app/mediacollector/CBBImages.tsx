@@ -22,7 +22,7 @@ export interface CBBImageProps {
   isDatabase: boolean;
   blockID: string;
   type: MediaType;
-  spine_color: string;
+  spineColor: string;
 }
 
 export default function CBBImages({
@@ -30,7 +30,7 @@ export default function CBBImages({
   isDatabase,
   blockID,
   type,
-  spine_color,
+  spineColor,
 }: CBBImageProps) {
   //setup connection to redux slice
   const dispatch = useAppDispatch();
@@ -61,7 +61,7 @@ export default function CBBImages({
           blockID,
         }),
       );
-      dispatch(addToPNGCollectionList({ url: src, type, spine_color }));
+      dispatch(addToPNGCollectionList({ url: src, type, spineColor }));
     } else {
       dispatch(removeFromDatabaseData({ blockID, type, idx }));
       dispatch(removeFromPNGCollectionList({ url: src }));

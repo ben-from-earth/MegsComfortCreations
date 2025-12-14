@@ -24,9 +24,9 @@ import { mediaTypeBlockClasses } from '@/app/mediacollector/CollectedCoversBlock
 
 // interfaces and types
 import {
-  blockInfo,
+  BlockInfo,
   MediaType,
-  postSavedMediaItem,
+  PostSavedMediaItem,
   SuccessfulMediaSaveEditResponse,
 } from '@/lib/interfaces/globalInterfaces';
 import {
@@ -35,18 +35,18 @@ import {
 } from '@/app/api/api-Errors';
 
 export interface MinimalTextAreaProps {
-  name: 'title' | 'author' | 'pub_year' | 'page_count';
+  name: 'title' | 'author' | 'pubYear' | 'pageCount';
   label: string;
   type: MediaType;
   value: string | number;
-  setDatabaseData: Dispatch<SetStateAction<postSavedMediaItem>>;
+  setDatabaseData: Dispatch<SetStateAction<PostSavedMediaItem>>;
 }
 
 export interface EditDatabaseBlockProps {
   info: {
     type: MediaType;
     images: string[];
-    blockInfo: Omit<blockInfo, 'databaseGenres'> & { initialGenres: string[] };
+    BlockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
     id: string;
     setEdit: Dispatch<SetStateAction<boolean>>;
   };
@@ -75,7 +75,7 @@ const MyTextArea = ({
         name={name}
         defaultValue={value}
         onChange={(e) => {
-          if (name === 'pub_year' || name === 'page_count') {
+          if (name === 'pubYear' || name === 'pageCount') {
             setDatabaseData((prev) => ({
               ...prev,
               [name]: Number(e.target.value),
@@ -94,30 +94,33 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   info: {
     type,
     images,
-    blockInfo: {
+    BlockInfo: {
       title,
       author,
-      pub_year,
-      page_count,
-      spine_color = '#ffffff',
+      pubYear,
+      pageCount,
+      spineColor = '#ffffff',
       initialGenres = [],
     },
     id,
     setEdit,
   },
 }: EditDatabaseBlockProps) {
-  const [databaseData, setDatabaseData] = useState<postSavedMediaItem>({
+  const initialValues = {
     id,
     title,
     author,
-    pub_year,
-    page_count,
-    spine_color,
-    image_urls: images,
-  });
+    pubYear,
+    pageCount,
+    spineColor,
+    imageUrls: images,
+  };
+
+  const [databaseData, setDatabaseData] =
+    useState<PostSavedMediaItem>(initialValues);
 
   const [databaseGenres, setDatabaseGenres] = useState([...initialGenres]);
-  const [color, setColor] = useState(spine_color);
+  const [color, setColor] = useState(spineColor);
 
   //establish variables for icons
   const icons = {
@@ -143,9 +146,9 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
-      const spine_color = sRGBHex;
-      setColor(spine_color);
-      setDatabaseData((prev) => ({ ...prev, spine_color: spine_color }));
+      const spineColor = sRGBHex;
+      setColor(spineColor);
+      setDatabaseData((prev) => ({ ...prev, spineColor: spineColor }));
     } catch (e) {
       console.log(e);
     }
@@ -262,17 +265,17 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
               setDatabaseData={setDatabaseData}
             />
             <MyTextArea
-              name="pub_year"
+              name="pubYear"
               label="Pub Year"
               type={type}
-              value={pub_year || ''}
+              value={pubYear || ''}
               setDatabaseData={setDatabaseData}
             />
             <MyTextArea
-              name="page_count"
+              name="pageCount"
               label="Page Count"
               type={type}
-              value={page_count || ''}
+              value={pageCount || ''}
               setDatabaseData={setDatabaseData}
             />
           </>

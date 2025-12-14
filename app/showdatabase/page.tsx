@@ -19,7 +19,7 @@ import { titleRearrange } from '@/lib/helpers/titleRearrange';
 // interfaces and types
 import {
   MediaType,
-  postSavedMediaItem,
+  PostSavedMediaItem,
   SuccessfulMediaSearchResponse,
   SuccessfulPaginationResponse,
 } from '@/lib/interfaces/globalInterfaces';
@@ -28,7 +28,7 @@ import { SortOptions } from '@/app/showdatabase/PaginationInputs';
 
 export interface displayDatabaseItems {
   type: MediaType;
-  items: postSavedMediaItem[];
+  items: PostSavedMediaItem[];
   total: number;
   min: number;
   max: number;

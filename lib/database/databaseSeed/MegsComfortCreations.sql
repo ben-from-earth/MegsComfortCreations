@@ -18,32 +18,32 @@ CREATE TABLE books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
     author TEXT NOT NULL,
-    page_count INTEGER,
-    pub_year INTEGER,
-    spine_color TEXT NOT NULL,
-    image_urls TEXT[] NOT NULL,
+    pageCount INTEGER,
+    pubYear INTEGER,
+    spineColor TEXT NOT NULL,
+    imageUrls TEXT[] NOT NULL,
     UNIQUE (title, author)
 );
 
 CREATE TABLE movies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL UNIQUE,
-    spine_color TEXT NOT NULL,
-    image_urls TEXT[]
+    spineColor TEXT NOT NULL,
+    imageUrls TEXT[]
 );
 
 CREATE TABLE video_games (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL UNIQUE,
-    spine_color TEXT NOT NULL,
-    image_urls TEXT[]
+    spineColor TEXT NOT NULL,
+    imageUrls TEXT[]
 );
 
 CREATE TABLE albums (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL UNIQUE,
-    spine_color TEXT NOT NULL,
-    image_urls TEXT[]
+    spineColor TEXT NOT NULL,
+    imageUrls TEXT[]
 );
 
 CREATE TABLE genres (

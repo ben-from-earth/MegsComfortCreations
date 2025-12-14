@@ -12,51 +12,75 @@ import { medias } from '@/lib/state/slices/collectorSlice';
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
 
 // interfaces and types
-import { databasePayload } from '@/app/mediacollector/CollectedCoversBlock';
+import { DatabasePayload } from '@/app/mediacollector/CollectedCoversBlock';
 import {
-  databaseSaveServerResponse,
-  MediaLabel,
+  AlbumInsert,
+  BookInsert,
+  DatabaseSaveServerResponse,
   MediaType,
-  presavedMediaItem,
+  MovieInsert,
+  PreSavedMediaItem,
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulMediaSaveEditResponse,
+  VideoGameInsert,
 } from '@/lib/interfaces/globalInterfaces';
 import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
 
-export interface databaseSliceData extends presavedMediaItem {
+type WithImages<T> = T & {
   images: { src: string; idx: number }[];
-}
-export interface databaseDataPerType {
-  type: MediaType;
-  label: MediaLabel;
-  data: databaseSliceData[];
-}
+};
+
+export type DatabaseSliceDataBook = WithImages<BookInsert>;
+export type DatabaseSliceDataMovie = WithImages<MovieInsert>;
+export type DatabaseSliceDataVideoGame = WithImages<VideoGameInsert>;
+export type DatabaseSliceDataAlbum = WithImages<AlbumInsert>;
+
+export type DatabaseDataPerType =
+  | {
+      type: 'book';
+      label: 'Book';
+      data: DatabaseSliceDataBook[];
+    }
+  | {
+      type: 'movie';
+      label: 'Movie';
+      data: DatabaseSliceDataMovie[];
+    }
+  | {
+      type: 'video_game';
+      label: 'Video Game';
+      data: DatabaseSliceDataVideoGame[];
+    }
+  | {
+      type: 'album';
+      label: 'Album';
+      data: DatabaseSliceDataAlbum[];
+    };
 
 //set up initial state
-const initialState: databaseDataPerType[] = medias.map(({ type, label }) => ({
-  type,
-  label,
-  data: [] as databaseSliceData[],
-}));
+const initialState: DatabaseDataPerType[] = medias.map((m) => ({
+  ...m,
+  data: [] as never[],
+})) as DatabaseDataPerType[];
 
 export const sendToDatabase = createAsyncThunk(
   '/databaseData/sendtodatabase',
   async (
-    databaseData: databaseDataPerType[],
-  ): Promise<databaseSaveServerResponse> => {
-    const serverResponses: databaseSaveServerResponse = [];
+    databaseData: DatabaseDataPerType[],
+  ): Promise<DatabaseSaveServerResponse> => {
+    const serverResponses: DatabaseSaveServerResponse = [];
     for (const media of databaseData) {
-      const sendData = media.data;
       if (media.type === 'book') {
-        const bookPromises = sendData.map(async (book: databaseSliceData) => {
+        const sendData = media.data;
+        const bookPromises = sendData.map(async (book) => {
           const title = titleRearrange(book.title);
-          const bookData: presavedMediaItem = {
+          const bookData = {
             title,
             author: book.author,
-            page_count: book.page_count,
-            pub_year: book.pub_year,
-            image_urls: book.images.map((item) => item.src),
-            spine_color: book.spine_color,
+            pageCount: book.pageCount,
+            pubYear: book.pubYear,
+            imageUrls: book.images.map((item) => item.src),
+            spineColor: book.spineColor,
           };
 
           try {
@@ -102,38 +126,37 @@ export const sendToDatabase = createAsyncThunk(
             .map((result) => result.value),
         );
       } else {
-        const otherMediaPromises = sendData.map(
-          async (otherMedia: databaseSliceData) => {
-            const title = titleRearrange(otherMedia.title);
-            const otherMediaData: presavedMediaItem = {
-              title,
-              image_urls: otherMedia.images.map((img) => img.src),
-              spine_color: otherMedia.spine_color,
-            };
+        const sendData = media.data;
+        const otherMediaPromises = sendData.map(async (otherMedia) => {
+          const title = titleRearrange(otherMedia.title);
+          const otherMediaData: PreSavedMediaItem = {
+            title,
+            imageUrls: otherMedia.images.map((img) => img.src),
+            spineColor: otherMedia.spineColor,
+          };
 
-            try {
-              const otherMediaSaveRes = await axios.post<
-                SuccessfulMediaSaveEditResponse | DatabaseSaveEditErrorResponse
-              >(`/api/database/save/${media.type}`, otherMediaData, {
-                validateStatus: (status) => status < 500,
-              });
-              const otherMediaCreationResponse = otherMediaSaveRes.data;
-              return otherMediaCreationResponse;
-            } catch {
-              const serverError: DatabaseSaveEditErrorResponse = {
-                actionAttemptItem: otherMediaData,
-                type: media.type,
-                errors: [
-                  'Server Error during save',
-                  `${otherMediaData.title} did not save to the database`,
-                ],
-                error: 'Server Error',
-                message: `There was a server error during save attempt for ${otherMediaData.title}`,
-              };
-              return serverError;
-            }
-          },
-        );
+          try {
+            const otherMediaSaveRes = await axios.post<
+              SuccessfulMediaSaveEditResponse | DatabaseSaveEditErrorResponse
+            >(`/api/database/save/${media.type}`, otherMediaData, {
+              validateStatus: (status) => status < 500,
+            });
+            const otherMediaCreationResponse = otherMediaSaveRes.data;
+            return otherMediaCreationResponse;
+          } catch {
+            const serverError: DatabaseSaveEditErrorResponse = {
+              actionAttemptItem: otherMediaData,
+              type: media.type,
+              errors: [
+                'Server Error during save',
+                `${otherMediaData.title} did not save to the database`,
+              ],
+              error: 'Server Error',
+              message: `There was a server error during save attempt for ${otherMediaData.title}`,
+            };
+            return serverError;
+          }
+        });
         const results = await Promise.allSettled(otherMediaPromises);
         serverResponses.push(
           ...results
@@ -153,26 +176,47 @@ export const databaseDataSlice = createSlice({
   reducers: {
     populateDatabaseData: (
       state,
-      action: PayloadAction<databasePayload>,
+      action: PayloadAction<DatabasePayload>,
     ): void => {
-      const { type, data } = action.payload;
-      const i: number = state.findIndex((m) => m.type === type);
+      const payload = action.payload;
+      const i = state.findIndex((m) => m.type === payload.type);
+      if (i === -1) return;
 
-      //check if the data already exists before pushing
-      let exists = false;
-      for (const item of state[i].data) {
-        if (
-          type === 'book' &&
-          item.title === data.title &&
-          item.author === data.author
-        ) {
-          exists = true;
-        } else if (type !== 'book' && item.title === data.title) {
-          exists = true;
+      const mediaState = state[i];
+
+      if (payload.type === 'book' && mediaState.type === 'book') {
+        const bookDataArray = mediaState.data;
+        const bookData = payload.data;
+
+        let exists = false;
+        for (const item of bookDataArray) {
+          // item: DatabaseSliceDataBook
+          if (
+            item.title === bookData.title &&
+            item.author === bookData.author
+          ) {
+            exists = true;
+            break;
+          }
         }
-      }
-      if (!exists) {
-        state[i].data.push({ ...data, images: [] });
+
+        if (!exists) {
+          mediaState.data.push({ ...bookData, images: [] });
+        }
+      } else if (payload.type !== 'book' && mediaState.type !== 'book') {
+        const otherData = payload.data;
+
+        let exists = false;
+        for (const item of mediaState.data) {
+          if (item.title === otherData.title) {
+            exists = true;
+            break;
+          }
+        }
+
+        if (!exists) {
+          mediaState.data.push({ ...otherData, images: [] });
+        }
       }
     },
     clearDatabaseData: () => initialState,
@@ -184,19 +228,54 @@ export const databaseDataSlice = createSlice({
       action: PayloadAction<{
         blockID: string;
         type: 'book' | 'movie' | 'video_game' | 'album';
-        name: 'title' | 'author' | 'pub_year' | 'page_count';
+        name: 'title' | 'author' | 'pubYear' | 'pageCount';
         newText: string;
       }>,
     ) => {
-      const { blockID, type, name, newText } = action.payload;
-      const i = state.findIndex((m) => m.type === type);
-      const j = state[i].data.findIndex((block) => block.blockID === blockID);
-      if (name === 'pub_year' || name === 'page_count') {
-        state[i].data[j][name] = Number(newText);
-      } else {
-        state[i].data[j][name] = newText;
+      const payload = action.payload;
+
+      // find which media bucket we're editing
+      const mediaIndex = state.findIndex((m) => m.type === payload.type);
+      if (mediaIndex === -1) return;
+
+      const mediaState = state[mediaIndex];
+
+      // find which block within that bucket
+      const blockIndex = mediaState.data.findIndex(
+        (block) => block.blockID === payload.blockID,
+      );
+      if (blockIndex === -1) return;
+
+      // ---- BOOK BRANCH --------------------------------------------------------
+      if (mediaState.type === 'book') {
+        // TS + Immer sometimes still won't narrow `mediaState.data[blockIndex]`,
+        // so we help it with a one-time cast that is logically safe because of the guard:
+        const block = mediaState.data[blockIndex] as DatabaseSliceDataBook;
+
+        if (payload.name === 'title') {
+          block.title = payload.newText;
+        } else if (payload.name === 'author') {
+          block.author = payload.newText;
+        } else if (payload.name === 'pubYear') {
+          block.pubYear = Number(payload.newText);
+        } else if (payload.name === 'pageCount') {
+          block.pageCount = Number(payload.newText);
+        }
+
+        return;
       }
+
+      // ---- NON-BOOK BRANCH ----------------------------------------------------
+      // Here mediaState.type is 'movie' | 'video_game' | 'album'
+      // These types only have `title`, so we only handle that safely.
+      const block = mediaState.data[blockIndex];
+
+      if (payload.name === 'title') {
+        block.title = payload.newText;
+      }
+      // ignore author / pubYear / pageCount for non-book types
     },
+
     //push image to state storage if user selects it
     addToDatabaseData: (
       state,
@@ -205,17 +284,16 @@ export const databaseDataSlice = createSlice({
         type: MediaType;
         idx?: number;
         src?: string;
-        spine_color?: string;
+        spineColor?: string;
         genreText?: string;
       }>,
     ) => {
-      const { blockID, type, idx, src, spine_color, genreText } =
-        action.payload;
+      const { blockID, type, idx, src, spineColor, genreText } = action.payload;
       const i = state.findIndex((m) => m.type === type);
       const j = state[i].data.findIndex((block) => block.blockID === blockID);
       const chosenBlock = state[i].data[j];
       if (src) chosenBlock.images.push({ src, idx: idx! });
-      if (spine_color) chosenBlock.spine_color = spine_color;
+      if (spineColor) chosenBlock.spineColor = spineColor;
       if (genreText) chosenBlock.genres!.push(genreText);
     },
 

@@ -6,14 +6,14 @@ import Button from '@/app/components/Button';
 
 //interfaces and types
 import {
-  databaseDataPerType,
+  DatabaseDataPerType,
   selectDatabaseData,
 } from '@/lib/state/slices/databaseDataSlice';
 
 interface ButtonGroupProps {
   onCollect: () => void;
   onPNG: () => Promise<void>;
-  onDatabase: (databaseDate: databaseDataPerType[]) => Promise<void>;
+  onDatabase: (databaseDate: DatabaseDataPerType[]) => Promise<void>;
 }
 
 export default function ButtonGroup({
@@ -22,7 +22,7 @@ export default function ButtonGroup({
   onDatabase,
 }: ButtonGroupProps) {
   // setup connection to redux slice and get the database information
-  const databaseData: databaseDataPerType[] = useSelector(selectDatabaseData);
+  const databaseData: DatabaseDataPerType[] = useSelector(selectDatabaseData);
 
   return (
     <div className="flex flex-row content-center gap-4">

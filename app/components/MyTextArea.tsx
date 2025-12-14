@@ -8,7 +8,7 @@ import { updateDatabaseData } from '@/lib/state/slices/databaseDataSlice';
 import { MediaType } from '@/lib/interfaces/globalInterfaces';
 
 export interface MyTextAreaProps {
-  name: 'title' | 'author' | 'pub_year' | 'page_count';
+  name: 'title' | 'author' | 'pubYear' | 'pageCount';
   label: string;
   type: MediaType;
   blockID: string;

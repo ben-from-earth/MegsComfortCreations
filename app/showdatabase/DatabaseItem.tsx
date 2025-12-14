@@ -19,17 +19,18 @@ import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
 
 // interfaces and types
 import { ErrorResponse } from '@/app/api/api-Errors';
-import { postSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
+import { PostSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
+import { isBookRow } from '@/lib/helpers/handleMediaTyping';
 
 export interface DatabaseItemProps {
-  info: postSavedMediaItem;
+  info: PostSavedMediaItem;
 }
 
-const DatabaseItem = memo(function DatabaseItem({
-  info: { id, title, author, page_count, pub_year, spine_color, image_urls },
-}: DatabaseItemProps) {
+const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   // get necessary information from context
   const { type, handleGetMedia } = useDatabasePageContext();
+
+  const { id, title, spineColor, imageUrls } = info;
 
   //set up local state
   const [areYouSure, setAreYouSure] = useState(false);
@@ -105,32 +106,46 @@ const DatabaseItem = memo(function DatabaseItem({
       )}
       {edit && (
         <EditDatabaseBlock
-          info={{
-            type,
-            images: image_urls,
-            blockInfo: {
-              title,
-              author,
-              pub_year,
-              page_count,
-              spine_color,
-              initialGenres: [...genres],
-            },
-            id,
-            setEdit,
-          }}
+          info={
+            isBookRow(type, info)
+              ? {
+                  type,
+                  images: imageUrls ?? [],
+                  BlockInfo: {
+                    title,
+                    author: info.author,
+                    pubYear: info.pubYear,
+                    pageCount: info.pageCount,
+                    spineColor,
+                    initialGenres: [...genres],
+                  },
+                  id,
+                  setEdit,
+                }
+              : {
+                  type,
+                  images: imageUrls ?? [],
+                  BlockInfo: {
+                    title,
+                    spineColor,
+                    initialGenres: [...genres],
+                  },
+                  id,
+                  setEdit,
+                }
+          }
         />
       )}
       {type !== 'album' ? (
         <div
           className={`h-36 w-6 rounded-sm`}
-          style={{ backgroundColor: spine_color }}
+          style={{ backgroundColor: spineColor }}
         ></div>
       ) : (
         <></>
       )}
 
-      {image_urls.map((src, idx) => (
+      {imageUrls?.map((src, idx) => (
         <img
           key={idx}
           className={
@@ -141,14 +156,14 @@ const DatabaseItem = memo(function DatabaseItem({
           src={src}
         ></img>
       ))}
-      {type === 'book' ? (
+      {type === 'book' && isBookRow(type, info) ? (
         <div className="flex flex-col">
           <p className="text-3xl">{titleRearrange(title)}</p>
-          <p className="text-2xl">{author}</p>
+          <p className="text-2xl">{info.author}</p>
           <hr className="my-1 border-t border-black" />
-          <p className="text-xl">Pages: {page_count}</p>
+          <p className="text-xl">Pages: {info.pageCount}</p>
 
-          <p className="text-xl">Publication Date: {pub_year}</p>
+          <p className="text-xl">Publication Date: {info.pubYear}</p>
           <p className="text-xl">Genres: {list.format(genres)}</p>
         </div>
       ) : (

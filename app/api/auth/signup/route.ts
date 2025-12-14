@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { email, password, first_name, last_name } = body;
+    const { email, password, firstName, lastName } = body;
 
     const validation = validate(body, userCreateSchema);
     if (!validation.valid) {
@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
     const user = await User.create({
       email,
       password: hashedpass,
-      first_name,
-      last_name,
+      firstName,
+      lastName,
     });
 
     if (!user?.id) {
