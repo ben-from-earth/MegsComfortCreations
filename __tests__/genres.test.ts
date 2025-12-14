@@ -28,19 +28,19 @@ describe('Connection to database succesful', () => {
 const bookData = {
   title: 'Genre Test Title',
   author: 'Book Author',
-  page_count: 100,
-  pub_year: 2025,
-  spine_color: '#ca2f24ff',
-  image_urls: ['http://testurl.com'],
+  pageCount: 100,
+  pubYear: 2025,
+  spineColor: '#ca2f24ff',
+  imageUrls: ['http://testurl.com'],
 };
 
 const noGenreBookData = {
   title: 'Genre Test Title 2',
   author: 'Book Author',
-  page_count: 100,
-  pub_year: 2025,
-  spine_color: '#ca2f24ff',
-  image_urls: ['http://testurl.com'],
+  pageCount: 100,
+  pubYear: 2025,
+  spineColor: '#ca2f24ff',
+  imageUrls: ['http://testurl.com'],
 };
 
 let bookID: string;
@@ -52,10 +52,10 @@ beforeAll(async () => {
     .values({
       title: bookData.title,
       author: bookData.author,
-      pageCount: bookData.page_count,
-      pubYear: bookData.pub_year,
-      spineColor: bookData.spine_color,
-      imageUrls: bookData.image_urls,
+      pageCount: bookData.pageCount,
+      pubYear: bookData.pubYear,
+      spineColor: bookData.spineColor,
+      imageUrls: bookData.imageUrls,
     })
     .returning();
 
@@ -67,10 +67,10 @@ beforeAll(async () => {
     .values({
       title: noGenreBookData.title,
       author: noGenreBookData.author,
-      pageCount: noGenreBookData.page_count,
-      pubYear: noGenreBookData.pub_year,
-      spineColor: noGenreBookData.spine_color,
-      imageUrls: noGenreBookData.image_urls,
+      pageCount: noGenreBookData.pageCount,
+      pubYear: noGenreBookData.pubYear,
+      spineColor: noGenreBookData.spineColor,
+      imageUrls: noGenreBookData.imageUrls,
     })
     .returning();
 });

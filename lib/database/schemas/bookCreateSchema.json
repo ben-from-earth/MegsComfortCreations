@@ -4,7 +4,7 @@
   "$id": "http://example.com/root.json",
   "type": "object",
   "title": "The Book Create Schema",
-  "required": ["title", "author", "spine_color", "image_urls"],
+  "required": ["title", "author", "spineColor", "imageUrls"],
   "properties": {
     "title": {
       "$id": "../properties/title",
@@ -24,22 +24,22 @@
       "examples": ["Frank Herbert"],
       "pattern": "^(.*)$"
     },
-    "page_count": {
-      "$id": "../properties/page_count",
+    "pageCount": {
+      "$id": "../properties/pageCount",
       "type": "number",
       "title": "The Page Count Schema",
       "default": 0,
       "examples": [450]
     },
-    "pub_year": {
-      "$id": "../properties/pub_year",
+    "pubYear": {
+      "$id": "../properties/pubYear",
       "type": "number",
       "title": "The Publication Year Schema",
       "default": 0,
       "examples": [1965]
     },
-    "spine_color": {
-      "$id": "../properties/spine_color",
+    "spineColor": {
+      "$id": "../properties/spineColor",
       "type": "string",
       "title": "The Spine Color Schema",
       "minLength": 1,
@@ -47,8 +47,8 @@
       "examples": ["#f25b26"],
       "pattern": "^(.*)$"
     },
-    "image_urls": {
-      "$id": "../properties/image_urls",
+    "imageUrls": {
+      "$id": "../properties/imageUrls",
       "type": "array",
       "title": "The Image URL Schema",
       "minItems": 1,

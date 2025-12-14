@@ -5,7 +5,7 @@ import { memo } from 'react';
 import CollectedCoversBlock from '@/app/mediacollector/CollectedCoversBlock';
 
 // necessary imports from collector state slice
-import { collectedBlockInformation } from '@/lib/state/slices/collectorSlice';
+import { CollectedBlockInformation } from '@/lib/state/slices/collectorSlice';
 
 // interfaces and types
 import { MediaType } from '@/lib/interfaces/globalInterfaces';
@@ -14,7 +14,7 @@ const TitleBlockContainer = memo(function TitleBlockContainer({
   blocks,
   handleDeleteBlock,
 }: {
-  blocks: collectedBlockInformation[];
+  blocks: CollectedBlockInformation[];
   handleDeleteBlock: (
     blockID: string,
     type: MediaType,

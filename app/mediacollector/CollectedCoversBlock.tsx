@@ -28,18 +28,22 @@ import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
 
 // interfaces and types
 import {
+  AlbumInsert,
+  BookInsert,
   MediaType,
-  PreSavedMediaItem,
+  MovieInsert,
+  VideoGameInsert,
 } from '@/lib/interfaces/globalInterfaces';
-import { collectedBlockInformation } from '@/lib/state/slices/collectorSlice';
+import { CollectedBlockInformation } from '@/lib/state/slices/collectorSlice';
 
-export interface databasePayload {
-  type: MediaType;
-  data: PreSavedMediaItem;
-}
+export type DatabasePayload =
+  | { type: 'book'; data: BookInsert }
+  | { type: 'movie'; data: MovieInsert }
+  | { type: 'video_game'; data: VideoGameInsert }
+  | { type: 'album'; data: AlbumInsert };
 
 export interface CollectedCoversBlockProps {
-  info: collectedBlockInformation;
+  info: CollectedBlockInformation;
   handleDeleteBlock: (
     blockID: string,
     type: MediaType,
@@ -73,14 +77,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const {
     type,
     images,
-    BlockInfo: {
-      title,
-      author,
-      pub_year,
-      page_count,
-      spine_color = '#ffffff',
-      databaseGenres = [],
-    },
+    BlockInfo: { title, spineColor = '#ffffff', databaseGenres = [] },
     blockID,
     isDatabase,
   } = info;
@@ -99,30 +96,57 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   };
 
   //set local state for spine color
-  const [color, setColor] = useState(spine_color);
+  const [color, setColor] = useState(spineColor);
 
   //get genres for checkbox population
   const genres = useContext(GenreContext);
 
   //extra information used for books only
-  const bookSpecificDatabasePayload = {
-    author,
-    pub_year,
-    page_count,
-    genres: [],
+  const baseData = {
+    title,
+    spineColor: color,
+    blockID,
+    imageUrls: [] as string[],
   };
 
-  //set up the data paylod for population off send to database state
-  const databasePayload: databasePayload = {
-    type,
-    data: {
-      title,
-      spineColor: color,
-      blockID,
-      imageUrls: [],
-      ...(type === 'book' ? bookSpecificDatabasePayload : {}),
-    },
-  };
+  let databasePayload: DatabasePayload;
+
+  if (type === 'book') {
+    const {
+      BlockInfo: { author, pubYear, pageCount },
+    } = info;
+    databasePayload = {
+      type: 'book',
+      data: {
+        ...baseData,
+        author: author ?? '',
+        pubYear: pubYear ?? null,
+        pageCount: pageCount ?? null,
+        genres: [],
+      },
+    };
+  } else if (type === 'movie') {
+    databasePayload = {
+      type: 'movie',
+      data: {
+        ...baseData,
+      },
+    };
+  } else if (type === 'video_game') {
+    databasePayload = {
+      type: 'video_game',
+      data: {
+        ...baseData,
+      },
+    };
+  } else {
+    databasePayload = {
+      type: 'album',
+      data: {
+        ...baseData,
+      },
+    };
+  }
 
   //on mount, populate the database data (in the state) with the block information if the information is not already from the database
   //If the block is populated from the database, add the image to the png collection list
@@ -130,7 +154,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     if (!isDatabase) {
       dispatch(populateDatabaseData(databasePayload));
     } else {
-      dispatch(addToPNGCollectionList({ type, spine_color, url: images[0] }));
+      dispatch(addToPNGCollectionList({ type, spineColor, url: images[0] }));
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,9 +170,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
-      const spine_color = sRGBHex;
-      setColor(spine_color);
-      dispatch(addToDatabaseData({ blockID, type, spine_color }));
+      const spineColor = sRGBHex;
+      setColor(spineColor);
+      dispatch(addToDatabaseData({ blockID, type, spineColor }));
     } catch (e) {
       console.log(e);
     }
@@ -191,7 +215,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         isDatabase={isDatabase}
         blockID={blockID}
         type={type}
-        spine_color={color}
+        spineColor={color}
       />
       {type !== 'album' ? (
         <div
@@ -217,21 +241,21 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
             label="Author"
             type={type}
             blockID={blockID}
-            value={author || ''}
+            value={info.BlockInfo.author || ''}
           />
           <MyTextArea
-            name="pub_year"
+            name="pubYear"
             label="Pub Year"
             type={type}
             blockID={blockID}
-            value={pub_year || ''}
+            value={info.BlockInfo.pubYear || ''}
           />
           <MyTextArea
-            name="page_count"
+            name="pageCount"
             label="Page Count"
             type={type}
             blockID={blockID}
-            value={page_count || ''}
+            value={info.BlockInfo.pageCount || ''}
           />
         </>
       ) : (

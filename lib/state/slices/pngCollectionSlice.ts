@@ -6,7 +6,7 @@ import { RootState } from '@/lib/state/store';
 export interface ImageData {
   url: string;
   type: 'book' | 'movie' | 'video_game' | 'album';
-  spine_color: string;
+  spineColor: string;
 }
 
 const initialState = {

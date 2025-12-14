@@ -8,8 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export interface OpenLibrarySuccess {
   title: string;
   author: string;
-  pub_year: number;
-  page_count: number;
+  pubYear: number;
+  pageCount: number;
 }
 
 export async function POST(req: NextRequest) {
@@ -36,15 +36,15 @@ export async function POST(req: NextRequest) {
       ).format();
     } else {
       const {
-        first_publish_year: pub_year,
-        number_of_pages_median: page_count,
+        first_publish_year: pubYear,
+        number_of_pages_median: pageCount,
       }: { first_publish_year: number; number_of_pages_median: number } = doc;
       return NextResponse.json<OpenLibrarySuccess>(
         {
           title,
           author,
-          pub_year,
-          page_count,
+          pubYear,
+          pageCount,
         },
         { status: 200 },
       );

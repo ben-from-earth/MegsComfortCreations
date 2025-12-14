@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       return handleErrors({ error: 'Email Incorrect', email });
     }
 
-    const auth = await bcrypt.compare(password, user.password_hash);
+    const auth = await bcrypt.compare(password, user.passwordHash);
 
     if (!auth) {
       return handleErrors({ error: 'Incorrect Password' });

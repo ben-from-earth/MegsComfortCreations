@@ -17,10 +17,10 @@ export const books = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     title: text('title').notNull(),
     author: text('author').notNull(),
-    pageCount: integer('page_count'),
-    pubYear: integer('pub_year'),
-    spineColor: text('spine_color').notNull(),
-    imageUrls: text('image_urls').array().notNull(),
+    pageCount: integer('pageCount'),
+    pubYear: integer('pubYear'),
+    spineColor: text('spineColor').notNull(),
+    imageUrls: text('imageUrls').array().notNull(),
   },
   (table) => ({
     titleAuthorUnique: uniqueIndex('books_title_author_unique').on(
@@ -34,24 +34,24 @@ export const books = pgTable(
 export const movies = pgTable('movies', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull().unique(),
-  spineColor: text('spine_color').notNull(),
-  imageUrls: text('image_urls').array(), // nullable in SQL
+  spineColor: text('spineColor').notNull(),
+  imageUrls: text('imageUrls').array().notNull(), // nullable in SQL
 });
 
 // ---------- video_games ----------
 export const videoGames = pgTable('video_games', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull().unique(),
-  spineColor: text('spine_color').notNull(),
-  imageUrls: text('image_urls').array(),
+  spineColor: text('spineColor').notNull(),
+  imageUrls: text('imageUrls').array().notNull(),
 });
 
 // ---------- albums ----------
 export const albums = pgTable('albums', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull().unique(),
-  spineColor: text('spine_color').notNull(),
-  imageUrls: text('image_urls').array(),
+  spineColor: text('spineColor').notNull(),
+  imageUrls: text('imageUrls').array().notNull(),
 });
 
 // ---------- genres ----------

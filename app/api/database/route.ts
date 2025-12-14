@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     type === 'book'
       ? sort === 'title'
         ? table.title
-        : sort === 'pub_year'
+        : sort === 'pubYear'
           ? (table as typeof books).pubYear
           : table.spineColor
       : sort === 'title'

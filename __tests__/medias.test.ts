@@ -49,31 +49,31 @@ const saveIDs: Record<string, string> = {
 const testBookReq = {
   title: 'Dune',
   author: 'Frank Herbert',
-  page_count: 584,
-  pub_year: 1965,
-  spine_color: '#f25b26',
-  image_urls: ['http://testurl.com'],
+  pageCount: 584,
+  pubYear: 1965,
+  spineColor: '#f25b26',
+  imageUrls: ['http://testurl.com'],
 };
 
 const testOtherMediaReq = {
   title: 'Media Title',
-  spine_color: '#f25b26',
-  image_urls: ['http://testurl.com'],
+  spineColor: '#f25b26',
+  imageUrls: ['http://testurl.com'],
 };
 
 const bookData: PreSavedMediaItem & { id?: string } = {
   title: 'Book Title',
   author: 'Book Author',
-  page_count: 100,
-  pub_year: 2025,
-  spine_color: '#ca2f24ff',
-  image_urls: ['http://testurl.com'],
+  pageCount: 100,
+  pubYear: 2025,
+  spineColor: '#ca2f24ff',
+  imageUrls: ['http://testurl.com'],
 };
 
 const otherData: PreSavedMediaItem & { id?: string } = {
   title: 'Other Title',
-  spine_color: '#ca2f24ff',
-  image_urls: ['http://testurl.com'],
+  spineColor: '#ca2f24ff',
+  imageUrls: ['http://testurl.com'],
 };
 
 beforeAll(async () => {
@@ -83,10 +83,10 @@ beforeAll(async () => {
     .values({
       title: bookData.title,
       author: bookData.author!,
-      pageCount: bookData.page_count!,
-      pubYear: bookData.pub_year!,
-      spineColor: bookData.spine_color!,
-      imageUrls: bookData.image_urls,
+      pageCount: bookData.pageCount!,
+      pubYear: bookData.pubYear!,
+      spineColor: bookData.spineColor!,
+      imageUrls: bookData.imageUrls,
     })
     .returning();
 
@@ -97,8 +97,8 @@ beforeAll(async () => {
     .insert(movies)
     .values({
       title: otherData.title,
-      spineColor: otherData.spine_color!,
-      imageUrls: otherData.image_urls,
+      spineColor: otherData.spineColor!,
+      imageUrls: otherData.imageUrls,
     })
     .returning();
 
@@ -109,8 +109,8 @@ beforeAll(async () => {
     .insert(videoGames)
     .values({
       title: otherData.title,
-      spineColor: otherData.spine_color!,
-      imageUrls: otherData.image_urls,
+      spineColor: otherData.spineColor!,
+      imageUrls: otherData.imageUrls,
     })
     .returning();
 
@@ -121,8 +121,8 @@ beforeAll(async () => {
     .insert(albums)
     .values({
       title: otherData.title,
-      spineColor: otherData.spine_color!,
-      imageUrls: otherData.image_urls,
+      spineColor: otherData.spineColor!,
+      imageUrls: otherData.imageUrls,
     })
     .returning();
 
@@ -167,9 +167,9 @@ describe('Test saving book to database', () => {
     const missingFieldsReq = {
       title: 'Dune',
       author: 5,
-      page_count: 584,
-      pub_year: 1965,
-      image_urls: [
+      pageCount: 584,
+      pubYear: 1965,
+      imageUrls: [
         'https://m.media-amazon.com/images/I/81Ua99CURsL._UF894,1000_QL80_.jpg',
       ],
     };
@@ -185,7 +185,7 @@ describe('Test saving book to database', () => {
     const errors = responseBody.errors;
     expect(message).toEqual('Schema violation(s) during save/edit request');
     expect(errors.length).toEqual(2);
-    expect(errors[0]).toEqual('Save/Edit request missing spine_color');
+    expect(errors[0]).toEqual('Save/Edit request missing spineColor');
     expect(errors[1]).toEqual('author is of wrong type');
 
     expect(res.status).toEqual(422);
@@ -195,10 +195,10 @@ describe('Test saving book to database', () => {
     const missingImagesReq = {
       title: 'Title',
       author: 'Author',
-      page_count: 100,
-      pub_year: 2025,
-      spine_color: 'HexColor',
-      image_urls: [],
+      pageCount: 100,
+      pubYear: 2025,
+      spineColor: 'HexColor',
+      imageUrls: [],
     };
     const req = new NextRequest(`${serverDomain}/database/save`, {
       method: 'POST',
@@ -211,7 +211,7 @@ describe('Test saving book to database', () => {
     const message = responseBody.message;
     const errors = responseBody.errors;
     expect(message).toEqual('Schema violation(s) during save/edit request');
-    expect(errors[0]).toEqual('Save/Edit request missing image_urls');
+    expect(errors[0]).toEqual('Save/Edit request missing imageUrls');
     expect(res.status).toEqual(422);
   });
 
@@ -252,7 +252,7 @@ for (const media of otherMedias) {
     test(`Missing required field and wrong type when attempting to save a ${media} to database`, async () => {
       const missingFieldsReq = {
         title: 1234,
-        spine_color: '#f25b26',
+        spineColor: '#f25b26',
       };
       const req = new NextRequest(`${serverDomain}/database/save`, {
         method: 'POST',
@@ -268,7 +268,7 @@ for (const media of otherMedias) {
       const errors = responseBody.errors;
       expect(message).toEqual('Schema violation(s) during save/edit request');
       expect(errors.length).toEqual(2);
-      expect(errors[0]).toEqual('Save/Edit request missing image_urls');
+      expect(errors[0]).toEqual('Save/Edit request missing imageUrls');
       expect(errors[1]).toEqual('title is of wrong type');
 
       expect(res.status).toEqual(422);
@@ -277,8 +277,8 @@ for (const media of otherMedias) {
     test(`Attempt database save of ${media} with empty image array`, async () => {
       const missingImagesReq = {
         title: 'Title',
-        image_urls: [],
-        spine_color: '#f25b26',
+        imageUrls: [],
+        spineColor: '#f25b26',
       };
       const req = new NextRequest(`${serverDomain}/database/save`, {
         method: 'POST',
@@ -293,7 +293,7 @@ for (const media of otherMedias) {
       const message = responseBody.message;
       const errors = responseBody.errors;
       expect(message).toEqual('Schema violation(s) during save/edit request');
-      expect(errors[0]).toEqual('Save/Edit request missing image_urls');
+      expect(errors[0]).toEqual('Save/Edit request missing imageUrls');
       expect(res.status).toEqual(422);
     });
   });

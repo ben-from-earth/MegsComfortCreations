@@ -22,7 +22,7 @@ import { ImageData } from '@/lib/state/slices/pngCollectionSlice';
   Input:
   {
     template: 3 | 5,
-    images: Array<{ url: string, spine_color: string, type: string }>
+    images: Array<{ url: string, spineColor: string, type: string }>
   }
 */
 
@@ -436,14 +436,14 @@ async function renderCell(
   template: Template,
   rowHeight: number,
 ): Promise<OverlayOptions[]> {
-  const { url, spine_color, type } = img || {};
+  const { url, spineColor, type } = img || {};
   const cfg = COMBOS[template][type ?? ''] ?? COMBOS[template].default;
 
   // Cell background (spine color fills full slot)
   const cellBg = await makeBlock(
     slot.w,
     slot.h,
-    (spine_color as string | RGBA) ?? { r: 255, g: 0, b: 0, alpha: 1 },
+    (spineColor as string | RGBA) ?? { r: 255, g: 0, b: 0, alpha: 1 },
   );
 
   if (cfg.mode === 'single') {

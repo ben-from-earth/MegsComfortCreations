@@ -21,14 +21,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "spine_color": {
-          "name": "spine_color",
+        "spineColor": {
+          "name": "spineColor",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "image_urls": {
-          "name": "image_urls",
+        "imageUrls": {
+          "name": "imageUrls",
           "type": "text[]",
           "primaryKey": false,
           "notNull": false
@@ -41,9 +41,7 @@
         "albums_title_unique": {
           "name": "albums_title_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "title"
-          ]
+          "columns": ["title"]
         }
       },
       "policies": {},
@@ -73,26 +71,26 @@
           "primaryKey": false,
           "notNull": true
         },
-        "page_count": {
-          "name": "page_count",
+        "pageCount": {
+          "name": "pageCount",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "pub_year": {
-          "name": "pub_year",
+        "pubYear": {
+          "name": "pubYear",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "spine_color": {
-          "name": "spine_color",
+        "spineColor": {
+          "name": "spineColor",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "image_urls": {
-          "name": "image_urls",
+        "imageUrls": {
+          "name": "imageUrls",
           "type": "text[]",
           "primaryKey": false,
           "notNull": true
@@ -153,9 +151,7 @@
         "genres_genre_unique": {
           "name": "genres_genre_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "genre"
-          ]
+          "columns": ["genre"]
         }
       },
       "policies": {},
@@ -192,12 +188,8 @@
           "name": "genres_books_book_id_books_id_fk",
           "tableFrom": "genres_books",
           "tableTo": "books",
-          "columnsFrom": [
-            "book_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["book_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -205,12 +197,8 @@
           "name": "genres_books_genre_id_genres_id_fk",
           "tableFrom": "genres_books",
           "tableTo": "genres",
-          "columnsFrom": [
-            "genre_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["genre_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -238,14 +226,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "spine_color": {
-          "name": "spine_color",
+        "spineColor": {
+          "name": "spineColor",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "image_urls": {
-          "name": "image_urls",
+        "imageUrls": {
+          "name": "imageUrls",
           "type": "text[]",
           "primaryKey": false,
           "notNull": false
@@ -258,9 +246,7 @@
         "movies_title_unique": {
           "name": "movies_title_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "title"
-          ]
+          "columns": ["title"]
         }
       },
       "policies": {},
@@ -310,9 +296,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -336,14 +320,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "spine_color": {
-          "name": "spine_color",
+        "spineColor": {
+          "name": "spineColor",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "image_urls": {
-          "name": "image_urls",
+        "imageUrls": {
+          "name": "imageUrls",
           "type": "text[]",
           "primaryKey": false,
           "notNull": false
@@ -356,9 +340,7 @@
         "video_games_title_unique": {
           "name": "video_games_title_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "title"
-          ]
+          "columns": ["title"]
         }
       },
       "policies": {},

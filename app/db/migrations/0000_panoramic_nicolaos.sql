@@ -1,8 +1,8 @@
 CREATE TABLE "albums" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
-	"spine_color" text NOT NULL,
-	"image_urls" text[],
+	"spineColor" text NOT NULL,
+	"imageUrls" text[],
 	CONSTRAINT "albums_title_unique" UNIQUE("title")
 );
 --> statement-breakpoint
@@ -10,10 +10,10 @@ CREATE TABLE "books" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
 	"author" text NOT NULL,
-	"page_count" integer,
-	"pub_year" integer,
-	"spine_color" text NOT NULL,
-	"image_urls" text[] NOT NULL
+	"pageCount" integer,
+	"pubYear" integer,
+	"spineColor" text NOT NULL,
+	"imageUrls" text[] NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "genres" (
@@ -31,8 +31,8 @@ CREATE TABLE "genres_books" (
 CREATE TABLE "movies" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
-	"spine_color" text NOT NULL,
-	"image_urls" text[],
+	"spineColor" text NOT NULL,
+	"imageUrls" text[],
 	CONSTRAINT "movies_title_unique" UNIQUE("title")
 );
 --> statement-breakpoint
@@ -48,8 +48,8 @@ CREATE TABLE "users" (
 CREATE TABLE "video_games" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
-	"spine_color" text NOT NULL,
-	"image_urls" text[],
+	"spineColor" text NOT NULL,
+	"imageUrls" text[],
 	CONSTRAINT "video_games_title_unique" UNIQUE("title")
 );
 --> statement-breakpoint

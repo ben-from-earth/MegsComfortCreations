@@ -54,12 +54,12 @@ const ProfilePage = () => {
     );
   }
 
-  const { first_name, last_name } = user;
+  const { firstName, lastName } = user;
 
   return (
     <div className='m-5 text-center font-["Just_Another_Hand"] tracking-wider'>
       <h1 className="mb-5 text-7xl">
-        Hello, {first_name} {last_name}!
+        Hello, {firstName} {lastName}!
       </h1>
       <h3 className="text-3xl">Favorite Book: [Book Title]</h3>
       <h3 className="text-3xl">

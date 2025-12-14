@@ -33,10 +33,9 @@ import {
   DatabaseSaveEditErrorResponse,
   ErrorResponse,
 } from '@/app/api/api-Errors';
-import { isBookRow } from '@/lib/helpers/handleMediaTyping';
 
 export interface MinimalTextAreaProps {
-  name: 'title' | 'author' | 'pub_year' | 'page_count';
+  name: 'title' | 'author' | 'pubYear' | 'pageCount';
   label: string;
   type: MediaType;
   value: string | number;
@@ -76,7 +75,7 @@ const MyTextArea = ({
         name={name}
         defaultValue={value}
         onChange={(e) => {
-          if (name === 'pub_year' || name === 'page_count') {
+          if (name === 'pubYear' || name === 'pageCount') {
             setDatabaseData((prev) => ({
               ...prev,
               [name]: Number(e.target.value),
@@ -107,15 +106,18 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     setEdit,
   },
 }: EditDatabaseBlockProps) {
-  const [databaseData, setDatabaseData] = useState<PostSavedMediaItem>({
+  const initialValues = {
     id,
     title,
     author,
-    pub_year,
-    page_count,
-    spine_color,
-    image_urls: images,
-  });
+    pubYear,
+    pageCount,
+    spineColor,
+    imageUrls: images,
+  };
+
+  const [databaseData, setDatabaseData] =
+    useState<PostSavedMediaItem>(initialValues);
 
   const [databaseGenres, setDatabaseGenres] = useState([...initialGenres]);
   const [color, setColor] = useState(spineColor);
@@ -144,9 +146,9 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
-      const spine_color = sRGBHex;
-      setColor(spine_color);
-      setDatabaseData((prev) => ({ ...prev, spine_color: spine_color }));
+      const spineColor = sRGBHex;
+      setColor(spineColor);
+      setDatabaseData((prev) => ({ ...prev, spineColor: spineColor }));
     } catch (e) {
       console.log(e);
     }
@@ -263,14 +265,14 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
               setDatabaseData={setDatabaseData}
             />
             <MyTextArea
-              name="pub_year"
+              name="pubYear"
               label="Pub Year"
               type={type}
               value={pubYear || ''}
               setDatabaseData={setDatabaseData}
             />
             <MyTextArea
-              name="page_count"
+              name="pageCount"
               label="Page Count"
               type={type}
               value={pageCount || ''}

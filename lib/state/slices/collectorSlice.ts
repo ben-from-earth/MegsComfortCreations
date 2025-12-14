@@ -17,8 +17,10 @@ import { updateQueryCount } from '@/lib/helpers/updateQueryCount';
 import { RootState } from '@/lib/state/store';
 import {
   BlockInfo,
+  BookRow,
   MediaLabel,
   MediaType,
+  MovieRow,
   SuccessfulMediaSearchResponse,
 } from '@/lib/interfaces/globalInterfaces';
 import { OpenLibraryError, SearchErrorResponse } from '@/app/api/api-Errors';
@@ -38,13 +40,36 @@ interface InitialState {
   isLoading: boolean;
 }
 
-export interface collectedBlockInformation {
-  type: MediaType;
-  images: string[];
-  BlockInfo: BlockInfo;
-  blockID: string;
-  isDatabase: boolean;
-}
+// shared fields for all media
+type BaseBlockInfo = {
+  title: string;
+  spineColor?: string;
+  databaseGenres?: string[]; // only really used for books, but harmless here
+};
+
+// extra fields only for books
+type BookBlockInfo = BaseBlockInfo & {
+  author?: string;
+  pubYear?: number | null;
+  pageCount?: number | null;
+};
+
+// discriminated union for the whole block
+export type CollectedBlockInformation =
+  | {
+      type: 'book';
+      images: string[];
+      BlockInfo: BookBlockInfo;
+      blockID: string;
+      isDatabase: boolean;
+    }
+  | {
+      type: 'movie' | 'video_game' | 'album';
+      images: string[];
+      BlockInfo: BaseBlockInfo;
+      blockID: string;
+      isDatabase: boolean;
+    };
 
 //set up media types and respective labels
 export const medias: {
@@ -93,17 +118,11 @@ export const collectBlockInformation = createAsyncThunk(
     //if we return a book from the database, return the information.
     if ('foundMediaList' in mediaSearchData) {
       //--- still need to write logic for more than one return ---//
-      const {
-        id,
-        image_urls,
-        title,
-        author,
-        page_count,
-        pub_year,
-        spine_color,
-      } = mediaSearchData.foundMediaList[0]; //still checking only first index here
+      //still checking only first index here
 
       if (type === 'book') {
+        const { id, imageUrls, title, author, pageCount, pubYear, spineColor } =
+          mediaSearchData.foundMediaList[0] as BookRow;
         //get genres tied to the found book id
         const genreSearchRes = await axios.get(
           `/api/genres/getforbook?bookID=${id}`,
@@ -115,13 +134,13 @@ export const collectBlockInformation = createAsyncThunk(
         //return all the block info and designate isDatabase to be true for books
         return {
           type,
-          images: image_urls,
+          images: imageUrls,
           BlockInfo: {
             title,
             author,
-            pub_year,
-            page_count,
-            spine_color,
+            pubYear,
+            pageCount,
+            spineColor,
             databaseGenres,
           },
           blockID: nanoid(),
@@ -129,13 +148,16 @@ export const collectBlockInformation = createAsyncThunk(
         };
       }
 
+      const { imageUrls, title, spineColor } = mediaSearchData
+        .foundMediaList[0] as MovieRow;
+
       //return all the block info and designate isDatabase to be true for other media
       return {
         type,
-        images: image_urls,
+        images: imageUrls,
         BlockInfo: {
           title,
-          spine_color,
+          spineColor,
         },
         blockID: nanoid(),
         isDatabase: true,
@@ -169,14 +191,14 @@ export const collectBlockInformation = createAsyncThunk(
       } else {
         BlockInfo = bookInformation;
       }
-      // BlockInfo: { title, author, pub_year, page_count } || {title, author}
+      // BlockInfo: { title, author, pubYear, pageCount } || {title, author}
     } else {
       //Just submit title as BlockInfo for non-books
       //Updates to data collection for other media types can be performed here if necessary in future update.
       BlockInfo = { title };
     }
 
-    const collectedBlockInformation: collectedBlockInformation = {
+    const CollectedBlockInformation: CollectedBlockInformation = {
       type,
       images: imgArr,
       BlockInfo,
@@ -185,7 +207,7 @@ export const collectBlockInformation = createAsyncThunk(
     };
 
     //return the collected data for creation of collectedCoverBlock
-    return collectedBlockInformation;
+    return CollectedBlockInformation;
   },
 );
 

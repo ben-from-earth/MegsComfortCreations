@@ -22,7 +22,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     //req body: {template, images: [array of image blocks]}
-    //image blocks: {url: "url.com", spine_color: "#ffffffff", type}
+    //image blocks: {url: "url.com", spineColor: "#ffffffff", type}
     const { template, images }: { template: Template; images: ImageData[] } =
       await req.json();
     const { mime, filename, buffer } = await outputAuto({

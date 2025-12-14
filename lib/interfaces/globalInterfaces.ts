@@ -75,8 +75,8 @@ export interface SuccessfulGenreLinkUnlinkResponse {
 export interface BlockInfo {
   title: string;
   author?: string;
-  pubYear?: number;
-  pageCount?: number;
+  pubYear?: number | null;
+  pageCount?: number | null;
   spineColor?: string;
   databaseGenres?: string[];
 }

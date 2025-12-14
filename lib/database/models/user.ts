@@ -1,56 +1,74 @@
-import db from '../db';
+import { users } from '@/app/db/schema';
+import { db } from '@/app/db/client';
+import { eq } from 'drizzle-orm';
 
 export class User {
   static async create({
     email,
     password,
-    first_name,
-    last_name,
+    firstName,
+    lastName,
   }: {
     email: string;
     password: string;
-    first_name: string;
-    last_name: string;
-  }) {
-    const result = await db.query(
-      `INSERT INTO users (
-            email,
-            password_hash,
-            first_name,
-            last_name
-      ) VALUES ($1, $2, $3, $4) 
-      RETURNING 
-            id,
-            email,
-            first_name,
-            last_name`,
-      [email, password, first_name, last_name],
-    );
-    return result.rows[0];
+    firstName: string;
+    lastName: string;
+  }): Promise<UserType> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash: password,
+        firstName,
+        lastName,
+      })
+      .returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      });
+
+    return user;
   }
 
-  static async login(email: string) {
-    const result = await db.query(
-      `SELECT * FROM users
-      WHERE email = $1`,
-      [email],
-    );
-    return result.rows[0];
+  static async login(email: string): Promise<UserLoginRow | undefined> {
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        passwordHash: users.passwordHash,
+      })
+      .from(users)
+      .where(eq(users.email, email));
+
+    return user;
   }
 
-  static async findOne(id: string) {
-    const result = await db.query(
-      `SELECT first_name, last_name, email FROM users
-      WHERE id = $1`,
-      [id],
-    );
-    return result.rows[0];
+  static async findOne(id: string): Promise<UserType | undefined> {
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(users)
+      .where(eq(users.id, id));
+
+    return user;
   }
 }
 
 export type UserType = {
   id: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
+};
+
+export type UserLoginRow = UserType & {
+  passwordHash: string;
 };

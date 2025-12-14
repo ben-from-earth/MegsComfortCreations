@@ -30,31 +30,31 @@ const databaseSave = {
               value: {
                 title: 'Book title',
                 author: 'Book author',
-                page_count: 100,
-                pub_year: 2025,
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                pageCount: 100,
+                pubYear: 2025,
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
             movie: {
               value: {
                 title: 'Movie title',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
             video_game: {
               value: {
                 title: 'Video Game title',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
             album: {
               value: {
                 title: 'Album title',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
           },
@@ -79,10 +79,10 @@ const databaseSave = {
                     id: { type: 'string' },
                     title: { type: 'string' },
                     author: { type: 'string' },
-                    page_count: { type: 'integer' },
-                    pub_year: { type: 'integer' },
-                    spine_color: { type: 'string' },
-                    image_urls: {
+                    pageCount: { type: 'integer' },
+                    pubYear: { type: 'integer' },
+                    spineColor: { type: 'string' },
+                    imageUrls: {
                       type: 'array',
                       items: {
                         type: 'string',
@@ -105,10 +105,10 @@ const databaseSave = {
                     id: 'uuid string',
                     title: 'Book title',
                     author: 'Book author',
-                    page_count: 100,
-                    pub_year: 2025,
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    pageCount: 100,
+                    pubYear: 2025,
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'book',
                 },
@@ -119,8 +119,8 @@ const databaseSave = {
                   actionAttemptItem: {
                     id: 'uuid string',
                     title: 'Movie title',
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'movie',
                 },
@@ -132,8 +132,8 @@ const databaseSave = {
                   actionAttemptItem: {
                     id: 'uuid string',
                     title: 'Video Game title',
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'video_game',
                 },
@@ -144,8 +144,8 @@ const databaseSave = {
                   actionAttemptItem: {
                     id: 'uuid string',
                     title: 'Album title',
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'album',
                 },
@@ -177,10 +177,10 @@ const databaseSave = {
                   properties: {
                     title: { type: 'string' },
                     author: { type: 'string' },
-                    page_count: { type: 'integer' },
-                    pub_year: { type: 'integer' },
-                    spine_color: { type: 'string' },
-                    image_urls: {
+                    pageCount: { type: 'integer' },
+                    pubYear: { type: 'integer' },
+                    spineColor: { type: 'string' },
+                    imageUrls: {
                       type: 'array',
                       items: {
                         type: 'string',
@@ -199,13 +199,13 @@ const databaseSave = {
               error: 'Schema Violation Error',
               message: 'Schema violation(s) during save/edit request',
               errors: [
-                'Save/edit attempt missing spine_color',
-                'Save/edit attempt missing image_urls',
+                'Save/edit attempt missing spineColor',
+                'Save/edit attempt missing imageUrls',
               ],
               actionAttemptItem: {
                 title: 'Album title',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
               type: 'album',
             },
@@ -237,10 +237,10 @@ const databaseSave = {
                   properties: {
                     title: { type: 'string' },
                     author: { type: 'string' },
-                    page_count: { type: 'integer' },
-                    pub_year: { type: 'integer' },
-                    spine_color: { type: 'string' },
-                    image_urls: {
+                    pageCount: { type: 'integer' },
+                    pubYear: { type: 'integer' },
+                    spineColor: { type: 'string' },
+                    imageUrls: {
                       type: 'array',
                       items: {
                         type: 'string',
@@ -262,8 +262,8 @@ const databaseSave = {
               errors: ['key (title) = [title] already exits'],
               actionAttemptItem: {
                 title: 'Album title',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
               type: 'album',
             },

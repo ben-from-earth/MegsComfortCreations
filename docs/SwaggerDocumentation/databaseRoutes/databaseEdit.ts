@@ -31,31 +31,31 @@ const databaseEdit = {
               value: {
                 title: 'Book title edit',
                 author: 'Book author',
-                page_count: 100,
-                pub_year: 2025,
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                pageCount: 100,
+                pubYear: 2025,
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
             movie: {
               value: {
                 title: 'Movie title edit',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
             video_game: {
               value: {
                 title: 'Video Game title edit',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
             album: {
               value: {
                 title: 'Album title edit',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
             },
           },
@@ -80,10 +80,10 @@ const databaseEdit = {
                     id: { type: 'string' },
                     title: { type: 'string' },
                     author: { type: 'string' },
-                    page_count: { type: 'integer' },
-                    pub_year: { type: 'integer' },
-                    spine_color: { type: 'string' },
-                    image_urls: {
+                    pageCount: { type: 'integer' },
+                    pubYear: { type: 'integer' },
+                    spineColor: { type: 'string' },
+                    imageUrls: {
                       type: 'array',
                       items: {
                         type: 'string',
@@ -106,10 +106,10 @@ const databaseEdit = {
                     id: 'uuid string',
                     title: 'Book title edit',
                     author: 'Book author',
-                    page_count: 100,
-                    pub_year: 2025,
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    pageCount: 100,
+                    pubYear: 2025,
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'book',
                 },
@@ -120,8 +120,8 @@ const databaseEdit = {
                   actionAttemptItem: {
                     id: 'uuid string',
                     title: 'Movie title edit',
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'movie',
                 },
@@ -132,8 +132,8 @@ const databaseEdit = {
                   actionAttemptItem: {
                     id: 'uuid string',
                     title: 'Video Game title edit',
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'video_game',
                 },
@@ -144,8 +144,8 @@ const databaseEdit = {
                   actionAttemptItem: {
                     id: 'uuid string',
                     title: 'Album title edited',
-                    spine_color: '#hexcode',
-                    image_urls: ['123url.com'],
+                    spineColor: '#hexcode',
+                    imageUrls: ['123url.com'],
                   },
                   type: 'album',
                 },
@@ -177,10 +177,10 @@ const databaseEdit = {
                   properties: {
                     title: { type: 'string' },
                     author: { type: 'string' },
-                    page_count: { type: 'integer' },
-                    pub_year: { type: 'integer' },
-                    spine_color: { type: 'string' },
-                    image_urls: {
+                    pageCount: { type: 'integer' },
+                    pubYear: { type: 'integer' },
+                    spineColor: { type: 'string' },
+                    imageUrls: {
                       type: 'array',
                       items: {
                         type: 'string',
@@ -199,13 +199,13 @@ const databaseEdit = {
               error: 'Schema Violation Error',
               message: 'Schema violation(s) during save/edit request',
               errors: [
-                'Save/edit attempt missing spine_color',
-                'Save/edit attempt missing image_urls',
+                'Save/edit attempt missing spineColor',
+                'Save/edit attempt missing imageUrls',
               ],
               actionAttemptItem: {
                 title: 'Album title',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
               type: 'album',
             },
@@ -229,10 +229,10 @@ const databaseEdit = {
                   properties: {
                     title: { type: 'string' },
                     author: { type: 'string' },
-                    page_count: { type: 'integer' },
-                    pub_year: { type: 'integer' },
-                    spine_color: { type: 'string' },
-                    image_urls: {
+                    pageCount: { type: 'integer' },
+                    pubYear: { type: 'integer' },
+                    spineColor: { type: 'string' },
+                    imageUrls: {
                       type: 'array',
                       items: {
                         type: 'string',
@@ -259,8 +259,8 @@ const databaseEdit = {
                 'Edit requested on an item that does not exist in the database',
               actionAttemptItem: {
                 title: 'Album title edit',
-                spine_color: '#hexcode',
-                image_urls: ['123url.com'],
+                spineColor: '#hexcode',
+                imageUrls: ['123url.com'],
               },
               type: 'album',
               errors: ['[title] does not exist in the database'],

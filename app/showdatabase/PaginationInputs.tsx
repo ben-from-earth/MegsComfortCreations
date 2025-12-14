@@ -20,7 +20,7 @@ import {
 
 import { MediaType } from '@/lib/interfaces/globalInterfaces';
 
-export type SortOptions = 'title' | 'author' | 'page_count' | 'pub_year';
+export type SortOptions = 'title' | 'author' | 'pageCount' | 'pubYear';
 export type SortOptionsLabels = 'Title' | 'Author' | 'Page Count' | 'Pub. Year';
 
 export default function PaginationInputs() {
@@ -45,8 +45,8 @@ export default function PaginationInputs() {
     sortOptions = [
       { label: 'Title', value: 'title' },
       { label: 'Author', value: 'author' },
-      { label: 'Page Count', value: 'page_count' },
-      { label: 'Pub. Year', value: 'pub_year' },
+      { label: 'Page Count', value: 'pageCount' },
+      { label: 'Pub. Year', value: 'pubYear' },
     ];
   } else {
     sortOptions = [{ label: 'Title', value: 'title' }];
