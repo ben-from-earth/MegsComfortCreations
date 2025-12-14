@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { Formik, Form, useField } from 'formik';
 import * as Yup from 'yup';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
+import { signIn } from '@/lib/auth-client';
 
 // ---- Formik input component ----
 
@@ -100,34 +99,20 @@ const ItemForm: React.FC<{
 
 const LoginPage: React.FC = () => {
   const [loginError, setLoginError] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (values: LoginValues) => {
     setLoginError(false);
 
-    const res = await axios.post(
-      // If using Next API routes:
-      `/api/auth/login`,
-      // If using external server, use `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}/auth/login`
-      {
-        email: values.email,
-        password: values.password,
-      },
-      {
-        validateStatus: (status) => status < 500,
-        withCredentials: true,
-      },
-    );
+    const { error } = await signIn.email({
+      email: values.email,
+      password: values.password,
+      callbackURL: '/profile',
+    });
 
-    const response = res.data;
-
-    if (response.error || !response.user) {
+    if (error) {
       setLoginError(true);
       return;
     }
-
-    console.log('LOGIN success, navigating to /profile now');
-    router.replace('/profile');
   };
 
   return (
