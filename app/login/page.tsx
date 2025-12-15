@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { Formik, Form, useField } from 'formik';
 import * as Yup from 'yup';
-import { signIn } from '@/lib/auth-client';
+import { authClient } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
 
 // ---- Formik input component ----
 
@@ -98,12 +99,14 @@ const ItemForm: React.FC<{
 };
 
 const LoginPage: React.FC = () => {
+  const router = useRouter();
   const [loginError, setLoginError] = useState(false);
 
   const handleSubmit = async (values: LoginValues) => {
     setLoginError(false);
+    console.log(values);
 
-    const { error } = await signIn.email({
+    const { error } = await authClient.signIn.email({
       email: values.email,
       password: values.password,
       callbackURL: '/profile',
@@ -113,6 +116,9 @@ const LoginPage: React.FC = () => {
       setLoginError(true);
       return;
     }
+
+    router.replace('/profile');
+    router.refresh();
   };
 
   return (

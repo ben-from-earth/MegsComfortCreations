@@ -7,7 +7,13 @@ import ProfileButton from '@/app/components/ProfileButton';
 // public image imports
 import Logo from '@/public/Comfort.png';
 
-export default function NavBar() {
+// auth
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+
+export default async function NavBar() {
+  const session = await auth.api.getSession({ headers: await headers() });
+
   return (
     <nav className="bg-lightpink border-b-darkpink relative z-10 flex h-20 items-center gap-4 border-b-5 p-1.25">
       <Link href={'/'}>
@@ -26,12 +32,16 @@ export default function NavBar() {
         <Link href={'/'}>
           <Button label="Home" width={180} fontSize={36} />
         </Link>
-        <Link href={'/mediacollector'}>
-          <Button label="Media Collector" width={180} fontSize={36} />
-        </Link>
-        <Link href={'/showdatabase'}>
-          <Button label="Show Database" width={180} fontSize={36} />
-        </Link>
+        {session?.user.role === 'admin' && (
+          <Link href={'/mediacollector'}>
+            <Button label="Media Collector" width={180} fontSize={36} />
+          </Link>
+        )}
+        {session?.user.role === 'admin' && (
+          <Link href={'/showdatabase'}>
+            <Button label="Show Database" width={180} fontSize={36} />
+          </Link>
+        )}
         <ProfileButton />
       </div>
     </nav>

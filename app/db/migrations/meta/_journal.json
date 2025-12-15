@@ -8,6 +8,13 @@
       "when": 1765728588825,
       "tag": "0000_happy_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765763093336,
+      "tag": "0001_even_black_bolt",
+      "breakpoints": true
     }
   ]
 }
