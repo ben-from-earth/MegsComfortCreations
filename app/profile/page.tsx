@@ -1,13 +1,13 @@
-import { Suspense } from 'react';
-import ProfileData from './ProfileData';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import ProfileClient from './ProfileClient';
 
 export default async function ProfilePage() {
-  return (
-    <div>
-      <p>Profile Page</p>
-      <Suspense fallback={<div>Loading profile data...</div>}>
-        <ProfileData />
-      </Suspense>
-    </div>
-  );
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session) redirect('/login');
+
+  // session.user contains your user info
+  return <ProfileClient user={session.user} />;
 }

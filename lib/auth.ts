@@ -1,8 +1,21 @@
 import { betterAuth } from 'better-auth';
-import { Pool } from 'pg';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { db } from '@/app/db/client';
+import * as schema from '@/app/db/schema';
+import { admin } from 'better-auth/plugins';
 
 export const auth = betterAuth({
-  database: new Pool({
-    // connection options
+  trustedOrigins: [
+    'http://localhost:3000',
+    'https://megs-comfort-creations.vercel.app/',
+  ],
+  database: drizzleAdapter(db, {
+    provider: 'pg',
+    schema,
   }),
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: true,
+  },
+  plugins: [admin()],
 });
