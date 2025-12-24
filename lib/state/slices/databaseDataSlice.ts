@@ -25,6 +25,7 @@ import {
   VideoGameInsert,
 } from '@/lib/interfaces/globalInterfaces';
 import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
+import { trpcClient } from '@/lib/trpc/vanillaClient';
 
 type WithImages<T> = T & {
   images: { src: string; idx: number }[];
@@ -84,12 +85,15 @@ export const sendToDatabase = createAsyncThunk(
           };
 
           try {
-            const bookSaveRes = await axios.post<
-              SuccessfulMediaSaveEditResponse | DatabaseSaveEditErrorResponse
-            >('api/database/save/book', bookData, {
-              validateStatus: (status) => status < 500,
-            });
-            const bookCreationResponse = bookSaveRes.data;
+            const bookCreationResponse = (await trpcClient.database.save.mutate(
+              {
+                type: 'book',
+                mediaData: bookData,
+              },
+            )) as
+              | SuccessfulMediaSaveEditResponse
+              | DatabaseSaveEditErrorResponse;
+
             if ('error' in bookCreationResponse) {
               return bookCreationResponse;
             } else {
@@ -135,12 +139,11 @@ export const sendToDatabase = createAsyncThunk(
           };
 
           try {
-            const otherMediaSaveRes = await axios.post<
-              SuccessfulMediaSaveEditResponse | DatabaseSaveEditErrorResponse
-            >(`/api/database/save/${media.type}`, otherMediaData, {
-              validateStatus: (status) => status < 500,
-            });
-            const otherMediaCreationResponse = otherMediaSaveRes.data;
+            const otherMediaCreationResponse =
+              await trpcClient.database.save.mutate({
+                type: media.type,
+                mediaData: otherMediaData,
+              });
             return otherMediaCreationResponse;
           } catch {
             const serverError: DatabaseSaveEditErrorResponse = {

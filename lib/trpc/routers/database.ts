@@ -20,7 +20,6 @@ import type {
 import { validate } from 'jsonschema';
 import bookCreateSchema from '@/lib/database/schemas/bookCreateSchema.json';
 import otherMediaCreateSchema from '@/lib/database/schemas/otherMediaCreateSchema.json';
-// removed unused DatabaseError import
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
 
 const mediaType = z.enum(['book', 'movie', 'video_game', 'album']);
@@ -36,6 +35,7 @@ export const databaseRouter = router({
   searchByTitle: publicProcedure
     .input(z.object({ type: mediaType, title: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
+      console.log('Database searchByTitle called with input:', input);
       const db = ctx.db ?? defaultDb;
       const { type, title } = input;
       const table = tableMap[type];
@@ -51,6 +51,7 @@ export const databaseRouter = router({
         return {
           error: 'Media Not Found',
           message: `No ${type} in database with title ${rearrangedTitle}`,
+          failedSearchData: [],
         };
       }
 
@@ -145,52 +146,52 @@ export const databaseRouter = router({
     }),
 
   save: publicProcedure
-    .input(z.object({ type: mediaType, item: z.unknown() }))
+    .input(z.object({ type: mediaType, mediaData: z.unknown() }))
     .mutation(async ({ input, ctx }) => {
-      const { type, item } = input;
+      const { type, mediaData } = input;
       const db = ctx.db ?? defaultDb;
 
       if (type === 'book') {
-        const validation = validate(item, bookCreateSchema);
+        const validation = validate(mediaData, bookCreateSchema);
         if (!validation.valid) {
           return {
             error: 'Schema Violation',
             message: 'Schema violation(s) during save request',
             errors: validation.errors.map((e) => e.stack),
-            actionAttemptItem: item as BookInsert,
+            actionAttemptItem: mediaData as BookInsert,
             type,
           };
         }
         const [book] = await db
           .insert(books)
           .values({
-            title: (item as BookInsert).title,
-            author: (item as BookInsert).author,
-            pageCount: (item as BookInsert).pageCount ?? null,
-            pubYear: (item as BookInsert).pubYear ?? null,
-            spineColor: (item as BookInsert).spineColor,
-            imageUrls: (item as BookInsert).imageUrls,
+            title: (mediaData as BookInsert).title,
+            author: (mediaData as BookInsert).author,
+            pageCount: (mediaData as BookInsert).pageCount ?? null,
+            pubYear: (mediaData as BookInsert).pubYear ?? null,
+            spineColor: (mediaData as BookInsert).spineColor,
+            imageUrls: (mediaData as BookInsert).imageUrls,
           })
           .returning();
         const res: SuccessfulMediaSaveEditResponse = {
-          message: `${titleRearrange((item as BookInsert).title)} successfully added to database.`,
+          message: `${titleRearrange((mediaData as BookInsert).title)} successfully added to database.`,
           actionAttemptItem: {
             ...book,
-            genres: (item as BookInsert).genres,
-            blockID: (item as BookInsert).blockID,
+            genres: (mediaData as BookInsert).genres,
+            blockID: (mediaData as BookInsert).blockID,
           },
           type,
         };
         return res;
       }
 
-      const validation = validate(item, otherMediaCreateSchema);
+      const validation = validate(mediaData, otherMediaCreateSchema);
       if (!validation.valid) {
         return {
           error: 'Schema Violation',
           message: 'Schema violation(s) during save request',
           errors: validation.errors.map((e) => e.stack),
-          actionAttemptItem: item as PostSavedMediaItem,
+          actionAttemptItem: mediaData as PostSavedMediaItem,
           type,
         };
       }
@@ -198,7 +199,7 @@ export const databaseRouter = router({
       // Non-book saves: validate and insert with precise types per media
       switch (type) {
         case 'movie': {
-          const data = item as MovieInsert;
+          const data = mediaData as MovieInsert;
           const [row] = await db
             .insert(movies)
             .values({
@@ -214,7 +215,7 @@ export const databaseRouter = router({
           } satisfies SuccessfulMediaSaveEditResponse;
         }
         case 'video_game': {
-          const data = item as VideoGameInsert;
+          const data = mediaData as VideoGameInsert;
           const [row] = await db
             .insert(videoGames)
             .values({
@@ -230,7 +231,7 @@ export const databaseRouter = router({
           } satisfies SuccessfulMediaSaveEditResponse;
         }
         case 'album': {
-          const data = item as AlbumInsert;
+          const data = mediaData as AlbumInsert;
           const [row] = await db
             .insert(albums)
             .values({

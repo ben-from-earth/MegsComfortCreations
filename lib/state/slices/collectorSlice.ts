@@ -8,6 +8,7 @@ import {
 
 // library imports
 import axios from 'axios';
+import { trpcClient } from '@/lib/trpc/vanillaClient';
 
 // helpers
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
@@ -24,7 +25,7 @@ import {
   SuccessfulMediaSearchResponse,
 } from '@/lib/interfaces/globalInterfaces';
 import { OpenLibraryError, SearchErrorResponse } from '@/app/api/api-Errors';
-import { OpenLibrarySuccess } from '@/app/api/getonlinedata/openlibrary/route';
+import { OpenLibrarySuccess } from '@/lib/trpc/routers/online';
 import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
 
 export interface mediaTypeDefinitions {
@@ -106,14 +107,11 @@ export const collectBlockInformation = createAsyncThunk(
   }) => {
     const { title, author } = toCollectItem;
 
-    //check database for existing data with same title.
-    const mediaSearchRes = await axios.get(`/api/database/search`, {
-      params: { type, title: titleRearrange(title) },
-      //accept 400 codes for error handling
-      validateStatus: (status) => status < 500,
-    });
-    const mediaSearchData: SearchErrorResponse | SuccessfulMediaSearchResponse =
-      mediaSearchRes.data;
+    // check database via TRPC for existing data with same title.
+    const mediaSearchData = (await trpcClient.database.searchByTitle.query({
+      type,
+      title: titleRearrange(title),
+    })) as SearchErrorResponse | SuccessfulMediaSearchResponse;
 
     //if we return a book from the database, return the information.
     if ('foundMediaList' in mediaSearchData) {
@@ -124,12 +122,10 @@ export const collectBlockInformation = createAsyncThunk(
         const { id, imageUrls, title, author, pageCount, pubYear, spineColor } =
           mediaSearchData.foundMediaList[0] as BookRow;
         //get genres tied to the found book id
-        const genreSearchRes = await axios.get(
-          `/api/genres/getforbook?bookID=${id}`,
-        );
-        const genreSearchData: { message: string; genres: string[] } =
-          genreSearchRes.data;
-        const databaseGenres = genreSearchData.genres;
+        const genreSearchRes = (await trpcClient.genres.getForBook.query({
+          bookID: id,
+        })) as { message: string; genres: string[] };
+        const databaseGenres = genreSearchRes.genres;
 
         //return all the block info and designate isDatabase to be true for books
         return {

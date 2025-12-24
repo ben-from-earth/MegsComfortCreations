@@ -200,7 +200,7 @@ export default function MediaCollector() {
           try {
             const res = await databaseSave({
               type: 'book',
-              item: bookData as BookInsert,
+              mediaData: bookData as BookInsert,
             });
             if ('error' in res) {
               responses.push(res);
@@ -237,7 +237,7 @@ export default function MediaCollector() {
           try {
             const res = await databaseSave({
               type: media.type,
-              item: otherData,
+              mediaData: otherData,
             });
             responses.push(res);
           } catch {

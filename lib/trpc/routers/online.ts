@@ -5,6 +5,13 @@ import axios from 'axios';
 const API_KEY = process.env.GOOGLE_SEARCH_API_KEY;
 const CX = process.env.GOOGLE_SEARCH_CX;
 
+export interface OpenLibrarySuccess {
+  title: string;
+  author: string;
+  pubYear: number;
+  pageCount: number;
+}
+
 export const onlineRouter = router({
   openLibrary: publicProcedure
     .input(z.object({ title: z.string().min(1), author: z.string().min(1) }))
