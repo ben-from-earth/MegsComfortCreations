@@ -6,30 +6,23 @@ import { store } from '@/lib/state/store';
 import { useEffect, useState } from 'react';
 
 // library imports
-import axios from 'axios';
+// axios no longer needed for genres; using tRPC
 
 // context
 import GenreContext from '@/lib/context/GenreContext';
 
 // interfaces and types
-import { getAllResponse } from '@/app/api/genres/getall/route';
+import { trpc } from '@/lib/trpc/client';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   //get genres for use around the app
   const [genres, setGenres] = useState<string[]>([]);
-
+  const { data } = trpc.genres.getAll.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await axios.get<getAllResponse>(`/api/genres/getall`);
-        const collection = res.data;
-        setGenres(collection.genres);
-      } catch {
-        console.error('Could not fetch genres: Server down or not active');
-        return [];
-      }
-    })();
-  }, []);
+    if (data?.genres) setGenres(data.genres);
+  }, [data]);
   return (
     <Provider store={store}>
       <GenreContext.Provider value={genres}>{children}</GenreContext.Provider>

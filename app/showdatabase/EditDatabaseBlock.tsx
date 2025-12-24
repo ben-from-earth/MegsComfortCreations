@@ -16,7 +16,7 @@ import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
 import Button from '@/app/components/Button';
 
 // library imports
-import axios from 'axios';
+import { trpc } from '@/lib/trpc/client';
 
 // helpers
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
@@ -27,12 +27,8 @@ import {
   BlockInfo,
   MediaType,
   PostSavedMediaItem,
-  SuccessfulMediaSaveEditResponse,
 } from '@/lib/interfaces/globalInterfaces';
-import {
-  DatabaseSaveEditErrorResponse,
-  ErrorResponse,
-} from '@/app/api/api-Errors';
+import { ErrorResponse } from '@/app/api/api-Errors';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -163,57 +159,45 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     }
   };
 
+  const { mutateAsync: databaseEdit } = trpc.database.edit.useMutation();
+  const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
+  const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
+
   const handleEditSubmit = async () => {
-    const res = await axios.put<
-      | ErrorResponse
-      | SuccessfulMediaSaveEditResponse
-      | DatabaseSaveEditErrorResponse
-    >(`/api/database/edit/${type}`, databaseData, {
-      validateStatus: (status) => status < 500,
-    });
-
-    if ('error' in res.data) {
-      // just closing the window if there are any errors
-      // need to display error message
+    const res = await databaseEdit({ type, item: databaseData });
+    if ('error' in (res as ErrorResponse)) {
       setEdit(false);
-    } else {
-      const newGenres = databaseGenres;
-      const linkGenres: string[] = [];
-      const unlinkGenres: string[] = [];
+      return;
+    }
 
-      //get new added genres and link them
-      for (const genre of newGenres) {
-        if (!initialGenres.includes(genre)) {
-          linkGenres.push(genre);
-        }
-      }
+    const newGenres = databaseGenres;
+    const linkGenresList: string[] = [];
+    const unlinkGenresList: string[] = [];
+
+    for (const genre of newGenres) {
+      if (!initialGenres.includes(genre)) linkGenresList.push(genre);
+    }
+    if (linkGenresList.length > 0) {
       try {
-        await axios.post(`/api/genres/addlink`, {
-          bookID: id,
-          genres: linkGenres,
-        });
+        await linkGenres({ bookID: id, genres: linkGenresList });
       } catch {
         console.log('Genre link error');
       }
+    }
 
-      //remove link to any genres that were removed
-      for (const genre of initialGenres) {
-        if (!newGenres.includes(genre)) {
-          unlinkGenres.push(genre);
-        }
-      }
+    for (const genre of initialGenres) {
+      if (!newGenres.includes(genre)) unlinkGenresList.push(genre);
+    }
+    if (unlinkGenresList.length > 0) {
       try {
-        await axios.post(`/api/genres/unlink`, {
-          bookID: id,
-          genres: unlinkGenres,
-        });
+        await unlinkGenres({ bookID: id, genres: unlinkGenresList });
       } catch {
         console.log('Genre unlink error');
       }
-
-      handleGetMedia();
-      setEdit(false);
     }
+
+    handleGetMedia();
+    setEdit(false);
   };
 
   return (

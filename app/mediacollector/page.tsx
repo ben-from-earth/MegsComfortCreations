@@ -9,7 +9,7 @@ import { useSelector } from 'react-redux';
 import { useAppDispatch } from '@/lib/state/store';
 
 // library imports
-import axios from 'axios';
+import { trpc } from '@/lib/trpc/client';
 
 // components
 import Image from 'next/image';
@@ -42,7 +42,6 @@ import {
   clearDatabaseData,
   DatabaseDataPerType,
   removeFromDatabaseData,
-  sendToDatabase,
 } from '@/lib/state/slices/databaseDataSlice';
 
 // imports from the png state slice
@@ -57,9 +56,12 @@ import {
 import {
   DatabaseSaveServerResponse,
   MediaType,
+  BookInsert,
+  MovieInsert,
+  VideoGameInsert,
+  AlbumInsert,
 } from '@/lib/interfaces/globalInterfaces';
 import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
-import { ErrorResponse } from '@/app/api/api-Errors';
 
 export default function MediaCollector() {
   //setup connection to the redux slice and associated variables
@@ -89,6 +91,11 @@ export default function MediaCollector() {
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);
+
+  // trpc functions
+  const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
+  const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
+  const { mutateAsync: createPNG } = trpc.png.create.useMutation();
 
   //update ref whenever stateData updates
   //stateData holds data about showing checkboxes, and the titleCollectionList data.
@@ -175,12 +182,85 @@ export default function MediaCollector() {
   const handleDatabaseClick = async (
     databaseData: DatabaseDataPerType[],
   ): Promise<void> => {
-    const responses = await dispatch(sendToDatabase(databaseData)).unwrap();
+    const responses: DatabaseSaveServerResponse = [];
+    for (const media of databaseData) {
+      if (media.type === 'book') {
+        for (const book of media.data) {
+          const title = book.title; // titleRearrange already applied earlier upstream
+          const bookData = {
+            title,
+            author: book.author,
+            pageCount: book.pageCount,
+            pubYear: book.pubYear,
+            imageUrls: book.images.map((item) => item.src),
+            spineColor: book.spineColor,
+            genres: book.genres,
+            blockID: book.blockID,
+          };
+          try {
+            const res = await databaseSave({
+              type: 'book',
+              mediaData: bookData as BookInsert,
+            });
+            if ('error' in res) {
+              responses.push(res);
+            } else {
+              const bookDatabaseID = res.actionAttemptItem.id;
+              const linkRes = await linkGenres({
+                bookID: bookDatabaseID,
+                genres: book.genres ?? [],
+              });
+              responses.push({ ...res, ...linkRes });
+            }
+          } catch {
+            responses.push({
+              actionAttemptItem: bookData,
+              type: 'book',
+              errors: [
+                'Server Error during save',
+                `${bookData.title} did not save to the database`,
+              ],
+              error: 'Server Error',
+              message: `There was a server error during save attempt for ${bookData.title}`,
+            });
+          }
+        }
+      } else {
+        for (const other of media.data) {
+          const title = other.title;
+          const otherData: MovieInsert | VideoGameInsert | AlbumInsert = {
+            title,
+            imageUrls: other.images.map((img) => img.src),
+            spineColor: other.spineColor,
+            blockID: other.blockID,
+          };
+          try {
+            const res = await databaseSave({
+              type: media.type,
+              mediaData: otherData,
+            });
+            responses.push(res);
+          } catch {
+            responses.push({
+              actionAttemptItem: otherData,
+              type: media.type,
+              errors: [
+                'Server Error during save',
+                `${otherData.title} did not save to the database`,
+              ],
+              error: 'Server Error',
+              message: `There was a server error during save attempt for ${otherData.title}`,
+            });
+          }
+        }
+      }
+    }
     setDatabaseSavedData(responses);
     setDatabaseSaved(true);
   };
 
   //Handle creation of PNG from all covers. This is the main finishing product of the app
+
   const handlePNGClick = async (): Promise<void> => {
     if (!pngTemplate) {
       setPNGError(true);
@@ -191,56 +271,28 @@ export default function MediaCollector() {
     dispatch(startLoad());
 
     try {
-      const res = await axios.post<Blob | ErrorResponse>(
-        `/api/png/create`,
-        { template: pngTemplate, images: pngCollectionList },
-        {
-          responseType: 'blob',
-          // Accept both, let the server decide
-          headers: { Accept: 'image/png, application/zip' },
-          // increase timeout for large zips
-          timeout: 120000,
-        },
+      const res = await createPNG({
+        template: pngTemplate as number as 3 | 5,
+        images: pngCollectionList,
+      });
+      const { mime, filename, dataBase64 } = res as {
+        mime: string;
+        filename: string;
+        dataBase64: string;
+      };
+      const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
+        c.charCodeAt(0),
       );
-
-      // Determine filename & extension
-      const contentType = (res.headers['content-type'] || '').toLowerCase();
-      const contentDisp = res.headers['content-disposition'] || '';
-
-      // Try to parse a filename from Content-Disposition
-      let filename = (() => {
-        const m = /filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i.exec(
-          contentDisp,
-        );
-        return m ? decodeURIComponent(m[1]) : null;
-      })();
-
-      // Fallback filename by MIME
-      if (!filename) {
-        const ext = contentType.includes('zip')
-          ? 'zip'
-          : contentType.includes('png')
-            ? 'png'
-            : 'bin';
-        filename = `MCC_PNG_export.${ext}`;
-      }
-
-      // Create object URL and trigger download
-      if ('error' in res.data === false) {
-        const blob = res.data; // already a Blob because responseType: 'blob'
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        // In case the browser blocks a.click() without it being in DOM:
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      }
+      const blob = new Blob([byteArray], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
-      // Surface message if server returned JSON error but axios treated as blob
-      // (axios throws for non-2xx; this is just a friendly message)
       console.error('Download failed:', err);
     } finally {
       dispatch(finishedLoad());

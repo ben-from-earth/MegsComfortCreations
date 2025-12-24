@@ -5,6 +5,7 @@ import NavBar from '@/app/components/NavBar';
 import { Just_Another_Hand } from 'next/font/google';
 import { NextFont } from 'next/dist/compiled/@next/font';
 import Providers from '@/app/Providers';
+import { TRPCProvider } from '@/lib/trpc/provider';
 
 export const metadata: Metadata = {
   title: "Meg's Comfort Creations",
@@ -21,10 +22,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={JAH.className}>
-        <Providers>
-          <NavBar />
-          {children}
-        </Providers>
+        <TRPCProvider>
+          <Providers>
+            <NavBar />
+            {children}
+          </Providers>
+        </TRPCProvider>
       </body>
     </html>
   );
