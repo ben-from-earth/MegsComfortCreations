@@ -2,9 +2,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/state/store';
 
-// library imports
-import axios from 'axios';
-
 // necessary imports from collector state
 import { medias } from '@/lib/state/slices/collectorSlice';
 
@@ -98,14 +95,10 @@ export const sendToDatabase = createAsyncThunk(
               return bookCreationResponse;
             } else {
               const bookDatabaseID = bookCreationResponse.actionAttemptItem.id;
-              const genreLinkRes = await axios.post<{
-                genreResponses: SuccessfulGenreLinkUnlinkResponse[];
-              }>(
-                'api/genres/addlink',
-                { bookID: bookDatabaseID, genres: book.genres },
-                { validateStatus: (status) => status < 500 },
-              );
-              const genreLinkResponse = genreLinkRes.data;
+              const genreLinkResponse = (await trpcClient.genres.link.mutate({
+                bookID: bookDatabaseID,
+                genres: book.genres || [],
+              })) as { genreResponses: SuccessfulGenreLinkUnlinkResponse[] };
               return { ...bookCreationResponse, ...genreLinkResponse };
             }
           } catch {

@@ -14,8 +14,20 @@ export interface OpenLibrarySuccess {
 
 export const onlineRouter = router({
   openLibrary: publicProcedure
-    .input(z.object({ title: z.string().min(1), author: z.string().min(1) }))
+    .input(
+      z.object({
+        title: z.string().min(1),
+        author: z.string().min(1).optional(),
+      }),
+    )
     .mutation(async ({ input }) => {
+      if (!input.author) {
+        return {
+          error: 'Open Library Error',
+          message: `Error gathering Open Library data for ${input.title}, author not provided`,
+          failedSearchData: { title: input.title, author: input.author },
+        };
+      }
       const params = new URLSearchParams({
         title: input.title,
         author: input.author,

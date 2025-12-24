@@ -7,7 +7,6 @@ import {
 } from '@reduxjs/toolkit';
 
 // library imports
-import axios from 'axios';
 import { trpcClient } from '@/lib/trpc/vanillaClient';
 
 // helpers
@@ -161,14 +160,13 @@ export const collectBlockInformation = createAsyncThunk(
     }
 
     //if the media wasnt in the database, collect cover images
-    const imageSearchRes = await axios.post<{ images: string[] }>(
-      `/api/getonlinedata/mediacovers`,
-      {
+    const imageSearchRes = {
+      data: (await trpcClient.online.mediaCovers.mutate({
         title,
         author,
         type,
-      },
-    );
+      })) as { images: string[] },
+    };
     //conservative query count update every time we make a request to google search API.
     updateQueryCount();
     const imgArr = imageSearchRes.data.images;
@@ -176,11 +174,10 @@ export const collectBlockInformation = createAsyncThunk(
     let BlockInfo: BlockInfo;
     if (type === 'book') {
       //if book, go to open library and get more data about the book
-      const openLibraryRes = await axios.post<
-        OpenLibrarySuccess | OpenLibraryError
-      >(`/api/getonlinedata/openlibrary`, { title, author });
-
-      const bookInformation = openLibraryRes.data;
+      const bookInformation = (await trpcClient.online.openLibrary.mutate({
+        title,
+        author,
+      })) as OpenLibrarySuccess | OpenLibraryError;
 
       if ('failedSearchData' in bookInformation) {
         BlockInfo = bookInformation.failedSearchData;
