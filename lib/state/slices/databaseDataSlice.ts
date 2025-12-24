@@ -94,7 +94,6 @@ export const sendToDatabase = createAsyncThunk(
               return bookCreationResponse;
             } else {
               const bookDatabaseID = bookCreationResponse.actionAttemptItem.id;
-
               const genreLinkRes = await axios.post<{
                 genreResponses: SuccessfulGenreLinkUnlinkResponse[];
               }>(

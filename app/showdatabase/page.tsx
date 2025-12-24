@@ -1,10 +1,10 @@
 'use client';
 
 // react, redux imports
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // library imports
-import axios from 'axios';
+import { trpc } from '@/lib/trpc/client';
 
 // components
 import DatabaseItemsContainer from '@/app/showdatabase/DatabaseItemsContainer';
@@ -50,77 +50,85 @@ export default function ShowDatabase() {
   const [titleSearch, setTitleSearch] = useState('');
   const [genre, setGenre] = useState('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
-
-  const handleGetMedia = useCallback(async () => {
-    if (titleSearch.length > 0) {
-      try {
-        const res = await axios.get<SuccessfulMediaSearchResponse>(
-          `/api/database/search?type=${type}&title=${titleRearrange(titleSearch)}`,
-        );
-        const databaseResults = res.data;
-        setDatabaseItems({
-          type,
-          items: databaseResults.foundMediaList,
-          total: databaseResults.total,
-          min: 1,
-          max: databaseResults.total,
-        });
-      } catch (err) {
-        console.log(`Server Error getting database items:`, err);
-      }
-    } else {
-      if (type !== 'book' || genre === '') {
-        try {
-          const res = await axios.get<SuccessfulPaginationResponse>(
-            `/api/database?type=${type}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
-          );
-          const databaseResults = res.data;
-
-          setDatabaseItems({
-            type,
-            items: databaseResults.paginatedList,
-            total: databaseResults.total,
-            min: (page - 1) * limit + 1,
-            max: page * limit,
-          });
-        } catch (err) {
-          console.log(`Server Error getting database items:`, err);
-        }
-      } else {
-        if (genre === 'none') {
-          const res = await axios.get<SuccessfulPaginationResponse>(
-            `/api/genres/nogenres?sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
-          );
-          const databaseResults = res.data;
-
-          setDatabaseItems({
-            type,
-            items: databaseResults.paginatedList,
-            total: databaseResults.total,
-            min: (page - 1) * limit + 1,
-            max: page * limit,
-          });
-        } else {
-          const res = await axios.get<SuccessfulPaginationResponse>(
-            `/api/genres?genre=${genre}&sort=${sortBy}&limit=${limit}&page=${page}&ascDesc=${ascDesc}`,
-          );
-          const databaseResults = res.data;
-
-          setDatabaseItems({
-            type,
-            items: databaseResults.paginatedList,
-            total: databaseResults.total,
-            min: (page - 1) * limit + 1,
-            max: page * limit,
-          });
-        }
-      }
+  const effectiveSort = useMemo(() => {
+    if (type === 'book') {
+      if (sortBy === 'title') return 'title';
+      if (sortBy === 'pubYear') return 'pubYear';
+      return 'spineColor';
     }
-  }, [page, type, limit, sortBy, titleSearch, genre, ascDesc]);
+    return 'title';
+  }, [type, sortBy]);
+
+  const searchQuery = trpc.database.searchByTitle.useQuery(
+    { type, title: titleRearrange(titleSearch) },
+    { enabled: titleSearch.length > 0 },
+  );
+  const paginatedQuery = trpc.database.getPaginated.useQuery(
+    { type, sort: effectiveSort, limit, page, ascDesc },
+    { enabled: titleSearch.length === 0 && (type !== 'book' || genre === '') },
+  );
+  const noGenresQuery = trpc.genres.paginateNoGenres.useQuery(
+    { sort: effectiveSort, limit, page, ascDesc },
+    {
+      enabled: titleSearch.length === 0 && type === 'book' && genre === 'none',
+    },
+  );
+  const byGenreQuery = trpc.genres.paginateByGenre.useQuery(
+    { genre, sort: effectiveSort, limit, page, ascDesc },
+    {
+      enabled:
+        titleSearch.length === 0 &&
+        type === 'book' &&
+        genre !== '' &&
+        genre !== 'none',
+    },
+  );
 
   useEffect(() => {
-    handleGetMedia();
-  }, [handleGetMedia]);
+    if (searchQuery.data) {
+      const r = searchQuery.data as SuccessfulMediaSearchResponse;
+      setDatabaseItems({
+        type,
+        items: r.foundMediaList,
+        total: r.total,
+        min: 1,
+        max: r.total,
+      });
+    } else if (paginatedQuery.data) {
+      const r = paginatedQuery.data as SuccessfulPaginationResponse;
+      setDatabaseItems({
+        type,
+        items: r.paginatedList,
+        total: r.total,
+        min: (page - 1) * limit + 1,
+        max: page * limit,
+      });
+    } else if (noGenresQuery.data) {
+      const r = noGenresQuery.data as SuccessfulPaginationResponse;
+      setDatabaseItems({
+        type,
+        items: r.paginatedList,
+        total: r.total,
+        min: (page - 1) * limit + 1,
+        max: page * limit,
+      });
+    } else if (byGenreQuery.data) {
+      const r = byGenreQuery.data as SuccessfulPaginationResponse;
+      setDatabaseItems({
+        type,
+        items: r.paginatedList,
+        total: r.total,
+        min: (page - 1) * limit + 1,
+        max: page * limit,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    searchQuery.data,
+    paginatedQuery.data,
+    noGenresQuery.data,
+    byGenreQuery.data,
+  ]);
 
   const DatabasePageContextValue: DatabasePageContextValue = useMemo(
     () => ({
@@ -138,9 +146,28 @@ export default function ShowDatabase() {
       ascDesc,
       setAscDesc,
       setTitleSearch,
-      handleGetMedia,
+      handleGetMedia: async () => {
+        // trigger refetches based on current inputs
+        searchQuery.refetch();
+        paginatedQuery.refetch();
+        noGenresQuery.refetch();
+        byGenreQuery.refetch();
+        return Promise.resolve();
+      },
     }),
-    [handleGetMedia, page, databaseItems, type, limit, sortBy, genre, ascDesc],
+    [
+      page,
+      databaseItems,
+      type,
+      limit,
+      sortBy,
+      genre,
+      ascDesc,
+      searchQuery,
+      paginatedQuery,
+      noGenresQuery,
+      byGenreQuery,
+    ],
   );
 
   return (

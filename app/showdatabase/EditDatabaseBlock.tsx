@@ -16,7 +16,7 @@ import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
 import Button from '@/app/components/Button';
 
 // library imports
-import axios from 'axios';
+import { trpc } from '@/lib/trpc/client';
 
 // helpers
 import { titleRearrange } from '@/lib/helpers/titleRearrange';
@@ -163,57 +163,45 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     }
   };
 
+  const editMutation = trpc.database.edit.useMutation();
+  const linkMutation = trpc.genres.link.useMutation();
+  const unlinkMutation = trpc.genres.unlink.useMutation();
+
   const handleEditSubmit = async () => {
-    const res = await axios.put<
-      | ErrorResponse
-      | SuccessfulMediaSaveEditResponse
-      | DatabaseSaveEditErrorResponse
-    >(`/api/database/edit/${type}`, databaseData, {
-      validateStatus: (status) => status < 500,
-    });
-
-    if ('error' in res.data) {
-      // just closing the window if there are any errors
-      // need to display error message
+    const res = await editMutation.mutateAsync({ type, item: databaseData });
+    if ('error' in (res as ErrorResponse)) {
       setEdit(false);
-    } else {
-      const newGenres = databaseGenres;
-      const linkGenres: string[] = [];
-      const unlinkGenres: string[] = [];
+      return;
+    }
 
-      //get new added genres and link them
-      for (const genre of newGenres) {
-        if (!initialGenres.includes(genre)) {
-          linkGenres.push(genre);
-        }
-      }
+    const newGenres = databaseGenres;
+    const linkGenres: string[] = [];
+    const unlinkGenres: string[] = [];
+
+    for (const genre of newGenres) {
+      if (!initialGenres.includes(genre)) linkGenres.push(genre);
+    }
+    if (linkGenres.length > 0) {
       try {
-        await axios.post(`/api/genres/addlink`, {
-          bookID: id,
-          genres: linkGenres,
-        });
+        await linkMutation.mutateAsync({ bookID: id, genres: linkGenres });
       } catch {
         console.log('Genre link error');
       }
+    }
 
-      //remove link to any genres that were removed
-      for (const genre of initialGenres) {
-        if (!newGenres.includes(genre)) {
-          unlinkGenres.push(genre);
-        }
-      }
+    for (const genre of initialGenres) {
+      if (!newGenres.includes(genre)) unlinkGenres.push(genre);
+    }
+    if (unlinkGenres.length > 0) {
       try {
-        await axios.post(`/api/genres/unlink`, {
-          bookID: id,
-          genres: unlinkGenres,
-        });
+        await unlinkMutation.mutateAsync({ bookID: id, genres: unlinkGenres });
       } catch {
         console.log('Genre unlink error');
       }
-
-      handleGetMedia();
-      setEdit(false);
     }
+
+    handleGetMedia();
+    setEdit(false);
   };
 
   return (

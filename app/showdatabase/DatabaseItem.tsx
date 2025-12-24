@@ -3,7 +3,7 @@
 import { memo, useEffect, useState } from 'react';
 
 // library imports
-import axios from 'axios';
+import { trpc } from '@/lib/trpc/client';
 
 // components
 import AreYouSure from '@/app/components/AreYouSure';
@@ -41,48 +41,20 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   type GenreResponse = { message: string; genres: string[] };
 
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
+  const genresQuery = trpc.genres.getForBook.useQuery({ bookID: id });
   useEffect(() => {
-    let cancelled = false;
-
-    const fetchGenres = async () => {
-      try {
-        const { data } = await axios.get<GenreResponse | ErrorResponse>(
-          `/api/genres/getforbook?bookID=${id}`,
-        );
-
-        if (!('error' in data) && !cancelled) {
-          setGenres(data.genres);
-        }
-      } catch (err) {
-        console.error('[fetchGenres] failed', err);
-      }
-    };
-
-    fetchGenres();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id, edit]);
+    if (genresQuery.data?.genres) setGenres(genresQuery.data.genres);
+  }, [genresQuery.data]);
 
   //handle deletion of the media from the database
+  const deleteMutation = trpc.database.deleteByTitle.useMutation();
   const onDelete = async () => {
     try {
-      const deleteRes = await axios.delete<ErrorResponse | { message: string }>(
-        `/api/database/delete?title=${title}&type=${type}`,
-      );
-      const response = deleteRes.data;
-      if ('error' in response) {
-        console.log(response.message);
-        // setDeleteError(response.message);
-      } else {
-        handleGetMedia();
-      }
+      await deleteMutation.mutateAsync({ title, type });
+      handleGetMedia();
     } catch {
       console.log('There was an error deleting, try again.');
-      //   setDeleteError('There was an error deleting, try again.');
     }
-
     setAreYouSure(false);
   };
 
