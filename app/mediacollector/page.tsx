@@ -42,7 +42,6 @@ import {
   clearDatabaseData,
   DatabaseDataPerType,
   removeFromDatabaseData,
-  sendToDatabase,
 } from '@/lib/state/slices/databaseDataSlice';
 
 // imports from the png state slice
@@ -63,7 +62,6 @@ import {
   AlbumInsert,
 } from '@/lib/interfaces/globalInterfaces';
 import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
-import { ErrorResponse } from '@/app/api/api-Errors';
 
 export default function MediaCollector() {
   //setup connection to the redux slice and associated variables
@@ -93,6 +91,11 @@ export default function MediaCollector() {
 
   //refs for useEffect
   const mediaTypesRef = useRef(stateData);
+
+  // trpc functions
+  const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
+  const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
+  const { mutateAsync: createPNG } = trpc.png.create.useMutation();
 
   //update ref whenever stateData updates
   //stateData holds data about showing checkboxes, and the titleCollectionList data.
@@ -179,8 +182,6 @@ export default function MediaCollector() {
   const handleDatabaseClick = async (
     databaseData: DatabaseDataPerType[],
   ): Promise<void> => {
-    const saveMutation = trpc.database.save.useMutation();
-    const linkMutation = trpc.genres.link.useMutation();
     const responses: DatabaseSaveServerResponse = [];
     for (const media of databaseData) {
       if (media.type === 'book') {
@@ -197,7 +198,7 @@ export default function MediaCollector() {
             blockID: book.blockID,
           };
           try {
-            const res = await saveMutation.mutateAsync({
+            const res = await databaseSave({
               type: 'book',
               item: bookData as BookInsert,
             });
@@ -205,7 +206,7 @@ export default function MediaCollector() {
               responses.push(res);
             } else {
               const bookDatabaseID = res.actionAttemptItem.id;
-              const linkRes = await linkMutation.mutateAsync({
+              const linkRes = await linkGenres({
                 bookID: bookDatabaseID,
                 genres: book.genres ?? [],
               });
@@ -234,7 +235,7 @@ export default function MediaCollector() {
             blockID: other.blockID,
           };
           try {
-            const res = await saveMutation.mutateAsync({
+            const res = await databaseSave({
               type: media.type,
               item: otherData,
             });
@@ -259,7 +260,7 @@ export default function MediaCollector() {
   };
 
   //Handle creation of PNG from all covers. This is the main finishing product of the app
-  const pngMutation = trpc.png.create.useMutation();
+
   const handlePNGClick = async (): Promise<void> => {
     if (!pngTemplate) {
       setPNGError(true);
@@ -270,7 +271,7 @@ export default function MediaCollector() {
     dispatch(startLoad());
 
     try {
-      const res = await pngMutation.mutateAsync({
+      const res = await createPNG({
         template: pngTemplate as number as 3 | 5,
         images: pngCollectionList,
       });

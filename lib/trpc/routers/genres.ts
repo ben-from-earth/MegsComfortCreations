@@ -17,7 +17,7 @@ export const genresRouter = router({
   }),
 
   getForBook: publicProcedure
-    .input(z.object({ bookID: z.string().uuid() }))
+    .input(z.object({ bookID: z.uuid() }))
     .query(async ({ input }) => {
       const genres = await Genre.getforbook(input.bookID);
       return {
@@ -29,7 +29,7 @@ export const genresRouter = router({
   link: publicProcedure
     .input(
       z.object({
-        bookID: z.string().uuid(),
+        bookID: z.uuid(),
         genres: z.array(z.string().min(1)),
       }),
     )
@@ -49,7 +49,7 @@ export const genresRouter = router({
   unlink: publicProcedure
     .input(
       z.object({
-        bookID: z.string().uuid(),
+        bookID: z.uuid(),
         genres: z.array(z.string().min(1)),
       }),
     )

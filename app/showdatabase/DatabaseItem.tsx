@@ -18,7 +18,6 @@ import { titleRearrange } from '@/lib/helpers/titleRearrange';
 import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
 
 // interfaces and types
-import { ErrorResponse } from '@/app/api/api-Errors';
 import { PostSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
 import { isBookRow } from '@/lib/helpers/handleMediaTyping';
 
@@ -38,8 +37,6 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   const [genres, setGenres] = useState<string[]>([]);
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
-  type GenreResponse = { message: string; genres: string[] };
-
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
   const genresQuery = trpc.genres.getForBook.useQuery({ bookID: id });
   useEffect(() => {
@@ -47,10 +44,11 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   }, [genresQuery.data]);
 
   //handle deletion of the media from the database
-  const deleteMutation = trpc.database.deleteByTitle.useMutation();
+  const { mutateAsync: databaseDelete } =
+    trpc.database.deleteByTitle.useMutation();
   const onDelete = async () => {
     try {
-      await deleteMutation.mutateAsync({ title, type });
+      await databaseDelete({ title, type });
       handleGetMedia();
     } catch {
       console.log('There was an error deleting, try again.');

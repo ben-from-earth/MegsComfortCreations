@@ -27,12 +27,8 @@ import {
   BlockInfo,
   MediaType,
   PostSavedMediaItem,
-  SuccessfulMediaSaveEditResponse,
 } from '@/lib/interfaces/globalInterfaces';
-import {
-  DatabaseSaveEditErrorResponse,
-  ErrorResponse,
-} from '@/app/api/api-Errors';
+import { ErrorResponse } from '@/app/api/api-Errors';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -163,38 +159,38 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     }
   };
 
-  const editMutation = trpc.database.edit.useMutation();
-  const linkMutation = trpc.genres.link.useMutation();
-  const unlinkMutation = trpc.genres.unlink.useMutation();
+  const { mutateAsync: databaseEdit } = trpc.database.edit.useMutation();
+  const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
+  const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
 
   const handleEditSubmit = async () => {
-    const res = await editMutation.mutateAsync({ type, item: databaseData });
+    const res = await databaseEdit({ type, item: databaseData });
     if ('error' in (res as ErrorResponse)) {
       setEdit(false);
       return;
     }
 
     const newGenres = databaseGenres;
-    const linkGenres: string[] = [];
-    const unlinkGenres: string[] = [];
+    const linkGenresList: string[] = [];
+    const unlinkGenresList: string[] = [];
 
     for (const genre of newGenres) {
-      if (!initialGenres.includes(genre)) linkGenres.push(genre);
+      if (!initialGenres.includes(genre)) linkGenresList.push(genre);
     }
-    if (linkGenres.length > 0) {
+    if (linkGenresList.length > 0) {
       try {
-        await linkMutation.mutateAsync({ bookID: id, genres: linkGenres });
+        await linkGenres({ bookID: id, genres: linkGenresList });
       } catch {
         console.log('Genre link error');
       }
     }
 
     for (const genre of initialGenres) {
-      if (!newGenres.includes(genre)) unlinkGenres.push(genre);
+      if (!newGenres.includes(genre)) unlinkGenresList.push(genre);
     }
-    if (unlinkGenres.length > 0) {
+    if (unlinkGenresList.length > 0) {
       try {
-        await unlinkMutation.mutateAsync({ bookID: id, genres: unlinkGenres });
+        await unlinkGenres({ bookID: id, genres: unlinkGenresList });
       } catch {
         console.log('Genre unlink error');
       }
