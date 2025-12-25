@@ -15,6 +15,13 @@
       "when": 1765763093336,
       "tag": "0001_even_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766627318362,
+      "tag": "0002_omniscient_charles_xavier",
+      "breakpoints": true
     }
   ]
 }

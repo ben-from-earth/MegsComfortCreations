@@ -19,6 +19,36 @@ export const users = pgTable('users', {
   lastName: text('last_name').notNull(),
 });
 
+// ---------- orders ----------
+export const orders = pgTable('orders', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  customerId: uuid('customer_id')
+    .notNull()
+    .references(() => customers.id, { onDelete: 'cascade' }),
+  orderNumber: text('order_number').notNull().unique(),
+  orderDate: timestamp('order_date').defaultNow().notNull(),
+  totalAmount: integer('total_amount').notNull(),
+  pngId: uuid('png_id').references(() => pngs.id),
+});
+
+// ---------- orders_books ----------
+export const ordersBooks = pgTable('orders_books', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  bookId: uuid('book_id')
+    .notNull()
+    .references(() => books.id, { onDelete: 'cascade' }),
+});
+
+// ---------- pngs ----------
+export const pngs = pgTable('pngs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  url: text('url').notNull(),
+  description: text('description'),
+});
+
 // ---------- books ----------
 export const books = pgTable(
   'books',
@@ -26,41 +56,38 @@ export const books = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     title: text('title').notNull(),
     author: text('author').notNull(),
-    pageCount: integer('pageCount'),
-    pubYear: integer('pubYear'),
-    spineColor: text('spineColor').notNull(),
-    imageUrls: text('imageUrls').array().notNull(),
+    pageCount: integer('page_count'),
+    pubYear: integer('pub_year'),
+    spineColor: text('spine_color').notNull(),
+    imageUrls: text('image_urls').array().notNull(),
   },
-  (table) => ({
-    titleAuthorUnique: uniqueIndex('books_title_author_unique').on(
-      table.title,
-      table.author,
-    ),
-  }),
+  (table) => [
+    uniqueIndex('books_title_author_unique').on(table.title, table.author),
+  ],
 );
 
 // ---------- movies ----------
 export const movies = pgTable('movies', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull().unique(),
-  spineColor: text('spineColor').notNull(),
-  imageUrls: text('imageUrls').array().notNull(), // nullable in SQL
+  spineColor: text('spine_color').notNull(),
+  imageUrls: text('image_urls').array().notNull(), // nullable in SQL
 });
 
 // ---------- video_games ----------
 export const videoGames = pgTable('video_games', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull().unique(),
-  spineColor: text('spineColor').notNull(),
-  imageUrls: text('imageUrls').array().notNull(),
+  spineColor: text('spine_color').notNull(),
+  imageUrls: text('image_urls').array().notNull(),
 });
 
 // ---------- albums ----------
 export const albums = pgTable('albums', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: text('title').notNull().unique(),
-  spineColor: text('spineColor').notNull(),
-  imageUrls: text('imageUrls').array().notNull(),
+  spineColor: text('spine_color').notNull(),
+  imageUrls: text('image_urls').array().notNull(),
 });
 
 // ---------- genres ----------
@@ -79,6 +106,46 @@ export const genresBooks = pgTable('genres_books', {
     .notNull()
     .references(() => genres.id, { onDelete: 'cascade' }),
 });
+
+// ---------- customers ----------
+export const customers = pgTable('customers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  addressLine1: text('address_line_1').notNull(),
+  addressLine2: text('address_line_2'),
+  city: text('city').notNull(),
+  state: text('state').notNull(),
+  postalCode: text('postal_code').notNull(),
+  country: text('country').notNull(),
+  phone: text('phone'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// ---------- customers_users ----------
+export const customersUsers = pgTable(
+  'customers_users',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => customers.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('customers_users_customer_user_unique').on(
+      table.customerId,
+      table.userId,
+    ),
+  ],
+);
 
 // ---------- better-auth ----------
 

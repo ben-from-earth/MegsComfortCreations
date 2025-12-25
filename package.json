@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "jest",
     "test:ci": "NODE_ENV=test jest --runInBand",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "npx drizzle-kit migrate",
+    "db:generate": "npx drizzle-kit generate"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
