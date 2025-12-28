@@ -7,14 +7,14 @@ import {
 } from '@reduxjs/toolkit';
 
 // library imports
-import { trpcClient } from '@/lib/trpc/vanillaClient';
+import { trpcClient } from 'lib/trpc/vanillaClient';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
-import { updateQueryCount } from '@/lib/helpers/updateQueryCount';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
+import { updateQueryCount } from 'lib/helpers/updateQueryCount';
 
 // interfaces and types
-import { RootState } from '@/lib/state/store';
+import { RootState } from 'lib/state/store';
 import {
   BlockInfo,
   BookRow,
@@ -22,10 +22,10 @@ import {
   MediaType,
   MovieRow,
   SuccessfulMediaSearchResponse,
-} from '@/lib/interfaces/globalInterfaces';
-import { OpenLibraryError, SearchErrorResponse } from '@/app/api/api-Errors';
-import { OpenLibrarySuccess } from '@/lib/trpc/routers/online';
-import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
+} from 'lib/interfaces/globalInterfaces';
+import { OpenLibraryError, SearchErrorResponse } from '@//api/api-Errors';
+import { OpenLibrarySuccess } from 'lib/trpc/routers/online';
+import { titleOutputObj } from 'lib/helpers/titleCollectionListConversion';
 
 export interface mediaTypeDefinitions {
   type: MediaType;
@@ -64,7 +64,7 @@ export type CollectedBlockInformation =
       isDatabase: boolean;
     }
   | {
-      type: 'movie' | 'video_game' | 'album';
+      type: 'movie' | 'videoGame' | 'album';
       images: string[];
       BlockInfo: BaseBlockInfo;
       blockID: string;
@@ -78,7 +78,7 @@ export const medias: {
 }[] = [
   { type: 'book', label: 'Book' },
   { type: 'movie', label: 'Movie' },
-  { type: 'video_game', label: 'Video Game' },
+  { type: 'videoGame', label: 'Video Game' },
   { type: 'album', label: 'Album' },
 ];
 

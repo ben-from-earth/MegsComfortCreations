@@ -1,8 +1,8 @@
 // components
-import Button from '@/app/components/Button';
+import Button from '@//components/Button';
 
 // context
-import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
+import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 export default function PageSelector() {
   const {

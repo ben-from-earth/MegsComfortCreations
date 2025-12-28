@@ -6,19 +6,19 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import Button from '@/app/components/Button';
+import Button from '@//components/Button';
 
 // context
-import GenreContext from '@/lib/context/GenreContext';
+import GenreContext from 'lib/context/GenreContext';
 
 // interfaces and types
 
 import {
   DatabasePageContextValue,
   useDatabasePageContext,
-} from '@/lib/context/DatabasePageContext';
+} from 'lib/context/DatabasePageContext';
 
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
 
 export type SortOptions = 'title' | 'author' | 'pageCount' | 'pubYear';
 export type SortOptionsLabels = 'Title' | 'Author' | 'Page Count' | 'Pub. Year';
@@ -95,7 +95,7 @@ export default function PaginationInputs() {
         >
           <MenuItem value={'book'}>Book</MenuItem>
           <MenuItem value={'movie'}>Movie</MenuItem>
-          <MenuItem value={'video_game'}>Video Game</MenuItem>
+          <MenuItem value={'videoGame'}>Video Game</MenuItem>
           <MenuItem value={'album'}>Album</MenuItem>
         </Select>
       </FormControl>

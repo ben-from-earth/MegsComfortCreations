@@ -1,10 +1,10 @@
 // drizzle types
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { books, movies, videoGames, albums } from '@/app/db/schema';
+import { books, movies, videoGames, albums } from '@//db/schema';
 
-import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
+import { DatabaseSaveEditErrorResponse } from '@//api/api-Errors';
 
-export type MediaType = 'book' | 'movie' | 'video_game' | 'album';
+export type MediaType = 'book' | 'movie' | 'videoGame' | 'album';
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
 // 1. Map Drizzle row types

@@ -6,21 +6,21 @@ import MediaCollectorTitle from '@/public/MegsMediaCollector.png';
 // react and redux
 import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useAppDispatch } from '@/lib/state/store';
+import { useAppDispatch } from 'lib/state/store';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // components
 import Image from 'next/image';
-import QueryCounter from '@/app/components/QueryCounter';
-import MediaCheckboxes from '@/app/mediacollector/MediaCheckboxes';
-import MediaInputs from '@/app/mediacollector/MediaInputs';
-import PNGFormatPicker from '@/app/mediacollector/PNGFormatPicker';
-import ButtonGroup from '@/app/mediacollector/ButtonGroup';
-import LoadingWidget from '@/app/components/LoadingWidget';
-import DatabaseSavedWidget from '@/app/mediacollector/DatabaseSavedWidget';
-import TitleBlockContainer from '@/app/mediacollector/TitleBlockContainer';
+import QueryCounter from '@//components/QueryCounter';
+import MediaCheckboxes from '@//mediacollector/MediaCheckboxes';
+import MediaInputs from '@//mediacollector/MediaInputs';
+import PNGFormatPicker from '@//mediacollector/PNGFormatPicker';
+import LoadingWidget from '@//components/LoadingWidget';
+import DatabaseSavedWidget from '@//mediacollector/DatabaseSavedWidget';
+import TitleBlockContainer from '@//mediacollector/TitleBlockContainer';
+import TextInput from '@//components/TextInput';
 
 // imports from the collector state slice
 import {
@@ -35,14 +35,15 @@ import {
   setCollectList,
   startFetch,
   startLoad,
-} from '@/lib/state/slices/collectorSlice';
+} from 'lib/state/slices/collectorSlice';
 
 // imports from the database state slice
 import {
   clearDatabaseData,
   DatabaseDataPerType,
   removeFromDatabaseData,
-} from '@/lib/state/slices/databaseDataSlice';
+  selectDatabaseData,
+} from 'lib/state/slices/databaseDataSlice';
 
 // imports from the png state slice
 import {
@@ -50,7 +51,7 @@ import {
   ImageData,
   removeFromPNGCollectionList,
   selectPNGList,
-} from '@/lib/state/slices/pngCollectionSlice';
+} from 'lib/state/slices/pngCollectionSlice';
 
 //interfaces and types
 import {
@@ -60,10 +61,18 @@ import {
   MovieInsert,
   VideoGameInsert,
   AlbumInsert,
-} from '@/lib/interfaces/globalInterfaces';
-import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
+} from 'lib/interfaces/globalInterfaces';
+import { titleOutputObj } from 'lib/helpers/titleCollectionListConversion';
+import Button from '../components/Button';
+import { useCollectorForm } from './collector-form/use-collector-form';
+import type { CollectorFormData } from './collector-form/collectorFormSchema';
+import { FormProvider, useFormContext } from 'react-hook-form';
 
-export default function MediaCollector() {
+function MediaCollectorContent({
+  onSubmit,
+}: {
+  onSubmit: (data: CollectorFormData) => void;
+}) {
   //setup connection to the redux slice and associated variables
   const dispatch = useAppDispatch();
   const stateData: mediaTypeDefinitions[] = useSelector(mediaData);
@@ -72,12 +81,23 @@ export default function MediaCollector() {
   const pngCollectionList: ImageData[] = useSelector(selectPNGList);
 
   // setup states used throughout the component
+  const { watch, setValue } = useFormContext<CollectorFormData>();
+
+  // ---------
+  // these states will get integrated into the form. collected covers blocks will be derived from form data
   const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState<
     CollectedBlockInformation[]
   >([]);
   const [searchData, setSearchData] = useState<
     { type: MediaType; titleSearchList: titleOutputObj[] }[]
   >(stateData.map((media) => ({ type: media.type, titleSearchList: [] })));
+
+  // ---------
+  const orderNumber = watch('orderNumber');
+  const customerName = watch('customerName');
+
+  // onSubmit comes from parent wrapper that owns the form instance
+
   const [pngTemplateChecks, setPNGTemplateChecks] = useState<boolean[]>([
     false,
     false,
@@ -315,6 +335,8 @@ export default function MediaCollector() {
     }
   };
 
+  const databaseData: DatabaseDataPerType[] = useSelector(selectDatabaseData);
+
   return (
     <>
       <div
@@ -329,13 +351,58 @@ export default function MediaCollector() {
           src={MediaCollectorTitle}
           width={576}
         />
+        <div className="mt-2 flex flex-col content-center gap-4">
+          <TextInput
+            onChange={(e) => {
+              setValue('customerName', e.target.value);
+            }}
+            label={'Customer'}
+            variant="normal"
+            value={customerName}
+          />
+          <TextInput
+            onChange={(e) => {
+              setValue('orderNumber', e.target.value);
+            }}
+            label={'Order Number'}
+            variant="normal"
+            value={orderNumber}
+          />
+        </div>
         <MediaCheckboxes mediaTypes={stateData} setSearchData={setSearchData} />
 
-        <ButtonGroup
-          onCollect={handleCollectClick}
-          onPNG={handlePNGClick}
-          onDatabase={handleDatabaseClick}
-        />
+        <div className="flex flex-row content-center gap-4">
+          <Button
+            onClick={() => {
+              handleCollectClick();
+              onSubmit({
+                orderNumber,
+                customerName,
+                collectionData: {
+                  books: [],
+                  movies: [],
+                  videoGames: [],
+                  albums: [],
+                },
+              });
+            }}
+            label={'Collect Media Covers'}
+            width={175}
+            fontSize={25}
+          />
+          <Button
+            onClick={() => handleDatabaseClick(databaseData)}
+            label={'Send to Database'}
+            width={175}
+            fontSize={25}
+          />
+          <Button
+            onClick={() => handlePNGClick()}
+            label={'Get PNG'}
+            width={175}
+            fontSize={25}
+          />
+        </div>
 
         <MediaInputs mediaTypes={stateData} setSearchData={setSearchData} />
         <PNGFormatPicker
@@ -360,5 +427,17 @@ export default function MediaCollector() {
         />
       )}
     </>
+  );
+}
+
+export default function MediaCollector() {
+  const { form, onSubmit } = useCollectorForm();
+  return (
+    <FormProvider {...form}>
+      {/* Optionally wrap in a <form> for native submit */}
+      {/* <form onSubmit={form.handleSubmit(onSubmit)}> */}
+      <MediaCollectorContent onSubmit={onSubmit} />
+      {/* </form> */}
+    </FormProvider>
   );
 }

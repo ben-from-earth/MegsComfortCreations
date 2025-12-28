@@ -1,4 +1,4 @@
-import { db } from '@/app/db/client';
+import { db } from '@//db/client';
 import {
   MediaType,
   PostSavedMediaItem,
@@ -6,13 +6,13 @@ import {
   SuccessfulMediaSaveEditResponse,
   SuccessfulMediaSearchResponse,
   SuccessfulPaginationResponse,
-} from '@/lib/interfaces/globalInterfaces';
+} from 'lib/interfaces/globalInterfaces';
 
-import { GET as databaseSearchGET } from '@/app/api/database/search/route';
-import { GET as paginationGET } from '@/app/api/database/route';
-import { DELETE } from '@/app/api/database/delete/route';
-import { POST } from '@/app/api/database/save/[type]/route';
-import { PUT } from '@/app/api/database/edit/[type]/route';
+import { GET as databaseSearchGET } from '@//api/database/search/route';
+import { GET as paginationGET } from '@//api/database/route';
+import { DELETE } from '@//api/database/delete/route';
+import { POST } from '@//api/database/save/[type]/route';
+import { PUT } from '@//api/database/edit/[type]/route';
 
 import { NextRequest } from 'next/server';
 import {
@@ -25,7 +25,7 @@ import { randomUUID } from 'crypto';
 
 // drizzle
 import { sql } from 'drizzle-orm';
-import { books, movies, videoGames, albums } from '@/lib/database/schema';
+import { books, movies, videoGames, albums } from 'lib/database/schema';
 
 const serverDomain = process.env.SERVER_BASE_URL;
 

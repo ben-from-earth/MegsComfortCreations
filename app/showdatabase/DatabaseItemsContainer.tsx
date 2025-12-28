@@ -1,9 +1,9 @@
 // components
-import PageSelector from '@/app/components/PageSelector';
-import DatabaseItem from '@/app/showdatabase/DatabaseItem';
+import PageSelector from '@//components/PageSelector';
+import DatabaseItem from '@//showdatabase/DatabaseItem';
 
 // context
-import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
+import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 export default function DatabaseItemsContainer() {
   const { databaseItems } = useDatabasePageContext();

@@ -1,17 +1,19 @@
 // react, redux imports
 import { Dispatch, SetStateAction } from 'react';
 
-// library imports
-import { TextField } from '@mui/material';
-
 // necessary imports from collector state slice
-import { mediaTypeDefinitions } from '@/lib/state/slices/collectorSlice';
+import { mediaTypeDefinitions } from 'lib/state/slices/collectorSlice';
 
 // interfaces and types
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
 import titleCollectionListConversion, {
   titleOutputObj,
-} from '@/lib/helpers/titleCollectionListConversion';
+} from 'lib/helpers/titleCollectionListConversion';
+
+// component imports
+import TextInput from '../components/TextInput';
+import { useFormContext } from 'react-hook-form';
+import { CollectorFormData } from '@//mediacollector/collector-form/collectorFormSchema';
 
 interface MediaInputProps {
   mediaTypes: mediaTypeDefinitions[];
@@ -29,6 +31,11 @@ export default function MediaInputs({
   mediaTypes,
   setSearchData,
 }: MediaInputProps) {
+  // mediaTypes can be moved to local state of page.tsx, because were updating the form state
+  // only if media type box exists
+
+  const { setValue } = useFormContext<CollectorFormData>();
+
   return (
     <form
       id="MediaInputForm"
@@ -37,30 +44,18 @@ export default function MediaInputs({
       {mediaTypes
         .filter((mediaType) => mediaType.show)
         .map(({ type, label }) => (
-          <TextField
-            className="w-90 rounded-sm bg-white"
-            id={`outlined-multiline-static ${label}`}
-            multiline
+          <TextInput
+            variant="multiline"
             key={type}
             label={`${label} Titles`}
-            slotProps={{
-              inputLabel: {
-                sx: {
-                  '&.MuiInputLabel-shrink': {
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    px: '10px',
-                    color: 'rgb(0,0,0, 0.5)',
-                    transform: 'translate(6px, -8px) scale(0.75)',
-                  },
-                },
-              },
-            }}
             rows={5}
             onChange={(e) => {
               const titleSearchList = titleCollectionListConversion(
                 e.target.value,
               );
+              // for form change we can just do setValues('collectionData[type]', titleSearchList)
+              // this removes need for setSearchData function
+              setValue(`collectionData`, titleSearchList);
               setSearchData((prev) => {
                 return prev.map((media) =>
                   media.type === type ? { type: type, titleSearchList } : media,

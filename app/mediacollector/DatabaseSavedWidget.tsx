@@ -1,11 +1,11 @@
 // components
-import Button from '@/app/components/Button';
+import Button from '@//components/Button';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // interfaces and types
-import { DatabaseSaveServerResponse } from '@/lib/interfaces/globalInterfaces';
+import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
 
 export interface DatabaseSavedWidgetProps {
   data: DatabaseSaveServerResponse;

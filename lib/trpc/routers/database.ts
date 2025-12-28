@@ -1,8 +1,8 @@
-import { publicProcedure, router } from '@/lib/trpc/trpc';
+import { publicProcedure, router } from 'lib/trpc/trpc';
 import { asc, desc, ilike, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db as defaultDb } from '@/app/db/client';
-import { albums, books, movies, videoGames } from '@/app/db/schema';
+import { db as defaultDb } from '@//db/client';
+import { albums, books, movies, videoGames } from '@//db/schema';
 import type {
   SuccessfulPaginationResponse,
   SuccessfulMediaSaveEditResponse,
@@ -16,18 +16,18 @@ import type {
   MovieRow,
   VideoGameRow,
   AlbumRow,
-} from '@/lib/interfaces/globalInterfaces';
+} from 'lib/interfaces/globalInterfaces';
 import { validate } from 'jsonschema';
-import bookCreateSchema from '@/lib/database/schemas/bookCreateSchema.json';
-import otherMediaCreateSchema from '@/lib/database/schemas/otherMediaCreateSchema.json';
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
+import otherMediaCreateSchema from 'lib/database/schemas/otherMediaCreateSchema.json';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
-const mediaType = z.enum(['book', 'movie', 'video_game', 'album']);
+const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 
 const tableMap = {
   book: books,
   movie: movies,
-  video_game: videoGames,
+  videoGame: videoGames,
   album: albums,
 } as const;
 
@@ -96,7 +96,7 @@ export const databaseRouter = router({
         if (type === 'movie') {
           return sort === 'spineColor' ? movies.spineColor : movies.title;
         }
-        if (type === 'video_game') {
+        if (type === 'videoGame') {
           return sort === 'spineColor'
             ? videoGames.spineColor
             : videoGames.title;
@@ -214,7 +214,7 @@ export const databaseRouter = router({
             type,
           } satisfies SuccessfulMediaSaveEditResponse;
         }
-        case 'video_game': {
+        case 'videoGame': {
           const data = mediaData as VideoGameInsert;
           const [row] = await db
             .insert(videoGames)
@@ -339,7 +339,7 @@ export const databaseRouter = router({
             type,
           } satisfies SuccessfulMediaSaveEditResponse;
         }
-        case 'video_game': {
+        case 'videoGame': {
           const validation = validate(item, otherMediaCreateSchema);
           if (!validation.valid) {
             return {

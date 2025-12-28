@@ -1,7 +1,4 @@
-import {
-  MediaType,
-  PreSavedMediaItem,
-} from '@/lib/interfaces/globalInterfaces';
+import { MediaType, PreSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { NextResponse } from 'next/server';
 
 export interface ErrorResponse {

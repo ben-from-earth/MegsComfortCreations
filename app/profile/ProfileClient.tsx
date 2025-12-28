@@ -2,9 +2,9 @@
 
 import { useContext, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/app/components/Button';
-import GenreContext from '@/lib/context/GenreContext';
-import { authClient } from '@/lib/auth-client';
+import Button from '@//components/Button';
+import GenreContext from 'lib/context/GenreContext';
+import { authClient } from 'lib/auth-client';
 
 type Props = {
   user: {

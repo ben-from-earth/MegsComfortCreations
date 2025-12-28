@@ -2,13 +2,13 @@
 import { memo } from 'react';
 
 // components
-import CollectedCoversBlock from '@/app/mediacollector/CollectedCoversBlock';
+import CollectedCoversBlock from '@//mediacollector/CollectedCoversBlock';
 
 // necessary imports from collector state slice
-import { CollectedBlockInformation } from '@/lib/state/slices/collectorSlice';
+import { CollectedBlockInformation } from 'lib/state/slices/collectorSlice';
 
 // interfaces and types
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
 
 const TitleBlockContainer = memo(function TitleBlockContainer({
   blocks,

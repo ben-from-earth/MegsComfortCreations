@@ -8,27 +8,27 @@ import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
 import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 
 // context
-import GenreContext from '@/lib/context/GenreContext';
-import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
+import GenreContext from 'lib/context/GenreContext';
+import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // components
-import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
-import Button from '@/app/components/Button';
+import GenreCheckboxes from '@//mediacollector/GenreCheckboxes';
+import Button from '@//components/Button';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
-import { mediaTypeBlockClasses } from '@/app/mediacollector/CollectedCoversBlock';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
+import { mediaTypeBlockClasses } from '@//mediacollector/CollectedCoversBlock';
 
 // interfaces and types
 import {
   BlockInfo,
   MediaType,
   PostSavedMediaItem,
-} from '@/lib/interfaces/globalInterfaces';
-import { ErrorResponse } from '@/app/api/api-Errors';
+} from 'lib/interfaces/globalInterfaces';
+import { ErrorResponse } from '@//api/api-Errors';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -122,7 +122,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   const icons = {
     book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
     movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    video_game: (
+    videoGame: (
       <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
     ),
     album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,

@@ -1,4 +1,4 @@
-import { router } from '@/lib/trpc/trpc';
+import { router } from 'lib/trpc/trpc';
 import { databaseRouter } from './database';
 import { genresRouter } from './genres';
 import { onlineRouter } from './online';

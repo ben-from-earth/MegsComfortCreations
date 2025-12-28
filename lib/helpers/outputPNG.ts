@@ -6,7 +6,7 @@ import axios from 'axios';
 import JSZip from 'jszip';
 
 // interfaces and types
-import { ImageData } from '@/lib/state/slices/pngCollectionSlice';
+import { ImageData } from 'lib/state/slices/pngCollectionSlice';
 
 /*
   PNG/ZIP renderer (paginated)
@@ -116,14 +116,14 @@ const COMBOS: Record<
   3: {
     book: variation1,
     movie: variation1,
-    video_game: variation1,
+    videoGame: variation1,
     album: variation2,
     default: variation1,
   },
   5: {
     book: variation3,
     movie: variation4,
-    video_game: variation4,
+    videoGame: variation4,
     album: variation5,
     default: variation4,
   },

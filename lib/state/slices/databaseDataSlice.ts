@@ -1,15 +1,15 @@
 // react, redux imports
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RootState } from '@/lib/state/store';
+import { RootState } from 'lib/state/store';
 
 // necessary imports from collector state
-import { medias } from '@/lib/state/slices/collectorSlice';
+import { medias } from 'lib/state/slices/collectorSlice';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // interfaces and types
-import { DatabasePayload } from '@/app/mediacollector/CollectedCoversBlock';
+import { DatabasePayload } from '@//mediacollector/CollectedCoversBlock';
 import {
   AlbumInsert,
   BookInsert,
@@ -20,9 +20,9 @@ import {
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulMediaSaveEditResponse,
   VideoGameInsert,
-} from '@/lib/interfaces/globalInterfaces';
-import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
-import { trpcClient } from '@/lib/trpc/vanillaClient';
+} from 'lib/interfaces/globalInterfaces';
+import { DatabaseSaveEditErrorResponse } from '@//api/api-Errors';
+import { trpcClient } from 'lib/trpc/vanillaClient';
 
 type WithImages<T> = T & {
   images: { src: string; idx: number }[];
@@ -45,7 +45,7 @@ export type DatabaseDataPerType =
       data: DatabaseSliceDataMovie[];
     }
   | {
-      type: 'video_game';
+      type: 'videoGame';
       label: 'Video Game';
       data: DatabaseSliceDataVideoGame[];
     }
@@ -222,7 +222,7 @@ export const databaseDataSlice = createSlice({
       state,
       action: PayloadAction<{
         blockID: string;
-        type: 'book' | 'movie' | 'video_game' | 'album';
+        type: 'book' | 'movie' | 'videoGame' | 'album';
         name: 'title' | 'author' | 'pubYear' | 'pageCount';
         newText: string;
       }>,
@@ -261,7 +261,7 @@ export const databaseDataSlice = createSlice({
       }
 
       // ---- NON-BOOK BRANCH ----------------------------------------------------
-      // Here mediaState.type is 'movie' | 'video_game' | 'album'
+      // Here mediaState.type is 'movie' | 'videoGame' | 'album'
       // These types only have `title`, so we only handle that safely.
       const block = mediaState.data[blockIndex];
 

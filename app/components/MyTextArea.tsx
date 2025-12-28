@@ -1,11 +1,11 @@
 // react, redux imports
-import { useAppDispatch } from '@/lib/state/store';
+import { useAppDispatch } from 'lib/state/store';
 
 // necessary imports from database data slice
-import { updateDatabaseData } from '@/lib/state/slices/databaseDataSlice';
+import { updateDatabaseData } from 'lib/state/slices/databaseDataSlice';
 
 // interfaces and types
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
 
 export interface MyTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';

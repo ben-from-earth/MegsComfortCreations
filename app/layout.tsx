@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import NavBar from '@/app/components/NavBar';
+import NavBar from '@//components/NavBar';
 
 import { Just_Another_Hand } from 'next/font/google';
 import { NextFont } from 'next/dist/compiled/@next/font';
-import Providers from '@/app/Providers';
-import { TRPCProvider } from '@/lib/trpc/provider';
+import Providers from '@//Providers';
+import { TRPCProvider } from 'lib/trpc/provider';
 
 export const metadata: Metadata = {
   title: "Meg's Comfort Creations",

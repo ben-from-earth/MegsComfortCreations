@@ -1,18 +1,18 @@
-import { POST as addLinkPOST } from '@/app/api/genres/addlink/route';
-import { GET as GETall, getAllResponse } from '@/app/api/genres/getall/route';
-import { GET as GETforBook } from '@/app/api/genres/getforbook/route';
-import { GET as GETbookswithNoGenre } from '@/app/api/genres/nogenres/route';
-import { GET as GETbookswithGenre } from '@/app/api/genres/route';
-import { POST as unlinkPOST } from '@/app/api/genres/unlink/route';
+import { POST as addLinkPOST } from '@//api/genres/addlink/route';
+import { GET as GETall, getAllResponse } from '@//api/genres/getall/route';
+import { GET as GETforBook } from '@//api/genres/getforbook/route';
+import { GET as GETbookswithNoGenre } from '@//api/genres/nogenres/route';
+import { GET as GETbookswithGenre } from '@//api/genres/route';
+import { POST as unlinkPOST } from '@//api/genres/unlink/route';
 
-import { db } from '@/app/db/client'; // now your Drizzle db instance
-import { books, genresBooks } from '@/app/db/schema'; // drizzle tables
+import { db } from '@//db/client'; // now your Drizzle db instance
+import { books, genresBooks } from '@//db/schema'; // drizzle tables
 import { sql } from 'drizzle-orm';
 
 import {
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulPaginationResponse,
-} from '@/lib/interfaces/globalInterfaces';
+} from 'lib/interfaces/globalInterfaces';
 import { NextRequest } from 'next/server';
 
 const serverDomain = process.env.SERVER_BASE_URL;

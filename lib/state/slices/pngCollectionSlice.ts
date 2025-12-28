@@ -1,11 +1,11 @@
 // react, redux imports
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RootState } from '@/lib/state/store';
+import { RootState } from 'lib/state/store';
 
 // interfaces and types
 export interface ImageData {
   url: string;
-  type: 'book' | 'movie' | 'video_game' | 'album';
+  type: 'book' | 'movie' | 'videoGame' | 'album';
   spineColor: string;
 }
 

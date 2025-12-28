@@ -1,5 +1,5 @@
-import { users } from '@/app/db/schema';
-import { db } from '@/app/db/client';
+import { users } from '@//db/schema';
+import { db } from '@//db/client';
 import { eq } from 'drizzle-orm';
 
 export class User {

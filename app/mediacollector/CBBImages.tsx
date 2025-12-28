@@ -1,21 +1,22 @@
 // react, redux imports
 import { useState } from 'react';
-import { useAppDispatch } from '@/lib/state/store';
+import { useAppDispatch } from 'lib/state/store';
 
 // necessary imports from database data state slice
 import {
   addToDatabaseData,
   removeFromDatabaseData,
-} from '@/lib/state/slices/databaseDataSlice';
+} from 'lib/state/slices/databaseDataSlice';
 
 //necessary imports from png collection state slice
 import {
   addToPNGCollectionList,
   removeFromPNGCollectionList,
-} from '@/lib/state/slices/pngCollectionSlice';
+} from 'lib/state/slices/pngCollectionSlice';
 
 // interfaces and types
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
+import Image from 'next/image';
 
 export interface CBBImageProps {
   images: string[];
@@ -72,7 +73,9 @@ export default function CBBImages({
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-5">
       {images.map((src, idx) => (
         <div
-          className="relative z-10 overflow-hidden rounded-sm"
+          className={`relative z-10 overflow-hidden rounded-sm ${
+            type === 'album' ? 'w-31' : 'h-31 w-21'
+          }`}
           key={src}
           onClick={() => {
             if (!isDatabase) {
@@ -80,14 +83,19 @@ export default function CBBImages({
             }
           }}
         >
-          <img
+          <Image
             className={
               type === 'album'
-                ? 'block w-31 cursor-pointer object-cover outline-2'
-                : 'block h-31 w-21 cursor-pointer'
+                ? 'cursor-pointer object-cover outline-2'
+                : 'cursor-pointer'
             }
             src={src}
-          ></img>
+            alt={`${type} image`}
+            fill
+            sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 200px"
+            unoptimized
+            loader={({ src }) => src}
+          />
 
           <div
             className={`pointer-events-none absolute inset-0 flex content-center items-center ${

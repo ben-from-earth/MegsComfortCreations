@@ -1,6 +1,6 @@
 // react
 import { memo, useContext, useEffect, useState } from 'react';
-import { useAppDispatch } from '@/lib/state/store';
+import { useAppDispatch } from 'lib/state/store';
 
 //import icons and items from Material UI
 import BookIcon from '@mui/icons-material/BookTwoTone';
@@ -15,16 +15,16 @@ import {
   addToDatabaseData,
   populateDatabaseData,
   removeFromDatabaseData,
-} from '@/lib/state/slices/databaseDataSlice';
+} from 'lib/state/slices/databaseDataSlice';
 
 // necessary imports from png state slice
-import { addToPNGCollectionList } from '@/lib/state/slices/pngCollectionSlice';
+import { addToPNGCollectionList } from 'lib/state/slices/pngCollectionSlice';
 
 // components
-import CBBImages from '@/app/mediacollector/CBBImages';
-import MyTextArea from '@/app/components/MyTextArea';
-import GenreContext from '@/lib/context/GenreContext';
-import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
+import CBBImages from '@//mediacollector/CBBImages';
+import MyTextArea from '@//components/MyTextArea';
+import GenreContext from 'lib/context/GenreContext';
+import GenreCheckboxes from '@//mediacollector/GenreCheckboxes';
 
 // interfaces and types
 import {
@@ -33,13 +33,13 @@ import {
   MediaType,
   MovieInsert,
   VideoGameInsert,
-} from '@/lib/interfaces/globalInterfaces';
-import { CollectedBlockInformation } from '@/lib/state/slices/collectorSlice';
+} from 'lib/interfaces/globalInterfaces';
+import { CollectedBlockInformation } from 'lib/state/slices/collectorSlice';
 
 export type DatabasePayload =
   | { type: 'book'; data: BookInsert }
   | { type: 'movie'; data: MovieInsert }
-  | { type: 'video_game'; data: VideoGameInsert }
+  | { type: 'videoGame'; data: VideoGameInsert }
   | { type: 'album'; data: AlbumInsert };
 
 export interface CollectedCoversBlockProps {
@@ -67,7 +67,7 @@ export const mediaTypeBlockClasses = {
   book: 'bg-darkpink border-[#805052]',
   movie: 'bg-[#323b43] border-black text-white',
   album: 'bg-[#7fa5a3] border-[#354544]',
-  video_game: 'bg-[#98ab88] border-[#4e8885]',
+  videoGame: 'bg-[#98ab88] border-[#4e8885]',
 };
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
@@ -89,7 +89,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const icons = {
     book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
     movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    video_game: (
+    videoGame: (
       <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
     ),
     album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
@@ -132,9 +132,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         ...baseData,
       },
     };
-  } else if (type === 'video_game') {
+  } else if (type === 'videoGame') {
     databasePayload = {
-      type: 'video_game',
+      type: 'videoGame',
       data: {
         ...baseData,
       },

@@ -6,11 +6,11 @@ import { useDispatch } from 'react-redux';
 import {
   mediaTypeDefinitions,
   setChecks,
-} from '@/lib/state/slices/collectorSlice';
+} from 'lib/state/slices/collectorSlice';
 
 // interfaces and types
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
-import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { titleOutputObj } from 'lib/helpers/titleCollectionListConversion';
 
 interface MediaCheckboxesProps {
   mediaTypes: mediaTypeDefinitions[];

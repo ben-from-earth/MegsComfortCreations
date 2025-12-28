@@ -3,23 +3,23 @@
 import { memo, useEffect, useState } from 'react';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // components
-import AreYouSure from '@/app/components/AreYouSure';
-import Button from '@/app/components/Button';
-import { mediaTypeBlockClasses } from '@/app/mediacollector/CollectedCoversBlock';
-import EditDatabaseBlock from '@/app/showdatabase/EditDatabaseBlock';
+import AreYouSure from '@//components/AreYouSure';
+import Button from '@//components/Button';
+import { mediaTypeBlockClasses } from '@//mediacollector/CollectedCoversBlock';
+import EditDatabaseBlock from '@//showdatabase/EditDatabaseBlock';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // context
-import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
+import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // interfaces and types
-import { PostSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
-import { isBookRow } from '@/lib/helpers/handleMediaTyping';
+import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
+import { isBookRow } from 'lib/helpers/handleMediaTyping';
 
 export interface DatabaseItemProps {
   info: PostSavedMediaItem;

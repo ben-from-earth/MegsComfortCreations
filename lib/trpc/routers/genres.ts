@@ -1,11 +1,11 @@
-import { router, publicProcedure } from '@/lib/trpc/trpc';
+import { router, publicProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
-import Genre from '@/lib/database/models/genre';
+import Genre from 'lib/database/models/genre';
 import type {
   BookRow,
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulPaginationResponse,
-} from '@/lib/interfaces/globalInterfaces';
+} from 'lib/interfaces/globalInterfaces';
 
 export const genresRouter = router({
   getAll: publicProcedure.query(async () => {

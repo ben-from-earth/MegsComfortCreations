@@ -1,12 +1,12 @@
-import { router, publicProcedure } from '@/lib/trpc/trpc';
+import { router, publicProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
-import { outputAuto, type Template } from '@/lib/helpers/outputPNG';
-import type { ImageData } from '@/lib/state/slices/pngCollectionSlice';
+import { outputAuto, type Template } from 'lib/helpers/outputPNG';
+import type { ImageData } from 'lib/state/slices/pngCollectionSlice';
 
 const templateSchema = z.union([z.literal(3), z.literal(5)]);
 const imageSchema = z.object({
   url: z.string().url(),
-  type: z.enum(['book', 'movie', 'video_game', 'album']),
+  type: z.enum(['book', 'movie', 'videoGame', 'album']),
   spineColor: z.string().min(1),
 });
 
