@@ -90,9 +90,7 @@ export default function CBBImages({
           ></img>
 
           <div
-            className={`pointer-events-none absolute inset-0 flex content-center items-center bg-[rgba(0,200,0,0.5)] ${
-              clicked[idx] ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`pointer-events-none absolute inset-0 flex content-center items-center opacity-0`}
           >
             <p className='-translate-x-1 -rotate-65 font-["Just_Another_Hand"] text-5xl font-bold tracking-wider text-[rgb(0,77,0)]'>
               Selected
