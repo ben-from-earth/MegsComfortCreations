@@ -2,7 +2,7 @@
 
 import { useContext, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@//components/Button';
+import Button from '@/shared/Button';
 import GenreContext from 'lib/context/GenreContext';
 import { authClient } from 'lib/auth-client';
 

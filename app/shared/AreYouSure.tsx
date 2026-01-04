@@ -2,7 +2,7 @@
 import { Dispatch, SetStateAction } from 'react';
 
 // components
-import Button from '@//components/Button';
+import Button from '@/shared/Button';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';

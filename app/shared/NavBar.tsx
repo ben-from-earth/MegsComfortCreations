@@ -1,11 +1,11 @@
 // components
 import Image from 'next/image';
 import Link from 'next/link';
-import Button from '@//components/Button';
-import ProfileButton from '@//components/ProfileButton';
+import Button from '@/shared/Button';
+import ProfileButton from '@/shared/ProfileButton';
 
 // public image imports
-import Logo from '@/public/Comfort.png';
+import Logo from 'public/Comfort.png';
 
 // auth
 import { auth } from 'lib/auth';

@@ -11,7 +11,7 @@ import titleCollectionListConversion, {
 } from 'lib/helpers/titleCollectionListConversion';
 
 // component imports
-import TextInput from '../components/TextInput';
+import TextInput from '@/shared/TextInput';
 import { useFormContext } from 'react-hook-form';
 import { CollectorFormData } from '@//mediacollector/collector-form/collectorFormSchema';
 
@@ -53,9 +53,8 @@ export default function MediaInputs({
               const titleSearchList = titleCollectionListConversion(
                 e.target.value,
               );
-              // for form change we can just do setValues('collectionData[type]', titleSearchList)
-              // this removes need for setSearchData function
-              setValue(`collectionData`, titleSearchList);
+              setValue(`collectionList.${type}s`, titleSearchList);
+
               setSearchData((prev) => {
                 return prev.map((media) =>
                   media.type === type ? { type: type, titleSearchList } : media,

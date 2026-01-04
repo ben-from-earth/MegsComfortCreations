@@ -6,7 +6,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import Button from '@//components/Button';
+import Button from '@/shared/Button';
 
 // context
 import GenreContext from 'lib/context/GenreContext';

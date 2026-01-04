@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import NavBar from '@//components/NavBar';
+import NavBar from '@/shared/NavBar';
 
 import { Just_Another_Hand } from 'next/font/google';
 import { NextFont } from 'next/dist/compiled/@next/font';

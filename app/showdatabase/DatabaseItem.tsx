@@ -6,8 +6,8 @@ import { memo, useEffect, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 
 // components
-import AreYouSure from '@//components/AreYouSure';
-import Button from '@//components/Button';
+import AreYouSure from '@/shared/AreYouSure';
+import Button from '@/shared/Button';
 import { mediaTypeBlockClasses } from '@//mediacollector/CollectedCoversBlock';
 import EditDatabaseBlock from '@//showdatabase/EditDatabaseBlock';
 

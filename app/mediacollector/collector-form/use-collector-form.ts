@@ -7,7 +7,13 @@ import type { CollectorFormData } from './collectorFormSchema';
 const defaultValues: CollectorFormData = {
   orderNumber: '',
   customerName: '',
-  collectionData: {
+  collectionList: {
+    books: [],
+    movies: [],
+    videoGames: [],
+    albums: [],
+  },
+  collectedData: {
     books: [],
     movies: [],
     videoGames: [],
@@ -24,7 +30,8 @@ export function useCollectorForm() {
   });
 
   const onSubmit = (data: CollectorFormData) => {
-    console.log(data);
+    // this submit should be database additions
+    console.log('Form submitted successfully with data:', data);
   };
 
   const onError = (errors: FieldErrors<CollectorFormData>) => {

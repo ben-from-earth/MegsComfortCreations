@@ -1,7 +1,7 @@
 'use client';
 // image collection from assets
-import backgroundImage from '@/public/FlowerBackground.png';
-import MediaCollectorTitle from '@/public/MegsMediaCollector.png';
+import backgroundImage from 'public/FlowerBackground.png';
+import MediaCollectorTitle from 'public/MegsMediaCollector.png';
 
 // react and redux
 import { useEffect, useRef, useState } from 'react';
@@ -13,14 +13,14 @@ import { trpc } from 'lib/trpc/client';
 
 // components
 import Image from 'next/image';
-import QueryCounter from '@//components/QueryCounter';
+import QueryCounter from '@/shared/QueryCounter';
 import MediaCheckboxes from '@//mediacollector/MediaCheckboxes';
 import MediaInputs from '@//mediacollector/MediaInputs';
 import PNGFormatPicker from '@//mediacollector/PNGFormatPicker';
-import LoadingWidget from '@//components/LoadingWidget';
+import LoadingWidget from '@/shared/LoadingWidget';
 import DatabaseSavedWidget from '@//mediacollector/DatabaseSavedWidget';
 import TitleBlockContainer from '@//mediacollector/TitleBlockContainer';
-import TextInput from '@//components/TextInput';
+import TextInput from '@/shared/TextInput';
 
 // imports from the collector state slice
 import {
@@ -63,7 +63,7 @@ import {
   AlbumInsert,
 } from 'lib/interfaces/globalInterfaces';
 import { titleOutputObj } from 'lib/helpers/titleCollectionListConversion';
-import Button from '../components/Button';
+import Button from '@/shared/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
@@ -375,16 +375,6 @@ function MediaCollectorContent({
           <Button
             onClick={() => {
               handleCollectClick();
-              onSubmit({
-                orderNumber,
-                customerName,
-                collectionData: {
-                  books: [],
-                  movies: [],
-                  videoGames: [],
-                  albums: [],
-                },
-              });
             }}
             label={'Collect Media Covers'}
             width={175}

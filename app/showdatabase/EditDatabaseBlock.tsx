@@ -13,7 +13,7 @@ import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // components
 import GenreCheckboxes from '@//mediacollector/GenreCheckboxes';
-import Button from '@//components/Button';
+import Button from '@/shared/Button';
 
 // library imports
 import { trpc } from 'lib/trpc/client';

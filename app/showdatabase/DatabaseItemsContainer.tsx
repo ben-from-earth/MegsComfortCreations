@@ -1,5 +1,5 @@
 // components
-import PageSelector from '@//components/PageSelector';
+import PageSelector from '@/shared/PageSelector';
 import DatabaseItem from '@//showdatabase/DatabaseItem';
 
 // context

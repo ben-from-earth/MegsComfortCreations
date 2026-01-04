@@ -3,7 +3,13 @@ import z from 'zod';
 export const collectorFormSchema = z.object({
   orderNumber: z.string(),
   customerName: z.string(),
-  collectionData: z.object({
+  collectionList: z.object({
+    books: z.array(z.object({ title: z.string(), author: z.string() })),
+    movies: z.array(z.object({ title: z.string() })),
+    videoGames: z.array(z.object({ title: z.string() })),
+    albums: z.array(z.object({ title: z.string() })),
+  }),
+  collectedData: z.object({
     books: z.array(
       z.object({
         title: z.string(),

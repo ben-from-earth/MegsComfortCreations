@@ -6,7 +6,6 @@ import { albums, books, movies, videoGames } from '@//db/schema';
 import type {
   SuccessfulPaginationResponse,
   SuccessfulMediaSaveEditResponse,
-  SuccessfulMediaSearchResponse,
   BookInsert,
   MovieInsert,
   VideoGameInsert,
@@ -21,6 +20,7 @@ import { validate } from 'jsonschema';
 import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
 import otherMediaCreateSchema from 'lib/database/schemas/otherMediaCreateSchema.json';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
+import { searchByTitle } from './actions/search-by-title';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 
@@ -35,33 +35,10 @@ export const databaseRouter = router({
   searchByTitle: publicProcedure
     .input(z.object({ type: mediaType, title: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
-      console.log('Database searchByTitle called with input:', input);
       const db = ctx.db ?? defaultDb;
       const { type, title } = input;
-      const table = tableMap[type];
 
-      const rearrangedTitle = titleRearrange(title);
-      const result = await db
-        .select()
-        .from(table)
-        .where(ilike(table.title, rearrangedTitle));
-      const total = result.length;
-
-      if (total === 0) {
-        return {
-          error: 'Media Not Found',
-          message: `No ${type} in database with title ${rearrangedTitle}`,
-          failedSearchData: [],
-        };
-      }
-
-      return {
-        message: `Successfully found ${total} ${type}(s) with title ${titleRearrange(
-          result[0].title,
-        )}`,
-        foundMediaList: result,
-        total,
-      } satisfies SuccessfulMediaSearchResponse;
+      return await searchByTitle(db, type, title);
     }),
   getPaginated: publicProcedure
     .input(

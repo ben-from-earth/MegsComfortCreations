@@ -22,7 +22,7 @@ import { addToPNGCollectionList } from 'lib/state/slices/pngCollectionSlice';
 
 // components
 import CBBImages from '@//mediacollector/CBBImages';
-import MyTextArea from '@//components/MyTextArea';
+import MyTextArea from '@/shared/MyTextArea';
 import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@//mediacollector/GenreCheckboxes';
 

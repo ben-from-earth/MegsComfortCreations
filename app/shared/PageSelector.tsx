@@ -1,5 +1,5 @@
 // components
-import Button from '@//components/Button';
+import Button from '@/shared/Button';
 
 // context
 import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
