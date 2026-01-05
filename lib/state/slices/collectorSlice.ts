@@ -1,10 +1,5 @@
 // react, redux imports
-import {
-  createAsyncThunk,
-  createSlice,
-  nanoid,
-  PayloadAction,
-} from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 // library imports
 import { trpcClient } from 'lib/trpc/vanillaClient';
@@ -50,8 +45,8 @@ type BaseBlockInfo = {
 // extra fields only for books
 type BookBlockInfo = BaseBlockInfo & {
   author?: string;
-  pubYear?: number | null;
-  pageCount?: number | null;
+  pubYear: number | null;
+  pageCount: number | null;
 };
 
 // discriminated union for the whole block
@@ -59,14 +54,14 @@ export type CollectedBlockInformation =
   | {
       type: 'book';
       images: string[];
-      BlockInfo: BookBlockInfo;
+      blockInfo: BookBlockInfo;
       blockID: string;
       isDatabase: boolean;
     }
   | {
       type: 'movie' | 'videoGame' | 'album';
       images: string[];
-      BlockInfo: BaseBlockInfo;
+      blockInfo: BaseBlockInfo;
       blockID: string;
       isDatabase: boolean;
     };
@@ -130,7 +125,7 @@ export const collectBlockInformation = createAsyncThunk(
         return {
           type,
           images: imageUrls,
-          BlockInfo: {
+          blockInfo: {
             title,
             author,
             pubYear,
@@ -138,7 +133,7 @@ export const collectBlockInformation = createAsyncThunk(
             spineColor,
             databaseGenres,
           },
-          blockID: nanoid(),
+          blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
           isDatabase: true,
         };
       }
@@ -150,11 +145,11 @@ export const collectBlockInformation = createAsyncThunk(
       return {
         type,
         images: imageUrls,
-        BlockInfo: {
+        blockInfo: {
           title,
           spineColor,
         },
-        blockID: nanoid(),
+        blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
         isDatabase: true,
       };
     }
@@ -171,7 +166,7 @@ export const collectBlockInformation = createAsyncThunk(
     updateQueryCount();
     const imgArr = imageSearchRes.data.images;
 
-    let BlockInfo: BlockInfo;
+    let blockInfo: BlockInfo;
     if (type === 'book') {
       //if book, go to open library and get more data about the book
       const bookInformation = (await trpcClient.online.openLibrary.mutate({
@@ -180,27 +175,36 @@ export const collectBlockInformation = createAsyncThunk(
       })) as OpenLibrarySuccess | OpenLibraryError;
 
       if ('failedSearchData' in bookInformation) {
-        BlockInfo = bookInformation.failedSearchData;
+        blockInfo = bookInformation.failedSearchData;
       } else {
-        BlockInfo = bookInformation;
+        blockInfo = bookInformation;
       }
-      // BlockInfo: { title, author, pubYear, pageCount } || {title, author}
+      // blockInfo: { title, author, pubYear, pageCount } || {title, author}
     } else {
-      //Just submit title as BlockInfo for non-books
+      //Just submit title as blockInfo for non-books
       //Updates to data collection for other media types can be performed here if necessary in future update.
-      BlockInfo = { title };
+      blockInfo = { title };
     }
 
-    const CollectedBlockInformation: CollectedBlockInformation = {
-      type,
-      images: imgArr,
-      BlockInfo,
-      blockID: nanoid(),
-      isDatabase: false,
-    };
+    const collected: CollectedBlockInformation =
+      type === 'book'
+        ? {
+            type: 'book',
+            images: imgArr,
+            blockInfo: blockInfo as BookBlockInfo,
+            blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+            isDatabase: false,
+          }
+        : {
+            type,
+            images: imgArr,
+            blockInfo: blockInfo as BaseBlockInfo,
+            blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+            isDatabase: false,
+          };
 
     //return the collected data for creation of collectedCoverBlock
-    return CollectedBlockInformation;
+    return collected;
   },
 );
 

@@ -81,7 +81,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
               ? {
                   type,
                   images: imageUrls ?? [],
-                  BlockInfo: {
+                  blockInfo: {
                     title,
                     author: info.author,
                     pubYear: info.pubYear,
@@ -95,7 +95,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
               : {
                   type,
                   images: imageUrls ?? [],
-                  BlockInfo: {
+                  blockInfo: {
                     title,
                     spineColor,
                     initialGenres: [...genres],

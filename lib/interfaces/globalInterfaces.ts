@@ -1,6 +1,6 @@
 // drizzle types
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { books, movies, videoGames, albums } from '@//db/schema';
+import { books, movies, videoGames, albums } from '@/db/schema';
 
 import { DatabaseSaveEditErrorResponse } from '@//api/api-Errors';
 

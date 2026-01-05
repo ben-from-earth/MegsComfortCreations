@@ -1,5 +1,4 @@
 // react, redux imports
-import { Dispatch, SetStateAction } from 'react';
 import { useDispatch } from 'react-redux';
 
 // necessary imports from collector state slice
@@ -8,26 +7,11 @@ import {
   setChecks,
 } from 'lib/state/slices/collectorSlice';
 
-// interfaces and types
-import { MediaType } from 'lib/interfaces/globalInterfaces';
-import { titleOutputObj } from 'lib/helpers/titleCollectionListConversion';
-
 interface MediaCheckboxesProps {
   mediaTypes: mediaTypeDefinitions[];
-  setSearchData: Dispatch<
-    SetStateAction<
-      {
-        type: MediaType;
-        titleSearchList: titleOutputObj[];
-      }[]
-    >
-  >;
 }
 
-export default function MediaCheckboxes({
-  mediaTypes,
-  setSearchData,
-}: MediaCheckboxesProps) {
+export default function MediaCheckboxes({ mediaTypes }: MediaCheckboxesProps) {
   //setup connection to redux slice
   const dispatch = useDispatch();
 
@@ -42,13 +26,6 @@ export default function MediaCheckboxes({
             type="checkbox"
             onChange={() => {
               dispatch(setChecks(idx));
-              setSearchData((prev) => {
-                return prev.map((item, i) =>
-                  i === idx
-                    ? { ...prev[i], type: item.type, titleSearchList: [] }
-                    : prev[i],
-                );
-              });
             }}
           />
           {`${label}s`}

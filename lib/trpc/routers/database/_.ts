@@ -1,8 +1,8 @@
 import { publicProcedure, router } from 'lib/trpc/trpc';
 import { asc, desc, ilike, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db as defaultDb } from '@//db/client';
-import { albums, books, movies, videoGames } from '@//db/schema';
+import { db as defaultDb } from '@/db/client';
+import { albums, books, movies, videoGames } from '@/db/schema';
 import type {
   SuccessfulPaginationResponse,
   SuccessfulMediaSaveEditResponse,

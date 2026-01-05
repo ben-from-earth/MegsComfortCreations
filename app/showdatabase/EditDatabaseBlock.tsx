@@ -42,7 +42,7 @@ export interface EditDatabaseBlockProps {
   info: {
     type: MediaType;
     images: string[];
-    BlockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
+    blockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
     id: string;
     setEdit: Dispatch<SetStateAction<boolean>>;
   };
@@ -90,7 +90,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   info: {
     type,
     images,
-    BlockInfo: {
+    blockInfo: {
       title,
       author,
       pubYear,

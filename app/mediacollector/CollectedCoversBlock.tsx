@@ -77,7 +77,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const {
     type,
     images,
-    BlockInfo: { title, spineColor = '#ffffff', databaseGenres = [] },
+    blockInfo: { title, spineColor = '#ffffff', databaseGenres = [] },
     blockID,
     isDatabase,
   } = info;
@@ -113,7 +113,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   if (type === 'book') {
     const {
-      BlockInfo: { author, pubYear, pageCount },
+      blockInfo: { author, pubYear, pageCount },
     } = info;
     databasePayload = {
       type: 'book',
@@ -241,21 +241,21 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
             label="Author"
             type={type}
             blockID={blockID}
-            value={info.BlockInfo.author || ''}
+            value={info.blockInfo.author || ''}
           />
           <MyTextArea
             name="pubYear"
             label="Pub Year"
             type={type}
             blockID={blockID}
-            value={info.BlockInfo.pubYear || ''}
+            value={info.blockInfo.pubYear || ''}
           />
           <MyTextArea
             name="pageCount"
             label="Page Count"
             type={type}
             blockID={blockID}
-            value={info.BlockInfo.pageCount || ''}
+            value={info.blockInfo.pageCount || ''}
           />
         </>
       ) : (

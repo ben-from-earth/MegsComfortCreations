@@ -1,64 +1,56 @@
 import z from 'zod';
 
+export const baseBlockInfoSchema = z.object({
+  title: z.string(),
+  spineColor: z.string().optional(),
+  databaseGenres: z.array(z.string()).optional(),
+});
+
+export const bookBlockInfoSchema = baseBlockInfoSchema.extend({
+  author: z.string().optional(),
+  pubYear: z.number().nullable(),
+  pageCount: z.number().nullable(),
+});
+
+export const collectedBlockInformationSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('book'),
+    images: z.array(z.string()),
+    blockInfo: bookBlockInfoSchema,
+    blockID: z.string(),
+    isDatabase: z.boolean(),
+  }),
+  z.object({
+    type: z.union([
+      z.literal('movie'),
+      z.literal('videoGame'),
+      z.literal('album'),
+    ]),
+    images: z.array(z.string()),
+    blockInfo: baseBlockInfoSchema,
+    blockID: z.string(),
+    isDatabase: z.boolean(),
+  }),
+]);
+
 export const collectorFormSchema = z.object({
   orderNumber: z.string(),
   customerName: z.string(),
   collectionList: z.object({
-    books: z.array(z.object({ title: z.string(), author: z.string() })),
-    movies: z.array(z.object({ title: z.string() })),
-    videoGames: z.array(z.object({ title: z.string() })),
-    albums: z.array(z.object({ title: z.string() })),
-  }),
-  collectedData: z.object({
-    books: z.array(
-      z.object({
-        title: z.string(),
-        author: z.string(),
-        pageCount: z.number().optional(),
-        publicationYear: z.number().optional(),
-        images: z.array(
-          z.object({
-            src: z.string(),
-            selected: z.boolean(),
-          }),
-        ),
-        genres: z.array(z.string()),
-      }),
+    book: z.array(
+      z.object({ title: z.string(), author: z.string().optional() }),
     ),
-    movies: z.array(
-      z.object({
-        title: z.string(),
-        images: z.array(
-          z.object({
-            src: z.string(),
-            selected: z.boolean(),
-          }),
-        ),
-      }),
+    movie: z.array(
+      z.object({ title: z.string(), author: z.string().optional() }),
     ),
-    videoGames: z.array(
-      z.object({
-        title: z.string(),
-        images: z.array(
-          z.object({
-            src: z.string(),
-            selected: z.boolean(),
-          }),
-        ),
-      }),
+    videoGame: z.array(
+      z.object({ title: z.string(), author: z.string().optional() }),
     ),
-    albums: z.array(
-      z.object({
-        title: z.string(),
-        images: z.array(
-          z.object({
-            src: z.string(),
-            selected: z.boolean(),
-          }),
-        ),
-      }),
+    album: z.array(
+      z.object({ title: z.string(), author: z.string().optional() }),
     ),
   }),
+  collectedData: z.array(collectedBlockInformationSchema),
 });
 
 export type CollectorFormData = z.infer<typeof collectorFormSchema>;

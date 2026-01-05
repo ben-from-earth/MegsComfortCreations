@@ -24,22 +24,14 @@ import TextInput from '@/shared/TextInput';
 
 // imports from the collector state slice
 import {
-  collectBlockInformation,
-  CollectedBlockInformation,
-  finishedFetch,
   finishedLoad,
-  getFetchStatus,
-  getLoadingStatus,
   mediaData,
   mediaTypeDefinitions,
-  setCollectList,
-  startFetch,
   startLoad,
 } from 'lib/state/slices/collectorSlice';
 
 // imports from the database state slice
 import {
-  clearDatabaseData,
   DatabaseDataPerType,
   removeFromDatabaseData,
   selectDatabaseData,
@@ -47,7 +39,6 @@ import {
 
 // imports from the png state slice
 import {
-  clearPNGCollectionList,
   ImageData,
   removeFromPNGCollectionList,
   selectPNGList,
@@ -62,7 +53,6 @@ import {
   VideoGameInsert,
   AlbumInsert,
 } from 'lib/interfaces/globalInterfaces';
-import { titleOutputObj } from 'lib/helpers/titleCollectionListConversion';
 import Button from '@/shared/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
@@ -76,25 +66,15 @@ function MediaCollectorContent({
   //setup connection to the redux slice and associated variables
   const dispatch = useAppDispatch();
   const stateData: mediaTypeDefinitions[] = useSelector(mediaData);
-  const shouldFetch: boolean = useSelector(getFetchStatus);
-  const isLoading: boolean = useSelector(getLoadingStatus);
   const pngCollectionList: ImageData[] = useSelector(selectPNGList);
 
   // setup states used throughout the component
   const { watch, setValue } = useFormContext<CollectorFormData>();
 
-  // ---------
-  // these states will get integrated into the form. collected covers blocks will be derived from form data
-  const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState<
-    CollectedBlockInformation[]
-  >([]);
-  const [searchData, setSearchData] = useState<
-    { type: MediaType; titleSearchList: titleOutputObj[] }[]
-  >(stateData.map((media) => ({ type: media.type, titleSearchList: [] })));
-
-  // ---------
   const orderNumber = watch('orderNumber');
   const customerName = watch('customerName');
+  const toCollectList = watch('collectionList');
+  const collectedData = watch('collectedData');
 
   // onSubmit comes from parent wrapper that owns the form instance
 
@@ -116,6 +96,8 @@ function MediaCollectorContent({
   const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
   const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: createPNG } = trpc.png.create.useMutation();
+  const { mutateAsync: collectMedia, isPending: isCollectingMedia } =
+    trpc.collect.collectMedia.useMutation();
 
   //update ref whenever stateData updates
   //stateData holds data about showing checkboxes, and the titleCollectionList data.
@@ -134,68 +116,26 @@ function MediaCollectorContent({
     }
   }, []);
 
-  //if should fetch comes true, set off chain of events to collect media covers
-  useEffect(() => {
-    if (!shouldFetch) return;
-
-    let cancelled = false;
-    setCollectedCoversBlocks([]);
-
-    const work = mediaTypesRef.current
-      .filter((m) => m.titleCollectionList.length > 0)
-      .flatMap(({ type, titleCollectionList }) =>
-        titleCollectionList.map((t) => ({ type, toCollectItem: t })),
-      );
-
-    // Kick off thunks
-    const tasks = work.map(({ type, toCollectItem }) =>
-      dispatch(collectBlockInformation({ type, toCollectItem })),
-    );
-
-    //IIFE for async promise collection and collected covers block setting
-    (async () => {
-      try {
-        // unwrap in parallel
-        const results = await Promise.allSettled(tasks.map((t) => t.unwrap()));
-        if (cancelled) return;
-
-        const blocks = results
-          .filter((r) => r.status === 'fulfilled')
-          .map((r) => r.value);
-        setCollectedCoversBlocks(blocks);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (!cancelled) dispatch(finishedFetch());
-      }
-    })();
-
-    // on unmount/refresh: cancel thunks + mark cancelled
-    return () => {
-      cancelled = true;
-      tasks.forEach((t) => t.abort?.());
-    };
-  }, [shouldFetch, dispatch]);
-
   //Set of actions that set of Media Cover Collection
-  const handleCollectClick = (): void => {
-    //clear database information and PNG collection list if any information persists so blocks can populate appropriately
-    dispatch(clearDatabaseData());
-    dispatch(clearPNGCollectionList());
-
-    //Set the collection list from the text areas
-    dispatch(setCollectList(searchData));
-
-    //count number of items for loading widget
+  const handleCollectClick = async (): Promise<void> => {
     let count = 0;
-    searchData.map((type) => {
-      count += type.titleSearchList.length;
-    });
+    for (const searchList of Object.values(toCollectList)) {
+      count += searchList.length;
+    }
+
+    if (count === 0) {
+      alert('No media titles to collect. Please add titles first.');
+      return;
+    }
+
     setLoadingMessage(`Gathering ${count} media covers`);
 
-    //tell UI were loading and to kick off fetch in the above useEffect
-    dispatch(startLoad());
-    dispatch(startFetch());
+    const blocks = await collectMedia(toCollectList);
+    if (!blocks) {
+      return;
+    } else {
+      setValue('collectedData', blocks);
+    }
   };
 
   //Send block information to the database and give responses to the Database Saved Widget to appropriately show successes and errors
@@ -326,9 +266,12 @@ function MediaCollectorContent({
     deleteBlock: boolean,
     urls: string[],
   ) => {
-    setCollectedCoversBlocks((prev) =>
-      prev.filter((block) => block.blockID !== blockID),
+    setValue(
+      'collectedData',
+      collectedData.filter((block) => block.blockID !== blockID),
     );
+    // also remove from local state to immediately reflect change
+    //
     dispatch(removeFromDatabaseData({ blockID, type, deleteBlock }));
     for (const url of urls) {
       dispatch(removeFromPNGCollectionList({ url }));
@@ -369,7 +312,7 @@ function MediaCollectorContent({
             value={orderNumber}
           />
         </div>
-        <MediaCheckboxes mediaTypes={stateData} setSearchData={setSearchData} />
+        <MediaCheckboxes mediaTypes={stateData} />
 
         <div className="flex flex-row content-center gap-4">
           <Button
@@ -394,7 +337,7 @@ function MediaCollectorContent({
           />
         </div>
 
-        <MediaInputs mediaTypes={stateData} setSearchData={setSearchData} />
+        <MediaInputs mediaTypes={stateData} />
         <PNGFormatPicker
           pngTemplateChecks={pngTemplateChecks}
           pngError={pngError}
@@ -403,16 +346,16 @@ function MediaCollectorContent({
           setPNGTemplateChecks={setPNGTemplateChecks}
         />
       </div>
-      {isLoading && <LoadingWidget message={loadingMessage} />}
+      {isCollectingMedia && <LoadingWidget message={loadingMessage} />}
       {databaseSaved && (
         <DatabaseSavedWidget
           data={databaseSavedData}
           close={() => setDatabaseSaved(false)}
         />
       )}
-      {CollectedCoversBlocks.length > 0 && (
+      {collectedData.length > 0 && (
         <TitleBlockContainer
-          blocks={CollectedCoversBlocks}
+          blocks={collectedData}
           handleDeleteBlock={handleDeleteBlock}
         />
       )}

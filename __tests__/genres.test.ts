@@ -5,8 +5,8 @@ import { GET as GETbookswithNoGenre } from '@//api/genres/nogenres/route';
 import { GET as GETbookswithGenre } from '@//api/genres/route';
 import { POST as unlinkPOST } from '@//api/genres/unlink/route';
 
-import { db } from '@//db/client'; // now your Drizzle db instance
-import { books, genresBooks } from '@//db/schema'; // drizzle tables
+import { db } from '@/db/client'; // now your Drizzle db instance
+import { books, genresBooks } from '@/db/schema'; // drizzle tables
 import { sql } from 'drizzle-orm';
 
 import {

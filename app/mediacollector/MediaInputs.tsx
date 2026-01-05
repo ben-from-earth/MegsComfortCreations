@@ -1,14 +1,8 @@
-// react, redux imports
-import { Dispatch, SetStateAction } from 'react';
-
 // necessary imports from collector state slice
 import { mediaTypeDefinitions } from 'lib/state/slices/collectorSlice';
 
 // interfaces and types
-import { MediaType } from 'lib/interfaces/globalInterfaces';
-import titleCollectionListConversion, {
-  titleOutputObj,
-} from 'lib/helpers/titleCollectionListConversion';
+import titleCollectionListConversion from 'lib/helpers/titleCollectionListConversion';
 
 // component imports
 import TextInput from '@/shared/TextInput';
@@ -17,20 +11,9 @@ import { CollectorFormData } from '@//mediacollector/collector-form/collectorFor
 
 interface MediaInputProps {
   mediaTypes: mediaTypeDefinitions[];
-  setSearchData: Dispatch<
-    SetStateAction<
-      {
-        type: MediaType;
-        titleSearchList: titleOutputObj[];
-      }[]
-    >
-  >;
 }
 
-export default function MediaInputs({
-  mediaTypes,
-  setSearchData,
-}: MediaInputProps) {
+export default function MediaInputs({ mediaTypes }: MediaInputProps) {
   // mediaTypes can be moved to local state of page.tsx, because were updating the form state
   // only if media type box exists
 
@@ -53,13 +36,7 @@ export default function MediaInputs({
               const titleSearchList = titleCollectionListConversion(
                 e.target.value,
               );
-              setValue(`collectionList.${type}s`, titleSearchList);
-
-              setSearchData((prev) => {
-                return prev.map((media) =>
-                  media.type === type ? { type: type, titleSearchList } : media,
-                );
-              });
+              setValue(`collectionList.${type}`, titleSearchList);
             }}
           />
         ))}

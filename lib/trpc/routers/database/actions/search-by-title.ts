@@ -2,7 +2,7 @@ import { ilike } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/interfaces/globalInterfaces';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { albums, books, movies, videoGames } from '@//db/schema';
+import { albums, books, movies, videoGames } from '@/db/schema';
 
 export async function searchByTitle(db: Db, type: MediaType, title: string) {
   const tableMap = {

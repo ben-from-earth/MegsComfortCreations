@@ -8,17 +8,12 @@ const defaultValues: CollectorFormData = {
   orderNumber: '',
   customerName: '',
   collectionList: {
-    books: [],
-    movies: [],
-    videoGames: [],
-    albums: [],
+    book: [],
+    movie: [],
+    videoGame: [],
+    album: [],
   },
-  collectedData: {
-    books: [],
-    movies: [],
-    videoGames: [],
-    albums: [],
-  },
+  collectedData: [],
 };
 
 export function useCollectorForm() {
