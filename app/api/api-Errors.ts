@@ -12,8 +12,7 @@ export interface SearchErrorResponse extends ErrorResponse {
 
 export interface DatabaseSaveEditErrorResponse extends ErrorResponse {
   errors: string[];
-  actionAttemptItem: PreSavedMediaItem;
-  type: MediaType;
+  title: string;
 }
 
 export class ApiError extends Error {

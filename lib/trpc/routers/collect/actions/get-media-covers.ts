@@ -24,5 +24,10 @@ export async function getMediaCovers(
     `https://www.googleapis.com/customsearch/v1?${params.toString()}`,
   );
   (data.items ?? []).forEach((i) => imgArr.push(i.link));
+  const successfulImages = imgArr.length;
+  const missing = 3 - successfulImages;
+  for (let i = 0; i < missing; i++) {
+    imgArr.push('/images/placeholder-image.png');
+  }
   return imgArr;
 }

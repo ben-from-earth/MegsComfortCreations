@@ -8,8 +8,8 @@ import { trpc } from 'lib/trpc/client';
 // components
 import AreYouSure from '@/shared/AreYouSure';
 import Button from '@/shared/Button';
-import { mediaTypeBlockClasses } from '@//mediacollector/CollectedCoversBlock';
-import EditDatabaseBlock from '@//showdatabase/EditDatabaseBlock';
+import { mediaTypeBlockClasses } from '@/mediacollector/CollectedCoversBlock';
+import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
@@ -77,32 +77,32 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
       {edit && (
         <EditDatabaseBlock
           info={
-            isBookRow(type, info)
-              ? {
-                  type,
-                  images: imageUrls ?? [],
-                  blockInfo: {
-                    title,
-                    author: info.author,
-                    pubYear: info.pubYear,
-                    pageCount: info.pageCount,
-                    spineColor,
-                    initialGenres: [...genres],
-                  },
-                  id,
-                  setEdit,
-                }
-              : {
-                  type,
-                  images: imageUrls ?? [],
-                  blockInfo: {
-                    title,
-                    spineColor,
-                    initialGenres: [...genres],
-                  },
-                  id,
-                  setEdit,
-                }
+            // isBookRow(type, info)
+            {
+              type,
+              images: imageUrls ?? [],
+              blockInfo: {
+                title,
+                author: info.author,
+                pubYear: info.pubYear,
+                pageCount: info.pageCount,
+                spineColor,
+                initialGenres: [...genres],
+              },
+              id,
+              setEdit,
+            }
+            // : {
+            //     type,
+            //     images: imageUrls ?? [],
+            //     blockInfo: {
+            //       title,
+            //       spineColor,
+            //       initialGenres: [...genres],
+            //     },
+            //     id,
+            //     setEdit,
+            //   }
           }
         />
       )}

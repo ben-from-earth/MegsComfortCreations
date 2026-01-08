@@ -8,11 +8,11 @@ import {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 
-import { GET as databaseSearchGET } from '@//api/database/search/route';
-import { GET as paginationGET } from '@//api/database/route';
-import { DELETE } from '@//api/database/delete/route';
-import { POST } from '@//api/database/save/[type]/route';
-import { PUT } from '@//api/database/edit/[type]/route';
+import { GET as databaseSearchGET } from '@/api/database/search/route';
+import { GET as paginationGET } from '@/api/database/route';
+import { DELETE } from '@/api/database/delete/route';
+import { POST } from '@/api/database/save/[type]/route';
+import { PUT } from '@/api/database/edit/[type]/route';
 
 import { NextRequest } from 'next/server';
 import {

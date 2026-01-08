@@ -4,23 +4,15 @@ import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import { albums, books, movies, videoGames } from '@/db/schema';
 import type {
+  DatabaseSaveServerResponse,
   SuccessfulPaginationResponse,
-  SuccessfulMediaSaveEditResponse,
-  BookInsert,
-  MovieInsert,
-  VideoGameInsert,
-  AlbumInsert,
-  PostSavedMediaItem,
   BookRow,
-  MovieRow,
-  VideoGameRow,
-  AlbumRow,
 } from 'lib/interfaces/globalInterfaces';
 import { validate } from 'jsonschema';
 import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
-import otherMediaCreateSchema from 'lib/database/schemas/otherMediaCreateSchema.json';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { searchByTitle } from './actions/search-by-title';
+import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 
@@ -53,46 +45,35 @@ export const databaseRouter = router({
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
       const { type, limit, page, sort, ascDesc } = input;
-      const table = tableMap[type];
+      // const table = tableMap[type];
       const offset = (page - 1) * limit;
 
       // Determine the correct sort column per media type
       const sortColumn = (() => {
-        if (type === 'book') {
-          switch (sort) {
-            case 'author':
-              return books.author;
-            case 'pubYear':
-              return books.pubYear;
-            case 'spineColor':
-              return books.spineColor;
-            default:
-              return books.title;
-          }
+        switch (sort) {
+          case 'author':
+            return books.author;
+          case 'pubYear':
+            return books.pubYear;
+          case 'spineColor':
+            return books.spineColor;
+          default:
+            return books.title;
         }
-        if (type === 'movie') {
-          return sort === 'spineColor' ? movies.spineColor : movies.title;
-        }
-        if (type === 'videoGame') {
-          return sort === 'spineColor'
-            ? videoGames.spineColor
-            : videoGames.title;
-        }
-        return sort === 'spineColor' ? albums.spineColor : albums.title;
       })();
 
       const orderExpr = ascDesc === 'asc' ? asc(sortColumn) : desc(sortColumn);
 
       const rows = await db
         .select()
-        .from(table)
+        .from(books)
         .orderBy(orderExpr)
         .limit(limit)
         .offset(offset);
 
       const [{ count }] = await db
         .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(table);
+        .from(books);
 
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
@@ -123,107 +104,65 @@ export const databaseRouter = router({
     }),
 
   save: publicProcedure
-    .input(z.object({ type: mediaType, mediaData: z.unknown() }))
+    .input(z.array(collectedBlockInformationSchema))
     .mutation(async ({ input, ctx }) => {
-      const { type, mediaData } = input;
       const db = ctx.db ?? defaultDb;
 
-      if (type === 'book') {
-        const validation = validate(mediaData, bookCreateSchema);
-        if (!validation.valid) {
-          return {
+      const results: DatabaseSaveServerResponse = [];
+
+      for (const book of input) {
+        if (book.isDatabase) {
+          continue;
+        }
+        book.images = book.images.filter((img) => img.selected);
+        const validatedData = collectedBlockInformationSchema.safeParse(book);
+        if (!validatedData.success) {
+          console.log('Schema violation:', validatedData.error);
+          const tree = z.treeifyError(validatedData.error);
+          console.log(tree.properties?.images?.errors);
+          results.push({
             error: 'Schema Violation',
             message: 'Schema violation(s) during save request',
-            errors: validation.errors.map((e) => e.stack),
-            actionAttemptItem: mediaData as BookInsert,
-            type,
+            errors: tree.errors,
+            title: book.blockInfo.title,
+          });
+        } else {
+          const data = validatedData.data;
+
+          const insertData = {
+            title: data.blockInfo.title,
+            author: data.blockInfo.author!,
+            pageCount: data.blockInfo.pageCount ?? null,
+            pubYear: data.blockInfo.pubYear ?? null,
+            spineColor: data.blockInfo.spineColor,
+            imageUrls: data.images.map((img) => img.url),
           };
-        }
-        const [book] = await db
-          .insert(books)
-          .values({
-            title: (mediaData as BookInsert).title,
-            author: (mediaData as BookInsert).author,
-            pageCount: (mediaData as BookInsert).pageCount ?? null,
-            pubYear: (mediaData as BookInsert).pubYear ?? null,
-            spineColor: (mediaData as BookInsert).spineColor,
-            imageUrls: (mediaData as BookInsert).imageUrls,
-          })
-          .returning();
-        const res: SuccessfulMediaSaveEditResponse = {
-          message: `${titleRearrange((mediaData as BookInsert).title)} successfully added to database.`,
-          actionAttemptItem: {
-            ...book,
-            genres: (mediaData as BookInsert).genres,
-            blockID: (mediaData as BookInsert).blockID,
-          },
-          type,
-        };
-        return res;
-      }
 
-      const validation = validate(mediaData, otherMediaCreateSchema);
-      if (!validation.valid) {
-        return {
-          error: 'Schema Violation',
-          message: 'Schema violation(s) during save request',
-          errors: validation.errors.map((e) => e.stack),
-          actionAttemptItem: mediaData as PostSavedMediaItem,
-          type,
-        };
-      }
+          const [book] = await db.insert(books).values(insertData).returning();
 
-      // Non-book saves: validate and insert with precise types per media
-      switch (type) {
-        case 'movie': {
-          const data = mediaData as MovieInsert;
-          const [row] = await db
-            .insert(movies)
-            .values({
-              title: data.title,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .returning();
-          return {
-            message: `${titleRearrange(data.title)} successfully added to database.`,
-            actionAttemptItem: { ...row, blockID: data.blockID },
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
-        }
-        case 'videoGame': {
-          const data = mediaData as VideoGameInsert;
-          const [row] = await db
-            .insert(videoGames)
-            .values({
-              title: data.title,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .returning();
-          return {
-            message: `${titleRearrange(data.title)} successfully added to database.`,
-            actionAttemptItem: { ...row, blockID: data.blockID },
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
-        }
-        case 'album': {
-          const data = mediaData as AlbumInsert;
-          const [row] = await db
-            .insert(albums)
-            .values({
-              title: data.title,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .returning();
-          return {
-            message: `${titleRearrange(data.title)} successfully added to database.`,
-            actionAttemptItem: { ...row, blockID: data.blockID },
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
+          if (!book) {
+            results.push({
+              title: data.blockInfo.title,
+              error: 'Database Insertion Error',
+              message: 'An error occurred while trying to save to the database',
+              errors: [
+                `${titleRearrange(insertData.title)} could not be saved to the database.`,
+              ],
+            });
+          } else {
+            results.push({
+              message: `${titleRearrange(insertData.title)} successfully added to database.`,
+              actionAttemptItem: {
+                ...book,
+                genres: data.blockInfo.databaseGenres,
+                blockID: data.blockID,
+              },
+              type: data.type,
+            });
+          }
         }
       }
+      return results;
     }),
 
   edit: publicProcedure
@@ -232,170 +171,46 @@ export const databaseRouter = router({
       const { type, item } = input;
       const db = ctx.db ?? defaultDb;
 
-      switch (type) {
-        case 'book': {
-          const validation = validate(item, bookCreateSchema);
-          if (!validation.valid) {
-            return {
-              error: 'Schema Violation',
-              message: 'Schema violation(s) during edit request',
-              errors: validation.errors.map((e) => e.stack),
-              actionAttemptItem: item as BookRow,
-              type,
-            };
-          }
-          const data = item as BookRow;
-          const whereExpr = data.id
-            ? eq(books.id, data.id)
-            : eq(books.title, data.title);
-          const [book] = await db
-            .update(books)
-            .set({
-              title: data.title,
-              author: data.author,
-              pageCount: data.pageCount ?? null,
-              pubYear: data.pubYear ?? null,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .where(whereExpr)
-            .returning();
-          if (!book) {
-            return {
-              error: 'Media Not Found',
-              message:
-                'Edit requested on an item that does not exist in the database',
-              actionAttemptItem: data,
-              type,
-              errors: [`${data.title} does not exist in the database.`],
-            };
-          }
-          return {
-            message: `${titleRearrange(book.title)} successfully edited.`,
-            actionAttemptItem: book,
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
-        }
-        case 'movie': {
-          const validation = validate(item, otherMediaCreateSchema);
-          if (!validation.valid) {
-            return {
-              error: 'Schema Violation',
-              message: 'Schema violation(s) during edit request',
-              errors: validation.errors.map((e) => e.stack),
-              actionAttemptItem: item as PostSavedMediaItem,
-              type,
-            };
-          }
-          const data = item as MovieRow;
-          const whereExpr = data.id
-            ? eq(movies.id, data.id)
-            : eq(movies.title, data.title);
-          const [row] = await db
-            .update(movies)
-            .set({
-              title: data.title,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .where(whereExpr)
-            .returning();
-          if (!row) {
-            return {
-              error: 'Media Not Found',
-              message:
-                'Edit requested on an item that does not exist in the database',
-              actionAttemptItem: data,
-              type,
-              errors: [`${data.title} does not exist in the database.`],
-            };
-          }
-          return {
-            message: `${titleRearrange(row.title)} successfully edited.`,
-            actionAttemptItem: row,
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
-        }
-        case 'videoGame': {
-          const validation = validate(item, otherMediaCreateSchema);
-          if (!validation.valid) {
-            return {
-              error: 'Schema Violation',
-              message: 'Schema violation(s) during edit request',
-              errors: validation.errors.map((e) => e.stack),
-              actionAttemptItem: item as PostSavedMediaItem,
-              type,
-            };
-          }
-          const data = item as VideoGameRow;
-          const whereExpr = data.id
-            ? eq(videoGames.id, data.id)
-            : eq(videoGames.title, data.title);
-          const [row] = await db
-            .update(videoGames)
-            .set({
-              title: data.title,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .where(whereExpr)
-            .returning();
-          if (!row) {
-            return {
-              error: 'Media Not Found',
-              message:
-                'Edit requested on an item that does not exist in the database',
-              actionAttemptItem: data,
-              type,
-              errors: [`${data.title} does not exist in the database.`],
-            };
-          }
-          return {
-            message: `${titleRearrange(row.title)} successfully edited.`,
-            actionAttemptItem: row,
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
-        }
-        case 'album': {
-          const validation = validate(item, otherMediaCreateSchema);
-          if (!validation.valid) {
-            return {
-              error: 'Schema Violation',
-              message: 'Schema violation(s) during edit request',
-              errors: validation.errors.map((e) => e.stack),
-              actionAttemptItem: item as PostSavedMediaItem,
-              type,
-            };
-          }
-          const data = item as AlbumRow;
-          const whereExpr = data.id
-            ? eq(albums.id, data.id)
-            : eq(albums.title, data.title);
-          const [row] = await db
-            .update(albums)
-            .set({
-              title: data.title,
-              spineColor: data.spineColor,
-              imageUrls: data.imageUrls,
-            })
-            .where(whereExpr)
-            .returning();
-          if (!row) {
-            return {
-              error: 'Media Not Found',
-              message:
-                'Edit requested on an item that does not exist in the database',
-              actionAttemptItem: data,
-              type,
-              errors: [`${data.title} does not exist in the database.`],
-            };
-          }
-          return {
-            message: `${titleRearrange(row.title)} successfully edited.`,
-            actionAttemptItem: row,
-            type,
-          } satisfies SuccessfulMediaSaveEditResponse;
-        }
+      const validation = validate(item, bookCreateSchema);
+      if (!validation.valid) {
+        return {
+          error: 'Schema Violation',
+          message: 'Schema violation(s) during edit request',
+          errors: validation.errors.map((e) => e.stack),
+          actionAttemptItem: item as BookRow,
+          type,
+        };
       }
+      const data = item as BookRow;
+      const whereExpr = data.id
+        ? eq(books.id, data.id)
+        : eq(books.title, data.title);
+      const [book] = await db
+        .update(books)
+        .set({
+          title: data.title,
+          author: data.author,
+          pageCount: data.pageCount ?? null,
+          pubYear: data.pubYear ?? null,
+          spineColor: data.spineColor,
+          imageUrls: data.imageUrls,
+        })
+        .where(whereExpr)
+        .returning();
+      if (!book) {
+        return {
+          error: 'Media Not Found',
+          message:
+            'Edit requested on an item that does not exist in the database',
+          actionAttemptItem: data,
+          type,
+          errors: [`${data.title} does not exist in the database.`],
+        };
+      }
+      return {
+        message: `${titleRearrange(book.title)} successfully edited.`,
+        actionAttemptItem: book,
+        type,
+      };
     }),
 });

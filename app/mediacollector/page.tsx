@@ -14,28 +14,21 @@ import { trpc } from 'lib/trpc/client';
 // components
 import Image from 'next/image';
 import QueryCounter from '@/shared/QueryCounter';
-import MediaCheckboxes from '@//mediacollector/MediaCheckboxes';
-import MediaInputs from '@//mediacollector/MediaInputs';
-import PNGFormatPicker from '@//mediacollector/PNGFormatPicker';
+// import MediaCheckboxes from '@/mediacollector/MediaCheckboxes';
+import MediaInputs from '@/mediacollector/MediaInputs';
+import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
-import DatabaseSavedWidget from '@//mediacollector/DatabaseSavedWidget';
-import TitleBlockContainer from '@//mediacollector/TitleBlockContainer';
+import DatabaseSavedWidget from '@/mediacollector/DatabaseSavedWidget';
+import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
 import TextInput from '@/shared/TextInput';
 
-// imports from the collector state slice
-import {
-  finishedLoad,
-  mediaData,
-  mediaTypeDefinitions,
-  startLoad,
-} from 'lib/state/slices/collectorSlice';
-
-// imports from the database state slice
-import {
-  DatabaseDataPerType,
-  removeFromDatabaseData,
-  selectDatabaseData,
-} from 'lib/state/slices/databaseDataSlice';
+// // imports from the collector state slice
+// import {
+//   finishedLoad,
+//   mediaData,
+//   mediaTypeDefinitions,
+//   startLoad,
+// } from 'lib/state/slices/collectorSlice';
 
 // imports from the png state slice
 import {
@@ -45,36 +38,24 @@ import {
 } from 'lib/state/slices/pngCollectionSlice';
 
 //interfaces and types
-import {
-  DatabaseSaveServerResponse,
-  MediaType,
-  BookInsert,
-  MovieInsert,
-  VideoGameInsert,
-  AlbumInsert,
-} from 'lib/interfaces/globalInterfaces';
+import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
 import Button from '@/shared/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
 
-function MediaCollectorContent({
-  onSubmit,
-}: {
-  onSubmit: (data: CollectorFormData) => void;
-}) {
+function MediaCollectorContent() {
+  const { form, onSubmit } = useCollectorForm();
   //setup connection to the redux slice and associated variables
   const dispatch = useAppDispatch();
-  const stateData: mediaTypeDefinitions[] = useSelector(mediaData);
+  // const stateData: mediaTypeDefinitions[] = useSelector(mediaData);
   const pngCollectionList: ImageData[] = useSelector(selectPNGList);
 
   // setup states used throughout the component
   const { watch, setValue } = useFormContext<CollectorFormData>();
 
-  const orderNumber = watch('orderNumber');
-  const customerName = watch('customerName');
-  const toCollectList = watch('collectionList');
-  const collectedData = watch('collectedData');
+  const formValues = watch();
+  console.log('Form Values:', formValues);
 
   // onSubmit comes from parent wrapper that owns the form instance
 
@@ -90,20 +71,18 @@ function MediaCollectorContent({
     useState<DatabaseSaveServerResponse>([]);
 
   //refs for useEffect
-  const mediaTypesRef = useRef(stateData);
+  // const mediaTypesRef = useRef(stateData);
 
   // trpc functions
-  const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
-  const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: createPNG } = trpc.png.create.useMutation();
   const { mutateAsync: collectMedia, isPending: isCollectingMedia } =
     trpc.collect.collectMedia.useMutation();
 
   //update ref whenever stateData updates
   //stateData holds data about showing checkboxes, and the titleCollectionList data.
-  useEffect(() => {
-    mediaTypesRef.current = stateData;
-  }, [stateData]);
+  // useEffect(() => {
+  //   mediaTypesRef.current = stateData;
+  // }, [stateData]);
 
   //on mount, reset query count in local storage if its a new day
   //on unmount reset the visual state
@@ -116,10 +95,17 @@ function MediaCollectorContent({
     }
   }, []);
 
+  const handleDatabaseClick = async () => {
+    const result = await onSubmit(formValues);
+    setDatabaseSaved(true);
+    setDatabaseSavedData(result);
+  };
+
   //Set of actions that set of Media Cover Collection
   const handleCollectClick = async (): Promise<void> => {
+    setValue('collectedData', []);
     let count = 0;
-    for (const searchList of Object.values(toCollectList)) {
+    for (const searchList of Object.values(formValues.collectionList)) {
       count += searchList.length;
     }
 
@@ -130,7 +116,7 @@ function MediaCollectorContent({
 
     setLoadingMessage(`Gathering ${count} media covers`);
 
-    const blocks = await collectMedia(toCollectList);
+    const blocks = await collectMedia(formValues.collectionList);
     if (!blocks) {
       return;
     } else {
@@ -138,147 +124,59 @@ function MediaCollectorContent({
     }
   };
 
-  //Send block information to the database and give responses to the Database Saved Widget to appropriately show successes and errors
-  const handleDatabaseClick = async (
-    databaseData: DatabaseDataPerType[],
-  ): Promise<void> => {
-    const responses: DatabaseSaveServerResponse = [];
-    for (const media of databaseData) {
-      if (media.type === 'book') {
-        for (const book of media.data) {
-          const title = book.title; // titleRearrange already applied earlier upstream
-          const bookData = {
-            title,
-            author: book.author,
-            pageCount: book.pageCount,
-            pubYear: book.pubYear,
-            imageUrls: book.images.map((item) => item.src),
-            spineColor: book.spineColor,
-            genres: book.genres,
-            blockID: book.blockID,
-          };
-          try {
-            const res = await databaseSave({
-              type: 'book',
-              mediaData: bookData as BookInsert,
-            });
-            if ('error' in res) {
-              responses.push(res);
-            } else {
-              const bookDatabaseID = res.actionAttemptItem.id;
-              const linkRes = await linkGenres({
-                bookID: bookDatabaseID,
-                genres: book.genres ?? [],
-              });
-              responses.push({ ...res, ...linkRes });
-            }
-          } catch {
-            responses.push({
-              actionAttemptItem: bookData,
-              type: 'book',
-              errors: [
-                'Server Error during save',
-                `${bookData.title} did not save to the database`,
-              ],
-              error: 'Server Error',
-              message: `There was a server error during save attempt for ${bookData.title}`,
-            });
-          }
-        }
-      } else {
-        for (const other of media.data) {
-          const title = other.title;
-          const otherData: MovieInsert | VideoGameInsert | AlbumInsert = {
-            title,
-            imageUrls: other.images.map((img) => img.src),
-            spineColor: other.spineColor,
-            blockID: other.blockID,
-          };
-          try {
-            const res = await databaseSave({
-              type: media.type,
-              mediaData: otherData,
-            });
-            responses.push(res);
-          } catch {
-            responses.push({
-              actionAttemptItem: otherData,
-              type: media.type,
-              errors: [
-                'Server Error during save',
-                `${otherData.title} did not save to the database`,
-              ],
-              error: 'Server Error',
-              message: `There was a server error during save attempt for ${otherData.title}`,
-            });
-          }
-        }
-      }
-    }
-    setDatabaseSavedData(responses);
-    setDatabaseSaved(true);
-  };
-
   //Handle creation of PNG from all covers. This is the main finishing product of the app
 
   const handlePNGClick = async (): Promise<void> => {
-    if (!pngTemplate) {
-      setPNGError(true);
-      return;
-    }
+    console.log('PNG Clicked');
+    // if (!pngTemplate) {
+    //   setPNGError(true);
+    //   return;
+    // }
 
-    setLoadingMessage(`Putting together PNG export`);
-    dispatch(startLoad());
+    // setLoadingMessage(`Putting together PNG export`);
+    // dispatch(startLoad());
 
-    try {
-      const res = await createPNG({
-        template: pngTemplate as number as 3 | 5,
-        images: pngCollectionList,
-      });
-      const { mime, filename, dataBase64 } = res as {
-        mime: string;
-        filename: string;
-        dataBase64: string;
-      };
-      const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
-        c.charCodeAt(0),
-      );
-      const blob = new Blob([byteArray], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download failed:', err);
-    } finally {
-      dispatch(finishedLoad());
-    }
+    // try {
+    //   const res = await createPNG({
+    //     template: pngTemplate as number as 3 | 5,
+    //     images: pngCollectionList,
+    //   });
+    //   const { mime, filename, dataBase64 } = res as {
+    //     mime: string;
+    //     filename: string;
+    //     dataBase64: string;
+    //   };
+    //   const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
+    //     c.charCodeAt(0),
+    //   );
+    //   const blob = new Blob([byteArray], { type: mime });
+    //   const url = URL.createObjectURL(blob);
+    //   const a = document.createElement('a');
+    //   a.href = url;
+    //   a.download = filename;
+    //   document.body.appendChild(a);
+    //   a.click();
+    //   a.remove();
+    //   URL.revokeObjectURL(url);
+    // } catch (err) {
+    //   console.error('Download failed:', err);
+    // } finally {
+    //   dispatch(finishedLoad());
+    // }
   };
 
   //Delete a block action for if any end up uneeded or user has any reason to not want to add information to database or PNG export.
-  const handleDeleteBlock = (
-    blockID: string,
-    type: MediaType,
-    deleteBlock: boolean,
-    urls: string[],
-  ) => {
+  const handleDeleteBlock = (blockID: string, urls: string[]) => {
     setValue(
       'collectedData',
-      collectedData.filter((block) => block.blockID !== blockID),
+      formValues.collectedData.filter((block) => block.blockID !== blockID),
     );
-    // also remove from local state to immediately reflect change
-    //
-    dispatch(removeFromDatabaseData({ blockID, type, deleteBlock }));
     for (const url of urls) {
       dispatch(removeFromPNGCollectionList({ url }));
     }
   };
 
-  const databaseData: DatabaseDataPerType[] = useSelector(selectDatabaseData);
+  // const databaseData: DatabaseDataPerType[] = useSelector(selectDatabaseData);
 
   return (
     <>
@@ -294,14 +192,14 @@ function MediaCollectorContent({
           src={MediaCollectorTitle}
           width={576}
         />
-        <div className="mt-2 flex flex-col content-center gap-4">
+        <div className="mt-2 flex flex-col items-center gap-4">
           <TextInput
             onChange={(e) => {
               setValue('customerName', e.target.value);
             }}
             label={'Customer'}
             variant="normal"
-            value={customerName}
+            value={formValues.customerName}
           />
           <TextInput
             onChange={(e) => {
@@ -309,35 +207,36 @@ function MediaCollectorContent({
             }}
             label={'Order Number'}
             variant="normal"
-            value={orderNumber}
+            value={formValues.orderNumber}
           />
-        </div>
-        <MediaCheckboxes mediaTypes={stateData} />
 
-        <div className="flex flex-row content-center gap-4">
-          <Button
-            onClick={() => {
-              handleCollectClick();
-            }}
-            label={'Collect Media Covers'}
-            width={175}
-            fontSize={25}
-          />
-          <Button
-            onClick={() => handleDatabaseClick(databaseData)}
-            label={'Send to Database'}
-            width={175}
-            fontSize={25}
-          />
-          <Button
-            onClick={() => handlePNGClick()}
-            label={'Get PNG'}
-            width={175}
-            fontSize={25}
-          />
-        </div>
+          {/* <MediaCheckboxes mediaTypes={stateData} /> */}
 
-        <MediaInputs mediaTypes={stateData} />
+          <div className="flex flex-row items-center gap-4">
+            <Button
+              onClick={() => {
+                handleCollectClick();
+              }}
+              label={'Collect Media Covers'}
+              width={175}
+              fontSize={25}
+            />
+            <Button
+              onClick={() => handleDatabaseClick()}
+              label={'Send to Database'}
+              width={175}
+              fontSize={25}
+            />
+            <Button
+              onClick={() => handlePNGClick()}
+              label={'Get PNG'}
+              width={175}
+              fontSize={25}
+            />
+          </div>
+
+          <MediaInputs />
+        </div>
         <PNGFormatPicker
           pngTemplateChecks={pngTemplateChecks}
           pngError={pngError}
@@ -353,23 +252,20 @@ function MediaCollectorContent({
           close={() => setDatabaseSaved(false)}
         />
       )}
-      {collectedData.length > 0 && (
-        <TitleBlockContainer
-          blocks={collectedData}
-          handleDeleteBlock={handleDeleteBlock}
-        />
+      {formValues.collectedData.length > 0 && (
+        <TitleBlockContainer handleDeleteBlock={handleDeleteBlock} />
       )}
     </>
   );
 }
 
 export default function MediaCollector() {
-  const { form, onSubmit } = useCollectorForm();
+  const { form } = useCollectorForm();
   return (
     <FormProvider {...form}>
       {/* Optionally wrap in a <form> for native submit */}
       {/* <form onSubmit={form.handleSubmit(onSubmit)}> */}
-      <MediaCollectorContent onSubmit={onSubmit} />
+      <MediaCollectorContent />
       {/* </form> */}
     </FormProvider>
   );

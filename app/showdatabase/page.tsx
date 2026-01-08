@@ -7,8 +7,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 
 // components
-import DatabaseItemsContainer from '@//showdatabase/DatabaseItemsContainer';
-import PaginationInputs from '@//showdatabase/PaginationInputs';
+import DatabaseItemsContainer from '@/showdatabase/DatabaseItemsContainer';
+import PaginationInputs from '@/showdatabase/PaginationInputs';
 
 // context
 import DatabasePageContext from 'lib/context/DatabasePageContext';
@@ -24,7 +24,7 @@ import {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
-import { SortOptions } from '@//showdatabase/PaginationInputs';
+import { SortOptions } from '@/showdatabase/PaginationInputs';
 
 export interface displayDatabaseItems {
   type: MediaType;

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export async function getOpenLibraryData(title: string, author?: string) {
   if (!author) {
-    return { title, author, pubYear: null, pageCount: null };
+    return { title, author: null, pubYear: null, pageCount: null };
   }
 
   const params = new URLSearchParams({
@@ -21,6 +21,14 @@ export async function getOpenLibraryData(title: string, author?: string) {
   const {
     first_publish_year: pubYear,
     number_of_pages_median: pageCount,
-  }: { first_publish_year: number; number_of_pages_median: number } = doc;
-  return { title, author, pubYear, pageCount };
+  }: {
+    first_publish_year: number | undefined;
+    number_of_pages_median: number | undefined;
+  } = doc;
+  return {
+    title,
+    author,
+    pubYear: pubYear ?? null,
+    pageCount: pageCount ?? null,
+  };
 }

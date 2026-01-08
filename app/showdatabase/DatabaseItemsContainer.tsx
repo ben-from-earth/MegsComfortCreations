@@ -1,6 +1,6 @@
 // components
 import PageSelector from '@/shared/PageSelector';
-import DatabaseItem from '@//showdatabase/DatabaseItem';
+import DatabaseItem from '@/showdatabase/DatabaseItem';
 
 // context
 import { useDatabasePageContext } from 'lib/context/DatabasePageContext';

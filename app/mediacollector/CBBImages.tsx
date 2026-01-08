@@ -1,12 +1,5 @@
 // react, redux imports
-import { useState } from 'react';
 import { useAppDispatch } from 'lib/state/store';
-
-// necessary imports from database data state slice
-import {
-  addToDatabaseData,
-  removeFromDatabaseData,
-} from 'lib/state/slices/databaseDataSlice';
 
 //necessary imports from png collection state slice
 import {
@@ -17,69 +10,75 @@ import {
 // interfaces and types
 import { MediaType } from 'lib/interfaces/globalInterfaces';
 import Image from 'next/image';
+import { CollectorFormData } from './collector-form/collectorFormSchema';
+
+import { useFormContext } from 'react-hook-form';
 
 export interface CBBImageProps {
-  images: string[];
-  isDatabase: boolean;
-  blockID: string;
-  type: MediaType;
-  spineColor: string;
+  blockID: number;
 }
 
-export default function CBBImages({
-  images,
-  isDatabase,
-  blockID,
-  type,
-  spineColor,
-}: CBBImageProps) {
-  //setup connection to redux slice
+export default function CBBImages({ blockID }: CBBImageProps) {
+  const { watch, setValue } = useFormContext<CollectorFormData>();
+  const collectedData = watch('collectedData');
+  const block = collectedData[blockID];
   const dispatch = useAppDispatch();
-
-  //set up a local state to an array with an index for each image slot (current: 3) and set to false
-  //this is for click tracking and the "selected" style and setting the image as a block datapoint
-  const [clicked, setClicked] = useState<boolean[]>(() =>
-    Array(images.length).fill(false),
-  );
+  if (!block) {
+    return null;
+  }
+  const {
+    type,
+    images,
+    blockInfo: { spineColor },
+    isDatabase,
+  } = block;
+  //setup connection to redux slice
 
   //add the image url to the database data (in the state) or removes it if its there already
   const handleClick = (
-    blockID: string,
+    image: { url: string; selected: boolean },
     type: MediaType,
-    idx: number,
-    src: string,
+    imageIdx: number,
   ) => {
-    const next = !clicked[idx];
-    setClicked((prev) =>
-      prev.map((b, itemIndex) => (itemIndex === idx ? next : b)),
-    );
-    if (next) {
-      dispatch(
-        addToDatabaseData({
-          type,
-          src,
-          idx,
-          blockID,
-        }),
-      );
-      dispatch(addToPNGCollectionList({ url: src, type, spineColor }));
+    if (!image.selected) {
+      const newBlockImages = block.images.map((img, idx) => {
+        if (idx === imageIdx) {
+          return { ...img, selected: true };
+        }
+        return img;
+      });
+      setValue(`collectedData.${blockID}`, {
+        ...block,
+        images: newBlockImages,
+      });
+
+      dispatch(addToPNGCollectionList({ url: image.url, type, spineColor }));
     } else {
-      dispatch(removeFromDatabaseData({ blockID, type, idx }));
-      dispatch(removeFromPNGCollectionList({ url: src }));
+      const newBlockImages = block.images.map((img, idx) => {
+        if (idx === imageIdx) {
+          return { ...img, selected: false };
+        }
+        return img;
+      });
+      setValue(`collectedData.${blockID}`, {
+        ...block,
+        images: newBlockImages,
+      });
+      dispatch(removeFromPNGCollectionList({ url: image.url }));
     }
   };
 
   return (
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-5">
-      {images.map((src, idx) => (
+      {images.map((image, idx) => (
         <div
           className={`relative z-10 overflow-hidden rounded-sm ${
             type === 'album' ? 'w-31' : 'h-31 w-21'
           }`}
-          key={src}
+          key={image.url}
           onClick={() => {
             if (!isDatabase) {
-              handleClick(blockID, type, idx, src);
+              handleClick(image, type, idx);
             }
           }}
         >
@@ -89,7 +88,7 @@ export default function CBBImages({
                 ? 'cursor-pointer object-cover outline-2'
                 : 'cursor-pointer'
             }
-            src={src}
+            src={image.url}
             alt={`${type} image`}
             fill
             sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 200px"
@@ -99,7 +98,7 @@ export default function CBBImages({
 
           <div
             className={`pointer-events-none absolute inset-0 flex content-center items-center ${
-              clicked[idx] ? 'opacity-100' : 'opacity-0'
+              image.selected ? 'opacity-100' : 'opacity-0'
             }`}
           >
             <p className='-translate-x-1 -rotate-65 font-["Just_Another_Hand"] text-5xl font-bold tracking-wider text-[rgb(0,77,0)]'>

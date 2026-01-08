@@ -1,5 +1,5 @@
 import { router } from 'lib/trpc/trpc';
-import { genresRouter } from './genres';
+import { genresRouter } from './genres/_';
 import { onlineRouter } from './online';
 import { pngRouter } from './png';
 import { profileRouter } from './profile';

@@ -1,11 +1,8 @@
-// react, redux imports
-import { useAppDispatch } from 'lib/state/store';
-
-// necessary imports from database data slice
-import { updateDatabaseData } from 'lib/state/slices/databaseDataSlice';
-
 // interfaces and types
 import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
+
+import { useFormContext } from 'react-hook-form';
 
 export interface MyTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -22,7 +19,12 @@ export default function MyTextArea({
   blockID,
   value,
 }: MyTextAreaProps) {
-  const dispatch = useAppDispatch();
+  const { watch, setValue } = useFormContext<CollectorFormData>();
+  const collectedData = watch('collectedData');
+  const block = collectedData.find((block) => block.blockID === blockID);
+  if (!block) {
+    return null;
+  }
 
   return (
     <div className="relative">
@@ -42,13 +44,14 @@ export default function MyTextArea({
         name={name}
         defaultValue={value}
         onChange={(e) => {
-          dispatch(
-            updateDatabaseData({
-              blockID,
-              type,
-              name,
-              newText: e.target.value,
-            }),
+          const newText = e.target.value;
+          const newBlock = {
+            ...block,
+            blockInfo: { ...block?.blockInfo, [name]: newText },
+          };
+          setValue(
+            'collectedData',
+            collectedData.map((b) => (b.blockID === blockID ? newBlock : b)),
           );
         }}
       ></textarea>

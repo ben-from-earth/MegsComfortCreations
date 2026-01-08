@@ -12,7 +12,7 @@ import GenreContext from 'lib/context/GenreContext';
 import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // components
-import GenreCheckboxes from '@//mediacollector/GenreCheckboxes';
+import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import Button from '@/shared/Button';
 
 // library imports
@@ -20,7 +20,7 @@ import { trpc } from 'lib/trpc/client';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { mediaTypeBlockClasses } from '@//mediacollector/CollectedCoversBlock';
+import { mediaTypeBlockClasses } from '@/mediacollector/CollectedCoversBlock';
 
 // interfaces and types
 import {
@@ -28,7 +28,7 @@ import {
   MediaType,
   PostSavedMediaItem,
 } from 'lib/interfaces/globalInterfaces';
-import { ErrorResponse } from '@//api/api-Errors';
+import { ErrorResponse } from '@/api/api-Errors';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -105,7 +105,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   const initialValues = {
     id,
     title,
-    author,
+    author: author ?? '',
     pubYear,
     pageCount,
     spineColor,

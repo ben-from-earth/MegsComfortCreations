@@ -4,7 +4,7 @@ import NavBar from '@/shared/NavBar';
 
 import { Just_Another_Hand } from 'next/font/google';
 import { NextFont } from 'next/dist/compiled/@next/font';
-import Providers from '@//Providers';
+import Providers from '@/Providers';
 import { TRPCProvider } from 'lib/trpc/provider';
 
 export const metadata: Metadata = {

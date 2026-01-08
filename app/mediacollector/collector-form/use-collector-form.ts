@@ -3,15 +3,18 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { collectorFormSchema } from './collectorFormSchema';
 import type { CollectorFormData } from './collectorFormSchema';
 
+// library imports
+import { trpc } from 'lib/trpc/client';
+
 // This hook manages the state and logic for a media collector form.
 const defaultValues: CollectorFormData = {
   orderNumber: '',
   customerName: '',
   collectionList: {
     book: [],
-    movie: [],
-    videoGame: [],
-    album: [],
+    // movie: [],
+    // videoGame: [],
+    // album: [],
   },
   collectedData: [],
 };
@@ -24,9 +27,12 @@ export function useCollectorForm() {
     reValidateMode: 'onChange',
   });
 
-  const onSubmit = (data: CollectorFormData) => {
+  const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
+
+  const onSubmit = async (data: CollectorFormData) => {
     // this submit should be database additions
-    console.log('Form submitted successfully with data:', data);
+    const saveResult = await databaseSave(data.collectedData);
+    return saveResult;
   };
 
   const onError = (errors: FieldErrors<CollectorFormData>) => {
