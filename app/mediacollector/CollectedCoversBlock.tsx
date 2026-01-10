@@ -92,7 +92,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   //establish variables for icons
   const icons = {
-    book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
+    book: <BookIcon />,
     movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
     videoGame: (
       <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
@@ -141,7 +141,10 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           Database
         </p>
       )}
-      {icons[type]}
+      <div className="absolute top-1 left-1">
+        {icons[type]} block: {index + 1}
+      </div>
+
       <IconButton
         aria-label="delete"
         sx={{
