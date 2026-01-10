@@ -28,7 +28,7 @@ import {
 export interface CollectedCoversBlockProps {
   index: number;
   info: CollectedBlockInformation;
-  handleDeleteBlock: (blockID: string, urls: string[]) => void;
+  handleDeleteBlock: (blockID: string) => void;
 }
 
 declare global {
@@ -102,7 +102,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   //div to pick a color for the spine.
   //this is used in png creation and is required for each media type in the database
-  const handleColorPick = async (blockID: string) => {
+  const handleColorPick = async (blockID: number) => {
     if (!window.EyeDropper) {
       console.log('EyeDropper API not supported in this browser');
       return;
@@ -116,7 +116,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         ...info,
         blockInfo: { ...info.blockInfo, spineColor },
       };
-      setValue(`collectedData.${index}`, newBlock);
+      setValue(`collectedData.${blockID}`, newBlock);
     } catch (e) {
       console.log(e);
     }
@@ -151,12 +151,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           padding: '0',
           // color: type === 'movie' ? 'white' : '',
         }}
-        onClick={() =>
-          handleDeleteBlock(
-            blockID,
-            info.images.filter((img) => img.selected).map((img) => img.url),
-          )
-        }
+        onClick={() => handleDeleteBlock(blockID)}
       >
         <DeleteIcon />
       </IconButton>
@@ -165,7 +160,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       <div
         className="h-5 w-1/2 cursor-pointer"
         style={{ backgroundColor: color }}
-        onClick={() => handleColorPick(blockID)}
+        onClick={() => handleColorPick(index)}
       ></div>
       {/* ) : (
         <></>

@@ -10,7 +10,7 @@ import { CollectorFormData } from './collector-form/collectorFormSchema';
 const TitleBlockContainer = memo(function TitleBlockContainer({
   handleDeleteBlock,
 }: {
-  handleDeleteBlock: (blockID: string, urls: string[]) => void;
+  handleDeleteBlock: (blockID: string) => void;
 }) {
   const { watch } = useFormContext<CollectorFormData>();
   const blocks = watch('collectedData');

@@ -59,6 +59,7 @@ export const collectorFormSchema = z.object({
     // ),
   }),
   collectedData: z.array(collectedBlockInformationSchema),
+  pngFormat: z.enum(['3', '5']).optional(),
 });
 
 export type CollectorFormData = z.infer<typeof collectorFormSchema>;

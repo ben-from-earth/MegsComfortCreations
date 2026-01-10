@@ -1,23 +1,20 @@
 // react, redux imports
 import { Dispatch, SetStateAction } from 'react';
+import { useFormContext } from 'react-hook-form';
+import { CollectorFormData } from './collector-form/collectorFormSchema';
 
 // interfaces and types
 
 interface PNGFormatPickerProps {
-  pngTemplateChecks: boolean[];
   pngError: boolean;
   setPNGError: Dispatch<SetStateAction<boolean>>;
-  setPNGTemplate: Dispatch<SetStateAction<number | undefined>>;
-  setPNGTemplateChecks: Dispatch<SetStateAction<boolean[]>>;
 }
 
 export default function PNGFormatPicker({
-  pngTemplateChecks,
   pngError,
   setPNGError,
-  setPNGTemplate,
-  setPNGTemplateChecks,
 }: PNGFormatPickerProps) {
+  const { watch, setValue } = useFormContext<CollectorFormData>();
   return (
     <div className="flex flex-col items-center">
       <p
@@ -35,15 +32,13 @@ export default function PNGFormatPicker({
             className="m-2"
             id={'3mm'}
             type="checkbox"
-            checked={pngTemplateChecks[0]}
+            checked={watch('pngFormat') === '3'}
             onChange={(e) => {
               if (e.target.checked === true) {
                 setPNGError(false);
-                setPNGTemplateChecks([true, false]);
-                setPNGTemplate(3);
+                setValue('pngFormat', '3');
               } else {
-                setPNGTemplateChecks((prev) => [false, prev[1]]);
-                setPNGTemplate(undefined);
+                setValue('pngFormat', undefined);
               }
             }}
           />
@@ -54,15 +49,13 @@ export default function PNGFormatPicker({
             className="m-2"
             id={'5mm'}
             type="checkbox"
-            checked={pngTemplateChecks[1]}
+            checked={watch('pngFormat') === '5'}
             onChange={(e) => {
               if (e.target.checked === true) {
-                setPNGTemplateChecks([false, true]);
-                setPNGTemplate(5);
+                setValue('pngFormat', '5');
                 setPNGError(false);
               } else {
-                setPNGTemplateChecks((prev) => [prev[0], false]);
-                setPNGTemplate(undefined);
+                setValue('pngFormat', undefined);
               }
             }}
           />

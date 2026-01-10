@@ -335,11 +335,11 @@ async function renderPage({
 export async function outputPNGs({
   template,
   images = [],
-  namePrefix = 'MMC_Output',
+  fileOutputName,
 }: {
   template: Template;
   images: ImageData[];
-  namePrefix?: string;
+  fileOutputName: string;
 }): Promise<OutputFile[]> {
   const metrics = TEMPLATE_METRICS[template];
   if (!metrics) throw new Error('Unsupported template (use 3 or 5)');
@@ -353,7 +353,7 @@ export async function outputPNGs({
       images: [],
       startIndex: 0,
     });
-    results.push({ filename: `${namePrefix}_001.png`, buffer });
+    results.push({ filename: `${fileOutputName}.png`, buffer });
     return results;
   }
 
@@ -366,7 +366,10 @@ export async function outputPNGs({
       images,
       startIndex: idx,
     });
-    const filename = `${namePrefix}_${String(pageNo).padStart(3, '0')}.png`;
+    const filename =
+      pageNo === 1 && countUsed >= images.length
+      ? `${fileOutputName}.png`
+      : `${fileOutputName}_${String(pageNo).padStart(3, '0')}.png`;
     results.push({ filename, buffer });
     if (countUsed === 0) break;
     idx += countUsed;
@@ -380,14 +383,14 @@ export async function outputPNGs({
 export async function outputZIP({
   template,
   images = [],
-  prefix = 'grid',
+  fileOutputName,
 }: {
   template: Template;
   images: ImageData[];
-  prefix?: string;
+  fileOutputName: string;
 }): Promise<Buffer> {
   const zip = new JSZip();
-  const pages = await outputPNGs({ template, images, namePrefix: prefix });
+  const pages = await outputPNGs({ template, images, fileOutputName });
   for (const { filename, buffer } of pages) {
     zip.file(filename, buffer);
   }
@@ -405,13 +408,13 @@ export async function outputZIP({
 export async function outputAuto({
   template,
   images = [],
-  prefix = 'grid',
+  fileOutputName,
 }: {
   template: Template;
   images: ImageData[];
-  prefix?: string;
+  fileOutputName: string;
 }): Promise<AutoOutput> {
-  const pages = await outputPNGs({ template, images, namePrefix: prefix });
+  const pages = await outputPNGs({ template, images, fileOutputName });
 
   if (pages.length === 1) {
     return {
@@ -420,10 +423,10 @@ export async function outputAuto({
       buffer: pages[0].buffer,
     };
   }
-  const zipBuf = await outputZIP({ template, images, prefix });
+  const zipBuf = await outputZIP({ template, images, fileOutputName });
   return {
     mime: 'application/zip',
-    filename: `${prefix}_pages.zip`,
+    filename: `${fileOutputName}_pages.zip`,
     buffer: zipBuf,
   };
 }

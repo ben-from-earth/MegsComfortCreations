@@ -12,12 +12,23 @@ const imageSchema = z.object({
 
 export const pngRouter = router({
   create: publicProcedure
-    .input(z.object({ template: templateSchema, images: z.array(imageSchema) }))
+    .input(
+      z.object({
+        template: templateSchema,
+        images: z.array(imageSchema),
+        customerName: z.string(),
+        orderNumber: z.string(),
+      }),
+    )
     .mutation(async ({ input }) => {
+      const firstName = input.customerName.split(' ')[0] || 'Customer';
+      const lastInititial = input.customerName.split(' ')[1]
+        ? input.customerName.split(' ')[1][0]
+        : 'NoLastInitial';
       const { mime, filename, buffer } = await outputAuto({
         template: input.template as Template,
         images: input.images as ImageData[],
-        prefix: 'grid',
+        fileOutputName: `${firstName}_${lastInititial}_${input.orderNumber}`,
       });
       const dataBase64 = Buffer.from(buffer).toString('base64');
       return { mime, filename, dataBase64 };

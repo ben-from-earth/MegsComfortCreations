@@ -4,9 +4,7 @@ import backgroundImage from 'public/FlowerBackground.png';
 import MediaCollectorTitle from 'public/MegsMediaCollector.png';
 
 // react and redux
-import { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { useAppDispatch } from 'lib/state/store';
+import { useEffect, useState } from 'react';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
@@ -22,21 +20,6 @@ import DatabaseSavedWidget from '@/mediacollector/DatabaseSavedWidget';
 import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
 import TextInput from '@/shared/TextInput';
 
-// // imports from the collector state slice
-// import {
-//   finishedLoad,
-//   mediaData,
-//   mediaTypeDefinitions,
-//   startLoad,
-// } from 'lib/state/slices/collectorSlice';
-
-// imports from the png state slice
-import {
-  ImageData,
-  removeFromPNGCollectionList,
-  selectPNGList,
-} from 'lib/state/slices/pngCollectionSlice';
-
 //interfaces and types
 import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
 import Button from '@/shared/Button';
@@ -45,11 +28,7 @@ import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
 
 function MediaCollectorContent() {
-  const { form, onSubmit } = useCollectorForm();
-  //setup connection to the redux slice and associated variables
-  const dispatch = useAppDispatch();
-  // const stateData: mediaTypeDefinitions[] = useSelector(mediaData);
-  const pngCollectionList: ImageData[] = useSelector(selectPNGList);
+  const { onSubmit } = useCollectorForm();
 
   // setup states used throughout the component
   const { watch, setValue } = useFormContext<CollectorFormData>();
@@ -57,13 +36,6 @@ function MediaCollectorContent() {
   const formValues = watch();
   console.log('Form Values:', formValues);
 
-  // onSubmit comes from parent wrapper that owns the form instance
-
-  const [pngTemplateChecks, setPNGTemplateChecks] = useState<boolean[]>([
-    false,
-    false,
-  ]);
-  const [pngTemplate, setPNGTemplate] = useState<number | undefined>();
   const [pngError, setPNGError] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
@@ -74,7 +46,8 @@ function MediaCollectorContent() {
   // const mediaTypesRef = useRef(stateData);
 
   // trpc functions
-  const { mutateAsync: createPNG } = trpc.png.create.useMutation();
+  const { mutateAsync: createPNG, isPending: isCreatingPNG } =
+    trpc.png.create.useMutation();
   const { mutateAsync: collectMedia, isPending: isCollectingMedia } =
     trpc.collect.collectMedia.useMutation();
 
@@ -127,53 +100,55 @@ function MediaCollectorContent() {
   //Handle creation of PNG from all covers. This is the main finishing product of the app
 
   const handlePNGClick = async (): Promise<void> => {
-    console.log('PNG Clicked');
-    // if (!pngTemplate) {
-    //   setPNGError(true);
-    //   return;
-    // }
+    if (!formValues.pngFormat) {
+      setPNGError(true);
+      return;
+    }
 
-    // setLoadingMessage(`Putting together PNG export`);
-    // dispatch(startLoad());
+    setLoadingMessage(`Putting together PNG export`);
+    const images = formValues.collectedData.map((block) => {
+      let keptImages: { url: string; selected: boolean }[] = [];
+      if (block.isDatabase) {
+        keptImages = block.images;
+      } else {
+        keptImages = block.images.filter((img) => img.selected);
+      }
 
-    // try {
-    //   const res = await createPNG({
-    //     template: pngTemplate as number as 3 | 5,
-    //     images: pngCollectionList,
-    //   });
-    //   const { mime, filename, dataBase64 } = res as {
-    //     mime: string;
-    //     filename: string;
-    //     dataBase64: string;
-    //   };
-    //   const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
-    //     c.charCodeAt(0),
-    //   );
-    //   const blob = new Blob([byteArray], { type: mime });
-    //   const url = URL.createObjectURL(blob);
-    //   const a = document.createElement('a');
-    //   a.href = url;
-    //   a.download = filename;
-    //   document.body.appendChild(a);
-    //   a.click();
-    //   a.remove();
-    //   URL.revokeObjectURL(url);
-    // } catch (err) {
-    //   console.error('Download failed:', err);
-    // } finally {
-    //   dispatch(finishedLoad());
-    // }
+      const url = keptImages.map((img) => img.url)[0];
+      const type = block.type;
+      const spineColor = block.blockInfo.spineColor;
+      return {
+        url,
+        type,
+        spineColor,
+      };
+    });
+
+    const { mime, filename, dataBase64 } = await createPNG({
+      template: Number(formValues.pngFormat) as 3 | 5,
+      images,
+      customerName: formValues.customerName,
+      orderNumber: formValues.orderNumber,
+    });
+
+    const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
+    const blob = new Blob([byteArray], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   //Delete a block action for if any end up uneeded or user has any reason to not want to add information to database or PNG export.
-  const handleDeleteBlock = (blockID: string, urls: string[]) => {
+  const handleDeleteBlock = (blockID: string) => {
     setValue(
       'collectedData',
       formValues.collectedData.filter((block) => block.blockID !== blockID),
     );
-    for (const url of urls) {
-      dispatch(removeFromPNGCollectionList({ url }));
-    }
   };
 
   // const databaseData: DatabaseDataPerType[] = useSelector(selectDatabaseData);
@@ -197,7 +172,7 @@ function MediaCollectorContent() {
             onChange={(e) => {
               setValue('customerName', e.target.value);
             }}
-            label={'Customer'}
+            label={'Customer Full Name'}
             variant="normal"
             value={formValues.customerName}
           />
@@ -237,15 +212,11 @@ function MediaCollectorContent() {
 
           <MediaInputs />
         </div>
-        <PNGFormatPicker
-          pngTemplateChecks={pngTemplateChecks}
-          pngError={pngError}
-          setPNGError={setPNGError}
-          setPNGTemplate={setPNGTemplate}
-          setPNGTemplateChecks={setPNGTemplateChecks}
-        />
+        <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>
-      {isCollectingMedia && <LoadingWidget message={loadingMessage} />}
+      {(isCollectingMedia || isCreatingPNG) && (
+        <LoadingWidget message={loadingMessage} />
+      )}
       {databaseSaved && (
         <DatabaseSavedWidget
           data={databaseSavedData}

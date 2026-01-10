@@ -17,6 +17,7 @@ const defaultValues: CollectorFormData = {
     // album: [],
   },
   collectedData: [],
+  pngFormat: undefined,
 };
 
 export function useCollectorForm() {
@@ -30,7 +31,6 @@ export function useCollectorForm() {
   const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
 
   const onSubmit = async (data: CollectorFormData) => {
-    // this submit should be database additions
     const saveResult = await databaseSave(data.collectedData);
     return saveResult;
   };
