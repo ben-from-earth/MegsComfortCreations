@@ -13,7 +13,7 @@ import { trpc } from 'lib/trpc/client';
 import Image from 'next/image';
 import QueryCounter from '@/shared/QueryCounter';
 // import MediaCheckboxes from '@/mediacollector/MediaCheckboxes';
-import MediaInputs from '@/mediacollector/MediaInputs';
+// import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
 import InformationalDialog from '@/mediacollector/InformationalDialog';
@@ -26,6 +26,7 @@ import Button from '@/shared/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
+import titleCollectionListConversion from 'lib/helpers/titleCollectionListConversion';
 
 function MediaCollectorContent() {
   const { onSubmit } = useCollectorForm();
@@ -238,7 +239,17 @@ function MediaCollectorContent() {
             />
           </div>
 
-          <MediaInputs />
+          <TextInput
+            variant="multiline"
+            label={`Book Titles`}
+            rows={5}
+            onChange={(e) => {
+              const titleSearchList = titleCollectionListConversion(
+                e.target.value,
+              );
+              setValue(`collectionList.book`, titleSearchList);
+            }}
+          />
         </div>
         <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>
