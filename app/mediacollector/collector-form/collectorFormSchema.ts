@@ -3,7 +3,7 @@ import z from 'zod';
 export const baseBlockInfoSchema = z.object({
   title: z.string(),
   spineColor: z.string(),
-  databaseGenres: z.array(z.string()).optional(),
+  genres: z.array(z.string()),
 });
 
 export const bookBlockInfoSchema = baseBlockInfoSchema.extend({
@@ -44,6 +44,7 @@ export const collectedBlockInformationSchema = z.object({
 export const collectorFormSchema = z.object({
   orderNumber: z.string(),
   customerName: z.string(),
+  bookClubRepeat: z.number(),
   collectionList: z.object({
     book: z.array(
       z.object({ title: z.string(), author: z.string().optional() }),

@@ -9,11 +9,14 @@ import { CollectorFormData } from './collector-form/collectorFormSchema';
 
 const TitleBlockContainer = memo(function TitleBlockContainer({
   handleDeleteBlock,
+  blockIdsWithErrors,
 }: {
   handleDeleteBlock: (blockID: string) => void;
+  blockIdsWithErrors: string[];
 }) {
   const { watch } = useFormContext<CollectorFormData>();
-  const blocks = watch('collectedData');
+  const blocks = watch('collectedData') ?? [];
+
   return (
     <div className="flex w-full flex-row flex-wrap gap-3 p-2">
       {blocks.map((block, idx) => (
@@ -22,6 +25,7 @@ const TitleBlockContainer = memo(function TitleBlockContainer({
           info={block}
           key={block.blockID}
           handleDeleteBlock={handleDeleteBlock}
+          hasError={blockIdsWithErrors.includes(block.blockID)}
         />
       ))}
     </div>

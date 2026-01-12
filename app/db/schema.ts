@@ -1,5 +1,4 @@
 import {
-  check,
   pgTable,
   uuid,
   text,
@@ -9,7 +8,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { uniqueIndex } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -147,6 +146,13 @@ export const customersUsers = pgTable(
     ),
   ],
 );
+
+// ---------- google api query usage ----------
+export const googleApiQueryUsage = pgTable('google_api_query_usage', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  date: text('date').notNull().unique(),
+  queryCount: integer('query_count').notNull().default(0),
+});
 
 // ---------- better-auth ----------
 

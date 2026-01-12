@@ -1,14 +1,4 @@
-// react, redux imports
-import { useAppDispatch } from 'lib/state/store';
-
-//necessary imports from png collection state slice
-import {
-  addToPNGCollectionList,
-  removeFromPNGCollectionList,
-} from 'lib/state/slices/pngCollectionSlice';
-
 // interfaces and types
-import { MediaType } from 'lib/interfaces/globalInterfaces';
 import Image from 'next/image';
 import { CollectorFormData } from './collector-form/collectorFormSchema';
 
@@ -22,22 +12,15 @@ export default function CBBImages({ blockID }: CBBImageProps) {
   const { watch, setValue } = useFormContext<CollectorFormData>();
   const collectedData = watch('collectedData');
   const block = collectedData[blockID];
-  const dispatch = useAppDispatch();
   if (!block) {
     return null;
   }
-  const {
-    type,
-    images,
-    blockInfo: { spineColor },
-    isDatabase,
-  } = block;
+  const { type, images, isDatabase } = block;
   //setup connection to redux slice
 
   //add the image url to the database data (in the state) or removes it if its there already
   const handleClick = (
     image: { url: string; selected: boolean },
-    type: MediaType,
     imageIdx: number,
   ) => {
     if (!image.selected) {
@@ -51,8 +34,6 @@ export default function CBBImages({ blockID }: CBBImageProps) {
         ...block,
         images: newBlockImages,
       });
-
-      dispatch(addToPNGCollectionList({ url: image.url, type, spineColor }));
     } else {
       const newBlockImages = block.images.map((img, idx) => {
         if (idx === imageIdx) {
@@ -64,7 +45,6 @@ export default function CBBImages({ blockID }: CBBImageProps) {
         ...block,
         images: newBlockImages,
       });
-      dispatch(removeFromPNGCollectionList({ url: image.url }));
     }
   };
 
@@ -78,7 +58,7 @@ export default function CBBImages({ blockID }: CBBImageProps) {
           key={image.url}
           onClick={() => {
             if (!isDatabase) {
-              handleClick(image, type, idx);
+              handleClick(image, idx);
             }
           }}
         >

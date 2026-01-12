@@ -10,6 +10,7 @@ import { trpc } from 'lib/trpc/client';
 const defaultValues: CollectorFormData = {
   orderNumber: '',
   customerName: '',
+  bookClubRepeat: 1,
   collectionList: {
     book: [],
     // movie: [],

@@ -1,6 +1,5 @@
 // react
-import { memo, useContext, useEffect, useState } from 'react';
-import { useAppDispatch } from 'lib/state/store';
+import { memo, useContext, useState } from 'react';
 
 //import icons and items from Material UI
 import BookIcon from '@mui/icons-material/BookTwoTone';
@@ -9,9 +8,6 @@ import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
 import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
-
-// necessary imports from png state slice
-import { addToPNGCollectionList } from 'lib/state/slices/pngCollectionSlice';
 
 // components
 import CBBImages from '@/mediacollector/CBBImages';
@@ -29,6 +25,7 @@ export interface CollectedCoversBlockProps {
   index: number;
   info: CollectedBlockInformation;
   handleDeleteBlock: (blockID: string) => void;
+  hasError: boolean;
 }
 
 declare global {
@@ -42,44 +39,32 @@ declare global {
 }
 
 //styling of the block itself based on type
-export const mediaTypeBlockClasses = {
+export const blockClasses = {
   book: 'bg-darkpink border-[#805052]',
   movie: 'bg-[#323b43] border-black text-white',
   album: 'bg-[#7fa5a3] border-[#354544]',
   videoGame: 'bg-[#98ab88] border-[#4e8885]',
+  hasError: 'bg-[#E86C54] border-[#EB4423]',
 };
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
+  hasError,
   index,
   info,
   handleDeleteBlock,
 }: CollectedCoversBlockProps) {
   const {
     type,
-    images,
-    blockInfo: { title, spineColor = '#ffffff', databaseGenres = [] },
+    blockInfo: { title, spineColor = '#ffffff', genres = [] },
     blockID,
     isDatabase,
   } = info;
 
-  const dispatch = useAppDispatch();
   //set local state for spine color
   const [color, setColor] = useState(spineColor);
 
   //get genres for checkbox population
-  const genres = useContext(GenreContext);
-
-  //on mount, populate the database data (in the state) with the block information if the information is not already from the database
-  //If the block is populated from the database, add the image to the png collection list
-  useEffect(() => {
-    if (isDatabase) {
-      dispatch(
-        addToPNGCollectionList({ type, spineColor, url: images[0].url }),
-      );
-    } else {
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+  const allGenres = useContext(GenreContext);
 
   const { watch, setValue } = useFormContext<CollectorFormData>();
   const collectedData = watch('collectedData');
@@ -124,17 +109,26 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   //if genre is clicked we add it to the data associated with the block and remove if unchecked
   const handleGenreClick = (genreText: string, checked: boolean) => {
-    console.log('clicked genre:', genreText, 'checked:', checked);
-    // if (checked) {
-    //   dispatch(addToDatabaseData({ blockID, type: 'book', genreText }));
-    // } else {
-    //   dispatch(removeFromDatabaseData({ blockID, type: 'book', genreText }));
-    // }
+    if (checked) {
+      const newGenres = [...genres, genreText];
+      const newBlock = {
+        ...info,
+        blockInfo: { ...info.blockInfo, genres: newGenres },
+      };
+      setValue(`collectedData.${index}`, newBlock);
+    } else {
+      const newGenres = genres.filter((genre) => genre !== genreText);
+      const newBlock = {
+        ...info,
+        blockInfo: { ...info.blockInfo, genres: newGenres },
+      };
+      setValue(`collectedData.${index}`, newBlock);
+    }
   };
 
   return (
     <div
-      className={`relative flex h-fit min-w-sm flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${mediaTypeBlockClasses[type]}`}
+      className={`relative flex h-fit min-w-sm flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
     >
       {isDatabase && (
         <p className="absolute top-1 right-1 m-0 rounded-sm border-2 border-black bg-gray-700 p-1.25 tracking-wider text-white">
@@ -205,8 +199,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       )}
       {type === 'book' ? (
         <GenreCheckboxes
-          genres={genres}
-          databaseGenres={databaseGenres}
+          allGenres={allGenres}
+          blockGenres={genres}
           handleGenreClick={handleGenreClick}
         />
       ) : (

@@ -2,7 +2,15 @@ import { publicProcedure, router } from 'lib/trpc/trpc';
 import { asc, desc, ilike, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
-import { albums, books, movies, videoGames } from '@/db/schema';
+import {
+  albums,
+  books,
+  genres,
+  genresBooks,
+  googleApiQueryUsage,
+  movies,
+  videoGames,
+} from '@/db/schema';
 import type {
   DatabaseSaveServerResponse,
   SuccessfulPaginationResponse,
@@ -103,6 +111,24 @@ export const databaseRouter = router({
       return { message: `Successfully deleted ${title}` };
     }),
 
+  getQueryCount: publicProcedure
+    .input(z.object({ date: z.string().min(1) }))
+    .query(async ({ input, ctx }) => {
+      const { date } = input;
+      const db = ctx.db ?? defaultDb;
+
+      const [row] = await db
+        .select()
+        .from(googleApiQueryUsage)
+        .where(eq(googleApiQueryUsage.date, date))
+        .limit(1);
+
+      if (!row) {
+        return { date, queryCount: 0 };
+      }
+      return { date: row.date, queryCount: row.queryCount };
+    }),
+
   save: publicProcedure
     .input(z.array(collectedBlockInformationSchema))
     .mutation(async ({ input, ctx }) => {
@@ -117,9 +143,7 @@ export const databaseRouter = router({
         book.images = book.images.filter((img) => img.selected);
         const validatedData = collectedBlockInformationSchema.safeParse(book);
         if (!validatedData.success) {
-          console.log('Schema violation:', validatedData.error);
           const tree = z.treeifyError(validatedData.error);
-          console.log(tree.properties?.images?.errors);
           results.push({
             error: 'Schema Violation',
             message: 'Schema violation(s) during save request',
@@ -130,7 +154,7 @@ export const databaseRouter = router({
           const data = validatedData.data;
 
           const insertData = {
-            title: data.blockInfo.title,
+            title: titleRearrange(data.blockInfo.title),
             author: data.blockInfo.author!,
             pageCount: data.blockInfo.pageCount ?? null,
             pubYear: data.blockInfo.pubYear ?? null,
@@ -150,11 +174,26 @@ export const databaseRouter = router({
               ],
             });
           } else {
+            for (const genreName of data.blockInfo.genres) {
+              //check if genre exists
+              const [genreRow] = await db
+                .select()
+                .from(genres)
+                .where(eq(genres.genre, genreName));
+
+              const genreId = genreRow.id;
+
+              //insert into genresBooks junction table
+              await db.insert(genresBooks).values({
+                bookId: book.id,
+                genreId: genreId,
+              });
+            }
             results.push({
               message: `${titleRearrange(insertData.title)} successfully added to database.`,
               actionAttemptItem: {
                 ...book,
-                genres: data.blockInfo.databaseGenres,
+                genres: data.blockInfo.genres,
                 blockID: data.blockID,
               },
               type: data.type,

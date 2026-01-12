@@ -5,9 +5,6 @@ import sharp, { OverlayOptions, RGBA } from 'sharp';
 import axios from 'axios';
 import JSZip from 'jszip';
 
-// interfaces and types
-import { ImageData } from 'lib/state/slices/pngCollectionSlice';
-
 /*
   PNG/ZIP renderer (paginated)
 
@@ -22,7 +19,7 @@ import { ImageData } from 'lib/state/slices/pngCollectionSlice';
   Input:
   {
     template: 3 | 5,
-    images: Array<{ url: string, spineColor: string, type: string }>
+    images: ImageData[];
   }
 */
 
@@ -38,6 +35,12 @@ export interface AutoOutput {
   filename: string;
   buffer: Buffer;
 }
+
+export type ImageData = {
+  url: string;
+  type: 'book' | 'movie' | 'videoGame' | 'album';
+  spineColor: string;
+};
 
 interface Slot {
   x: number;
@@ -212,6 +215,8 @@ function layoutSlots({
   const slots: Slot[] = [];
   let x = marginX;
   let y = marginY;
+  // Track the start index of the current row so we can right-align the last cell
+  let rowStartIdx = 0;
 
   for (let i = 0; i < images.length; i++) {
     const type = images[i].type;
@@ -221,13 +226,28 @@ function layoutSlots({
 
     // Wrap if this cell would overflow the row
     if (x > marginX && x + w > canvasW - marginX) {
+      // Right-align the last cell of the previous row
+      if (slots.length > rowStartIdx) {
+        const lastIdx = slots.length - 1;
+        const last = slots[lastIdx];
+        slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
+      }
       x = marginX;
       y += h + yGap;
       if (y + h > canvasH - marginY) break; // no more vertical room
+      // New row starts at current slots length
+      rowStartIdx = slots.length;
     }
 
     slots.push({ x, y, w, h });
     x += w + xGap;
+  }
+
+  // After placing all cells, right-align the last cell of the final row
+  if (slots.length > rowStartIdx) {
+    const lastIdx = slots.length - 1;
+    const last = slots[lastIdx];
+    slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
   }
 
   return slots;
@@ -262,6 +282,8 @@ function layoutPage({
   let x = marginX;
   let y = marginY;
   let countUsed = 0;
+  // Track the start index of the current row so we can right-align the last cell
+  let rowStartIdx = 0;
 
   for (let i = startIndex; i < images.length; i++) {
     const type = images[i]?.type;
@@ -270,9 +292,17 @@ function layoutPage({
     const h = rowHeight;
 
     if (x > marginX && x + w > canvasW - marginX) {
+      // Right-align the last cell of the previous row
+      if (slots.length > rowStartIdx) {
+        const lastIdx = slots.length - 1;
+        const last = slots[lastIdx];
+        slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
+      }
       x = marginX;
       y += h + yGap;
       if (y + h > canvasH - marginY) break; // full
+      // New row starts at current slots length
+      rowStartIdx = slots.length;
     }
 
     if (y + h <= canvasH - marginY) {
@@ -282,6 +312,13 @@ function layoutPage({
     } else {
       break;
     }
+  }
+
+  // After placing all cells, right-align the last cell of the final row
+  if (slots.length > rowStartIdx) {
+    const lastIdx = slots.length - 1;
+    const last = slots[lastIdx];
+    slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
   }
 
   return { slots, countUsed };
@@ -368,8 +405,8 @@ export async function outputPNGs({
     });
     const filename =
       pageNo === 1 && countUsed >= images.length
-      ? `${fileOutputName}.png`
-      : `${fileOutputName}_${String(pageNo).padStart(3, '0')}.png`;
+        ? `${fileOutputName}.png`
+        : `${fileOutputName}_${String(pageNo).padStart(3, '0')}.png`;
     results.push({ filename, buffer });
     if (countUsed === 0) break;
     idx += countUsed;

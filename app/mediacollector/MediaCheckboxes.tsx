@@ -1,12 +1,6 @@
 // // react, redux imports
 // import { useDispatch } from 'react-redux';
 
-// // necessary imports from collector state slice
-// import {
-//   mediaTypeDefinitions,
-//   setChecks,
-// } from 'lib/state/slices/collectorSlice';
-
 // interface MediaCheckboxesProps {
 //   mediaTypes: mediaTypeDefinitions[];
 // }

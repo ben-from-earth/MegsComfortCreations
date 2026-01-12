@@ -6,15 +6,15 @@ import { genres, genresBooks } from '@/db/schema';
 import type { BookRow, MediaType } from 'lib/interfaces/globalInterfaces';
 
 import { getOpenLibraryData } from './actions/get-open-library-data';
-import { updateQueryCount } from 'lib/helpers/updateQueryCount';
 import { getMediaCovers } from './actions/get-media-covers';
 import { searchByTitle } from '../database/actions/search-by-title';
+import { googleApiQueryUsage } from '@/db/schema';
 
 // shared fields for all media
 type BaseBlockInfo = {
   title: string;
   spineColor: string;
-  databaseGenres?: string[]; // only really used for books, but harmless here
+  genres: string[];
 };
 
 // extra fields only for books
@@ -74,6 +74,18 @@ export const collectRouter = router({
       const db = ctx.db ?? defaultDb;
       const blocks: CollectedBlockInformation[] = [];
 
+      const todayStr = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'America/New_York',
+      });
+
+      const usageRows = await db
+        .select({ queryCount: googleApiQueryUsage.queryCount })
+        .from(googleApiQueryUsage)
+        .where(eq(googleApiQueryUsage.date, todayStr))
+        .limit(1);
+
+      let todayQueryCount = usageRows[0]?.queryCount ?? 0;
+
       for (const [key, searchList] of Object.entries(input)) {
         const type = key as MediaType;
         for (const item of searchList) {
@@ -110,7 +122,7 @@ export const collectRouter = router({
                 pubYear,
                 pageCount,
                 spineColor,
-                databaseGenres,
+                genres: databaseGenres,
               },
               blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
               isDatabase: true,
@@ -136,7 +148,7 @@ export const collectRouter = router({
             //if the media wasnt in the database, collect cover images
             const images = await getMediaCovers(title, author, type);
             //conservative query count update every time we make a request to google search API.
-            updateQueryCount();
+            todayQueryCount += 1;
             // if (type === 'book') {
             //if book, go to open library and get more data about the book
             const blockInfo = await getOpenLibraryData(title, author);
@@ -149,7 +161,7 @@ export const collectRouter = router({
             const collected = {
               type,
               images: images.map((url) => ({ url, selected: false })),
-              blockInfo: { ...blockInfo, spineColor: '#ffffff' },
+              blockInfo: { ...blockInfo, spineColor: '#ffffff', genres: [] },
               blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
               isDatabase: false,
             };
@@ -166,6 +178,14 @@ export const collectRouter = router({
           }
         }
       }
-      return blocks;
+      //update today's google api query count in the database
+      await db
+        .update(googleApiQueryUsage)
+        .set({ queryCount: todayQueryCount })
+        .where(eq(googleApiQueryUsage.date, todayStr));
+      const databaseSorted = [...blocks].sort((a, b) =>
+        a.isDatabase === b.isDatabase ? 0 : a.isDatabase ? 1 : -1,
+      );
+      return databaseSorted;
     }),
 });

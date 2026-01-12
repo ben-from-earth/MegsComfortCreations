@@ -104,7 +104,6 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (values: LoginValues) => {
     setLoginError(false);
-    console.log(values);
 
     const { error } = await authClient.signIn.email({
       email: values.email,

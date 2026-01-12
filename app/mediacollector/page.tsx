@@ -4,7 +4,7 @@ import backgroundImage from 'public/FlowerBackground.png';
 import MediaCollectorTitle from 'public/MegsMediaCollector.png';
 
 // react and redux
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
@@ -16,7 +16,7 @@ import QueryCounter from '@/shared/QueryCounter';
 import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
-import DatabaseSavedWidget from '@/mediacollector/DatabaseSavedWidget';
+import InformationalDialog from '@/mediacollector/InformationalDialog';
 import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
 import TextInput from '@/shared/TextInput';
 
@@ -34,11 +34,16 @@ function MediaCollectorContent() {
   const { watch, setValue } = useFormContext<CollectorFormData>();
 
   const formValues = watch();
-  console.log('Form Values:', formValues);
 
   const [pngError, setPNGError] = useState<boolean>(false);
+  const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
+  const [showInformationalDialog, setShowInformationalDialog] =
+    useState<boolean>(false);
+  const [informationalDialogText, setInformationalDialogText] =
+    useState<string>('');
+  const [isSavingToDatabase, setIsSavingToDatabase] = useState<boolean>(false);
   const [databaseSavedData, setDatabaseSavedData] =
     useState<DatabaseSaveServerResponse>([]);
 
@@ -48,31 +53,17 @@ function MediaCollectorContent() {
   // trpc functions
   const { mutateAsync: createPNG, isPending: isCreatingPNG } =
     trpc.png.create.useMutation();
+  const utils = trpc.useUtils();
   const { mutateAsync: collectMedia, isPending: isCollectingMedia } =
-    trpc.collect.collectMedia.useMutation();
-
-  //update ref whenever stateData updates
-  //stateData holds data about showing checkboxes, and the titleCollectionList data.
-  // useEffect(() => {
-  //   mediaTypesRef.current = stateData;
-  // }, [stateData]);
-
-  //on mount, reset query count in local storage if its a new day
-  //on unmount reset the visual state
-  useEffect(() => {
-    const lastQueryDate = localStorage.getItem('lastQueryDate');
-    const today = new Date().toISOString().split('T')[0];
-    if (lastQueryDate !== today) {
-      localStorage.setItem('queryCount', '0');
-      localStorage.setItem('lastQueryDate', today);
-    }
-  }, []);
-
-  const handleDatabaseClick = async () => {
-    const result = await onSubmit(formValues);
-    setDatabaseSaved(true);
-    setDatabaseSavedData(result);
-  };
+    trpc.collect.collectMedia.useMutation({
+      onSuccess: () => {
+        const date = new Date().toLocaleDateString('en-CA', {
+          timeZone: 'America/New_York',
+        });
+        // Invalidate today's query count so QueryCounter refetches
+        void utils.database.getQueryCount.invalidate({ date });
+      },
+    });
 
   //Set of actions that set of Media Cover Collection
   const handleCollectClick = async (): Promise<void> => {
@@ -97,11 +88,47 @@ function MediaCollectorContent() {
     }
   };
 
-  //Handle creation of PNG from all covers. This is the main finishing product of the app
-
   const handlePNGClick = async (): Promise<void> => {
+    setLoadingMessage(`Adding items to database`);
+    setIsSavingToDatabase(true);
+    setBlockIdsWithErrors([]);
+    const itemsWithoutImages = formValues.collectedData.filter((block) => {
+      const selectedImages = block.images.filter((img) => img.selected);
+      if (block.isDatabase) {
+        return false;
+      }
+      return selectedImages.length === 0;
+    });
+    const numWithoutImages = itemsWithoutImages.length;
+    if (numWithoutImages > 0) {
+      setInformationalDialogText(
+        `There are ${numWithoutImages} blocks without selected images that will not be saved to the database. Please select at least one image per block or delete the block.`,
+      );
+      setBlockIdsWithErrors(itemsWithoutImages.map((block) => block.blockID));
+      setShowInformationalDialog(true);
+      return;
+    }
+
     if (!formValues.pngFormat) {
       setPNGError(true);
+      return;
+    }
+
+    if (formValues.bookClubRepeat < 1) {
+      setInformationalDialogText(`Book Club Repeat Number must be at least 1.`);
+      setShowInformationalDialog(true);
+      return;
+    }
+
+    const result = await onSubmit(formValues);
+
+    const someHaveDatabaseErrors = result.some((res) => 'error' in res);
+
+    if (someHaveDatabaseErrors) {
+      setInformationalDialogText(
+        `There were database errors when saving some of the media blocks. Check status of database`,
+      );
+      setShowInformationalDialog(true);
       return;
     }
 
@@ -129,7 +156,9 @@ function MediaCollectorContent() {
       images,
       customerName: formValues.customerName,
       orderNumber: formValues.orderNumber,
+      repeatCount: formValues.bookClubRepeat,
     });
+    setIsSavingToDatabase(false);
 
     const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
     const blob = new Blob([byteArray], { type: mime });
@@ -143,15 +172,12 @@ function MediaCollectorContent() {
     URL.revokeObjectURL(url);
   };
 
-  //Delete a block action for if any end up uneeded or user has any reason to not want to add information to database or PNG export.
   const handleDeleteBlock = (blockID: string) => {
     setValue(
       'collectedData',
       formValues.collectedData.filter((block) => block.blockID !== blockID),
     );
   };
-
-  // const databaseData: DatabaseDataPerType[] = useSelector(selectDatabaseData);
 
   return (
     <>
@@ -184,6 +210,14 @@ function MediaCollectorContent() {
             variant="normal"
             value={formValues.orderNumber}
           />
+          <TextInput
+            onChange={(e) => {
+              setValue('bookClubRepeat', Number(e.target.value));
+            }}
+            label={'Book Club Repeat Number'}
+            variant="normal"
+            value={formValues.bookClubRepeat.toString()}
+          />
 
           {/* <MediaCheckboxes mediaTypes={stateData} /> */}
 
@@ -197,14 +231,8 @@ function MediaCollectorContent() {
               fontSize={25}
             />
             <Button
-              onClick={() => handleDatabaseClick()}
-              label={'Send to Database'}
-              width={175}
-              fontSize={25}
-            />
-            <Button
               onClick={() => handlePNGClick()}
-              label={'Get PNG'}
+              label={'Create PNG Export'}
               width={175}
               fontSize={25}
             />
@@ -214,17 +242,28 @@ function MediaCollectorContent() {
         </div>
         <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>
-      {(isCollectingMedia || isCreatingPNG) && (
+      {(isCollectingMedia || isCreatingPNG || isSavingToDatabase) && (
         <LoadingWidget message={loadingMessage} />
       )}
       {databaseSaved && (
-        <DatabaseSavedWidget
+        <InformationalDialog
+          variant="databaseSave"
           data={databaseSavedData}
           close={() => setDatabaseSaved(false)}
         />
       )}
+      {showInformationalDialog && (
+        <InformationalDialog
+          variant="informationalOnly"
+          infoText={informationalDialogText}
+          close={() => setShowInformationalDialog(false)}
+        />
+      )}
       {formValues.collectedData.length > 0 && (
-        <TitleBlockContainer handleDeleteBlock={handleDeleteBlock} />
+        <TitleBlockContainer
+          handleDeleteBlock={handleDeleteBlock}
+          blockIdsWithErrors={blockIdsWithErrors}
+        />
       )}
     </>
   );
@@ -234,10 +273,7 @@ export default function MediaCollector() {
   const { form } = useCollectorForm();
   return (
     <FormProvider {...form}>
-      {/* Optionally wrap in a <form> for native submit */}
-      {/* <form onSubmit={form.handleSubmit(onSubmit)}> */}
       <MediaCollectorContent />
-      {/* </form> */}
     </FormProvider>
   );
 }
