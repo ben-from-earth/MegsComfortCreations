@@ -8,7 +8,7 @@ import { trpc } from 'lib/trpc/client';
 // components
 import AreYouSure from '@/shared/AreYouSure';
 import Button from '@/shared/Button';
-import { mediaTypeBlockClasses } from '@/mediacollector/CollectedCoversBlock';
+import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
 
 // helpers
@@ -64,7 +64,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
 
   return (
     <div
-      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${mediaTypeBlockClasses[type]}`}
+      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${blockClasses[type]}`}
     >
       {areYouSure && (
         <AreYouSure

@@ -20,7 +20,7 @@ import { trpc } from 'lib/trpc/client';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { mediaTypeBlockClasses } from '@/mediacollector/CollectedCoversBlock';
+import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 
 // interfaces and types
 import {
@@ -165,7 +165,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
 
   const handleEditSubmit = async () => {
     const res = await databaseEdit({ type, item: databaseData });
-    if ('error' in (res as ErrorResponse)) {
+    if ('error' in res) {
       setEdit(false);
       return;
     }
@@ -205,7 +205,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       <h1>Editing: {titleRearrange(title)}</h1>
 
       <div
-        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 text-lg ${mediaTypeBlockClasses[type]} mb-1`}
+        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 text-lg ${blockClasses[type]} mb-1`}
       >
         {icons[type]}
         <div className="m-2.5 mb-0 flex flex-row items-center gap-7.5">
@@ -268,8 +268,8 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
         )}
         {type === 'book' ? (
           <GenreCheckboxes
-            genres={genres}
-            databaseGenres={databaseGenres}
+            allGenres={genres}
+            blockGenres={databaseGenres}
             handleGenreClick={handleGenreClick}
           />
         ) : (
