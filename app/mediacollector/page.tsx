@@ -90,8 +90,6 @@ function MediaCollectorContent() {
   };
 
   const handlePNGClick = async (): Promise<void> => {
-    setLoadingMessage(`Adding items to database`);
-    setIsSavingToDatabase(true);
     setBlockIdsWithErrors([]);
     const itemsWithoutImages = formValues.collectedData.filter((block) => {
       const selectedImages = block.images.filter((img) => img.selected);
@@ -119,6 +117,9 @@ function MediaCollectorContent() {
       setInformationalDialogText(`Book Club Repeat Number must be at least 1.`);
       setShowInformationalDialog(true);
       return;
+
+      setLoadingMessage(`Adding items to database`);
+      setIsSavingToDatabase(true);
     }
 
     const result = await onSubmit(formValues);
