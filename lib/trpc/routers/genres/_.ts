@@ -1,11 +1,13 @@
-import { router, publicProcedure } from '@/lib/trpc/trpc';
+import { router, publicProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
-import Genre from '@/lib/database/models/genre';
+import Genre from 'lib/database/models/genre';
 import type {
   BookRow,
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulPaginationResponse,
-} from '@/lib/interfaces/globalInterfaces';
+} from 'lib/interfaces/globalInterfaces';
+import { link } from 'fs';
+import { linkGenres } from './actions/linkGenres';
 
 export const genresRouter = router({
   getAll: publicProcedure.query(async () => {
@@ -34,16 +36,8 @@ export const genresRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const responses: SuccessfulGenreLinkUnlinkResponse[] = [];
-      for (const g of input.genres) {
-        await Genre.link(g, input.bookID);
-        responses.push({
-          message: 'Successful genre link',
-          genre: g,
-          bookID: input.bookID,
-        });
-      }
-      return { genreResponses: responses };
+      const responses = await linkGenres(input.bookID, input.genres);
+      return responses;
     }),
 
   unlink: publicProcedure

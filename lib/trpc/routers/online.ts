@@ -1,4 +1,4 @@
-import { router, publicProcedure } from '@/lib/trpc/trpc';
+import { router, publicProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
 import axios from 'axios';
 
@@ -57,7 +57,7 @@ export const onlineRouter = router({
       z.object({
         title: z.string().min(1),
         author: z.string().optional(),
-        type: z.enum(['book', 'movie', 'video_game', 'album']),
+        type: z.enum(['book', 'movie', 'videoGame', 'album']),
       }),
     )
     .mutation(async ({ input }) => {

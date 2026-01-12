@@ -1,10 +1,10 @@
 // drizzle types
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { books, movies, videoGames, albums } from '@/app/db/schema';
+import { books, movies, videoGames, albums } from '@/db/schema';
 
-import { DatabaseSaveEditErrorResponse } from '@/app/api/api-Errors';
+import { DatabaseSaveEditErrorResponse } from '@/api/api-Errors';
 
-export type MediaType = 'book' | 'movie' | 'video_game' | 'album';
+export type MediaType = 'book' | 'movie' | 'videoGame' | 'album';
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
 // 1. Map Drizzle row types
@@ -31,14 +31,13 @@ export type AlbumInsert = Omit<InferInsertModel<typeof albums>, 'id'> &
 // 3. “Pre-saved” (create/edit body) – based on INSERT types, no id
 //    You *can* keep title/spineColor etc. here if your JSON schema
 //    is slightly different from the DB, but this keeps you close to Drizzle.
-export type PreSavedMediaItem =
-  | BookInsert
-  | MovieInsert
-  | VideoGameInsert
-  | AlbumInsert;
+export type PreSavedMediaItem = BookInsert;
+// | MovieInsert
+// | VideoGameInsert
+// | AlbumInsert;
 
 // 4. “Post-saved” (what comes back from DB) – based on SELECT types
-export type PostSavedMediaItem = BookRow | MovieRow | VideoGameRow | AlbumRow;
+export type PostSavedMediaItem = BookRow;
 
 // 5. Response shapes now use these types
 
@@ -74,18 +73,19 @@ export interface SuccessfulGenreLinkUnlinkResponse {
 // 6. Make this match your camelCase DB schema (or keep snake_case if your rows do)
 export interface BlockInfo {
   title: string;
-  author?: string;
-  pubYear?: number | null;
-  pageCount?: number | null;
-  spineColor?: string;
+  author: string | null;
+  pubYear: number | null;
+  pageCount: number | null;
+  spineColor: string;
   databaseGenres?: string[];
 }
 
 // 7. Server response union
-export type DatabaseSaveServerResponse = (
+type DatabaseSaveServerResponseItem =
   | DatabaseSaveEditErrorResponse
   | SuccessfulMediaSaveEditResponse
   | (SuccessfulMediaSaveEditResponse & {
       genreResponses: SuccessfulGenreLinkUnlinkResponse[];
-    })
-)[];
+    });
+
+export type DatabaseSaveServerResponse = DatabaseSaveServerResponseItem[];

@@ -4,17 +4,17 @@
 import { useEffect, useMemo, useState } from 'react';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // components
-import DatabaseItemsContainer from '@/app/showdatabase/DatabaseItemsContainer';
-import PaginationInputs from '@/app/showdatabase/PaginationInputs';
+import DatabaseItemsContainer from '@/showdatabase/DatabaseItemsContainer';
+import PaginationInputs from '@/showdatabase/PaginationInputs';
 
 // context
-import DatabasePageContext from '@/lib/context/DatabasePageContext';
+import DatabasePageContext from 'lib/context/DatabasePageContext';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // interfaces and types
 import {
@@ -22,9 +22,9 @@ import {
   PostSavedMediaItem,
   SuccessfulMediaSearchResponse,
   SuccessfulPaginationResponse,
-} from '@/lib/interfaces/globalInterfaces';
-import { DatabasePageContextValue } from '@/lib/context/DatabasePageContext';
-import { SortOptions } from '@/app/showdatabase/PaginationInputs';
+} from 'lib/interfaces/globalInterfaces';
+import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
+import { SortOptions } from '@/showdatabase/PaginationInputs';
 
 export interface displayDatabaseItems {
   type: MediaType;

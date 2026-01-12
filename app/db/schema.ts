@@ -147,6 +147,13 @@ export const customersUsers = pgTable(
   ],
 );
 
+// ---------- google api query usage ----------
+export const googleApiQueryUsage = pgTable('google_api_query_usage', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  date: text('date').notNull().unique(),
+  queryCount: integer('query_count').notNull().default(0),
+});
+
 // ---------- better-auth ----------
 
 export const user = pgTable('user', {

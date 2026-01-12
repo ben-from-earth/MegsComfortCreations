@@ -1,4 +1,4 @@
-import { db } from '@/app/db/client';
+import { db } from '@/db/client';
 
 export type Context = {
   db: typeof db;

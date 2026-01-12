@@ -2,9 +2,9 @@
 import { createContext, Dispatch, SetStateAction, useContext } from 'react';
 
 // interfaces and types
-import { displayDatabaseItems } from '@/app/showdatabase/page';
-import { SortOptions } from '@/app/showdatabase/PaginationInputs';
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { displayDatabaseItems } from '@/showdatabase/page';
+import { SortOptions } from '@/showdatabase/PaginationInputs';
+import { MediaType } from 'lib/interfaces/globalInterfaces';
 
 export interface DatabasePageContextValue {
   page: number;

@@ -3,23 +3,23 @@
 import { memo, useEffect, useState } from 'react';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // components
-import AreYouSure from '@/app/components/AreYouSure';
-import Button from '@/app/components/Button';
-import { mediaTypeBlockClasses } from '@/app/mediacollector/CollectedCoversBlock';
-import EditDatabaseBlock from '@/app/showdatabase/EditDatabaseBlock';
+import AreYouSure from '@/shared/AreYouSure';
+import Button from '@/shared/Button';
+import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
+import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // context
-import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
+import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // interfaces and types
-import { PostSavedMediaItem } from '@/lib/interfaces/globalInterfaces';
-import { isBookRow } from '@/lib/helpers/handleMediaTyping';
+import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
+import { isBookRow } from 'lib/helpers/handleMediaTyping';
 
 export interface DatabaseItemProps {
   info: PostSavedMediaItem;
@@ -64,7 +64,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
 
   return (
     <div
-      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${mediaTypeBlockClasses[type]}`}
+      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${blockClasses[type]}`}
     >
       {areYouSure && (
         <AreYouSure
@@ -77,32 +77,32 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
       {edit && (
         <EditDatabaseBlock
           info={
-            isBookRow(type, info)
-              ? {
-                  type,
-                  images: imageUrls ?? [],
-                  BlockInfo: {
-                    title,
-                    author: info.author,
-                    pubYear: info.pubYear,
-                    pageCount: info.pageCount,
-                    spineColor,
-                    initialGenres: [...genres],
-                  },
-                  id,
-                  setEdit,
-                }
-              : {
-                  type,
-                  images: imageUrls ?? [],
-                  BlockInfo: {
-                    title,
-                    spineColor,
-                    initialGenres: [...genres],
-                  },
-                  id,
-                  setEdit,
-                }
+            // isBookRow(type, info)
+            {
+              type,
+              images: imageUrls ?? [],
+              blockInfo: {
+                title,
+                author: info.author,
+                pubYear: info.pubYear,
+                pageCount: info.pageCount,
+                spineColor,
+                initialGenres: [...genres],
+              },
+              id,
+              setEdit,
+            }
+            // : {
+            //     type,
+            //     images: imageUrls ?? [],
+            //     blockInfo: {
+            //       title,
+            //       spineColor,
+            //       initialGenres: [...genres],
+            //     },
+            //     id,
+            //     setEdit,
+            //   }
           }
         />
       )}

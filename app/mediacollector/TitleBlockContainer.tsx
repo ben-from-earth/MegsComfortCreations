@@ -2,33 +2,30 @@
 import { memo } from 'react';
 
 // components
-import CollectedCoversBlock from '@/app/mediacollector/CollectedCoversBlock';
+import CollectedCoversBlock from '@/mediacollector/CollectedCoversBlock';
 
-// necessary imports from collector state slice
-import { CollectedBlockInformation } from '@/lib/state/slices/collectorSlice';
-
-// interfaces and types
-import { MediaType } from '@/lib/interfaces/globalInterfaces';
+import { useFormContext } from 'react-hook-form';
+import { CollectorFormData } from './collector-form/collectorFormSchema';
 
 const TitleBlockContainer = memo(function TitleBlockContainer({
-  blocks,
   handleDeleteBlock,
+  blockIdsWithErrors,
 }: {
-  blocks: CollectedBlockInformation[];
-  handleDeleteBlock: (
-    blockID: string,
-    type: MediaType,
-    deleteBlock: boolean,
-    urls: string[],
-  ) => void;
+  handleDeleteBlock: (blockID: string) => void;
+  blockIdsWithErrors: string[];
 }) {
+  const { watch } = useFormContext<CollectorFormData>();
+  const blocks = watch('collectedData') ?? [];
+
   return (
     <div className="flex w-full flex-row flex-wrap gap-3 p-2">
-      {blocks.map((b) => (
+      {blocks.map((block, idx) => (
         <CollectedCoversBlock
-          info={b}
-          key={b.blockID}
+          index={idx}
+          info={block}
+          key={block.blockID}
           handleDeleteBlock={handleDeleteBlock}
+          hasError={blockIdsWithErrors.includes(block.blockID)}
         />
       ))}
     </div>

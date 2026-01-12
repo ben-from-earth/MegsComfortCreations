@@ -1,9 +1,9 @@
 // database import
-import { db } from '@/app/db/client';
+import { db } from '@/db/client';
 
 // interfaces and types
-import { BookRow } from '@/lib/interfaces/globalInterfaces';
-import { books, genres, genresBooks } from '@/app/db/schema';
+import { BookRow } from 'lib/interfaces/globalInterfaces';
+import { books, genres, genresBooks } from '@/db/schema';
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 
 const validSortKeys = ['title', 'pubYear', 'spineColor'] as const;

@@ -8,27 +8,27 @@ import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
 import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 
 // context
-import GenreContext from '@/lib/context/GenreContext';
-import { useDatabasePageContext } from '@/lib/context/DatabasePageContext';
+import GenreContext from 'lib/context/GenreContext';
+import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // components
-import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
-import Button from '@/app/components/Button';
+import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
+import Button from '@/shared/Button';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
-import { mediaTypeBlockClasses } from '@/app/mediacollector/CollectedCoversBlock';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
+import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 
 // interfaces and types
 import {
   BlockInfo,
   MediaType,
   PostSavedMediaItem,
-} from '@/lib/interfaces/globalInterfaces';
-import { ErrorResponse } from '@/app/api/api-Errors';
+} from 'lib/interfaces/globalInterfaces';
+import { ErrorResponse } from '@/api/api-Errors';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -42,7 +42,7 @@ export interface EditDatabaseBlockProps {
   info: {
     type: MediaType;
     images: string[];
-    BlockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
+    blockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
     id: string;
     setEdit: Dispatch<SetStateAction<boolean>>;
   };
@@ -90,7 +90,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   info: {
     type,
     images,
-    BlockInfo: {
+    blockInfo: {
       title,
       author,
       pubYear,
@@ -105,7 +105,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   const initialValues = {
     id,
     title,
-    author,
+    author: author ?? '',
     pubYear,
     pageCount,
     spineColor,
@@ -122,7 +122,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   const icons = {
     book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
     movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    video_game: (
+    videoGame: (
       <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
     ),
     album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
@@ -165,7 +165,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
 
   const handleEditSubmit = async () => {
     const res = await databaseEdit({ type, item: databaseData });
-    if ('error' in (res as ErrorResponse)) {
+    if ('error' in res) {
       setEdit(false);
       return;
     }
@@ -205,7 +205,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       <h1>Editing: {titleRearrange(title)}</h1>
 
       <div
-        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 text-lg ${mediaTypeBlockClasses[type]} mb-1`}
+        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 text-lg ${blockClasses[type]} mb-1`}
       >
         {icons[type]}
         <div className="m-2.5 mb-0 flex flex-row items-center gap-7.5">
@@ -268,8 +268,8 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
         )}
         {type === 'book' ? (
           <GenreCheckboxes
-            genres={genres}
-            databaseGenres={databaseGenres}
+            allGenres={genres}
+            blockGenres={databaseGenres}
             handleGenreClick={handleGenreClick}
           />
         ) : (

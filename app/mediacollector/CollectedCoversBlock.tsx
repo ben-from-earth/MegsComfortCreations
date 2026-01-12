@@ -1,6 +1,5 @@
 // react
-import { memo, useContext, useEffect, useState } from 'react';
-import { useAppDispatch } from '@/lib/state/store';
+import { memo, useContext, useState } from 'react';
 
 //import icons and items from Material UI
 import BookIcon from '@mui/icons-material/BookTwoTone';
@@ -10,46 +9,23 @@ import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-// necessary imports from database state slice
-import {
-  addToDatabaseData,
-  populateDatabaseData,
-  removeFromDatabaseData,
-} from '@/lib/state/slices/databaseDataSlice';
-
-// necessary imports from png state slice
-import { addToPNGCollectionList } from '@/lib/state/slices/pngCollectionSlice';
-
 // components
-import CBBImages from '@/app/mediacollector/CBBImages';
-import MyTextArea from '@/app/components/MyTextArea';
-import GenreContext from '@/lib/context/GenreContext';
-import GenreCheckboxes from '@/app/mediacollector/GenreCheckboxes';
+import CBBImages from '@/mediacollector/CBBImages';
+import MyTextArea from '@/shared/MyTextArea';
+import GenreContext from 'lib/context/GenreContext';
+import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
+import { useFormContext } from 'react-hook-form';
 
-// interfaces and types
 import {
-  AlbumInsert,
-  BookInsert,
-  MediaType,
-  MovieInsert,
-  VideoGameInsert,
-} from '@/lib/interfaces/globalInterfaces';
-import { CollectedBlockInformation } from '@/lib/state/slices/collectorSlice';
-
-export type DatabasePayload =
-  | { type: 'book'; data: BookInsert }
-  | { type: 'movie'; data: MovieInsert }
-  | { type: 'video_game'; data: VideoGameInsert }
-  | { type: 'album'; data: AlbumInsert };
+  CollectedBlockInformation,
+  CollectorFormData,
+} from './collector-form/collectorFormSchema';
 
 export interface CollectedCoversBlockProps {
+  index: number;
   info: CollectedBlockInformation;
-  handleDeleteBlock: (
-    blockID: string,
-    type: MediaType,
-    deleteBlock: boolean,
-    urls: string[],
-  ) => void;
+  handleDeleteBlock: (blockID: string) => void;
+  hasError: boolean;
 }
 
 declare global {
@@ -63,106 +39,55 @@ declare global {
 }
 
 //styling of the block itself based on type
-export const mediaTypeBlockClasses = {
+export const blockClasses = {
   book: 'bg-darkpink border-[#805052]',
   movie: 'bg-[#323b43] border-black text-white',
   album: 'bg-[#7fa5a3] border-[#354544]',
-  video_game: 'bg-[#98ab88] border-[#4e8885]',
+  videoGame: 'bg-[#98ab88] border-[#4e8885]',
+  hasError: 'bg-[#E86C54] border-[#EB4423]',
 };
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
+  hasError,
+  index,
   info,
   handleDeleteBlock,
 }: CollectedCoversBlockProps) {
   const {
     type,
-    images,
-    BlockInfo: { title, spineColor = '#ffffff', databaseGenres = [] },
+    blockInfo: { title, spineColor = '#ffffff', genres = [] },
     blockID,
     isDatabase,
   } = info;
-
-  //setup connection to redux slice
-  const dispatch = useAppDispatch();
-
-  //establish variables for icons
-  const icons = {
-    book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    video_game: (
-      <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
-    ),
-    album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-  };
 
   //set local state for spine color
   const [color, setColor] = useState(spineColor);
 
   //get genres for checkbox population
-  const genres = useContext(GenreContext);
+  const allGenres = useContext(GenreContext);
 
-  //extra information used for books only
-  const baseData = {
-    title,
-    spineColor: color,
-    blockID,
-    imageUrls: [] as string[],
-  };
-
-  let databasePayload: DatabasePayload;
-
-  if (type === 'book') {
-    const {
-      BlockInfo: { author, pubYear, pageCount },
-    } = info;
-    databasePayload = {
-      type: 'book',
-      data: {
-        ...baseData,
-        author: author ?? '',
-        pubYear: pubYear ?? null,
-        pageCount: pageCount ?? null,
-        genres: [],
-      },
-    };
-  } else if (type === 'movie') {
-    databasePayload = {
-      type: 'movie',
-      data: {
-        ...baseData,
-      },
-    };
-  } else if (type === 'video_game') {
-    databasePayload = {
-      type: 'video_game',
-      data: {
-        ...baseData,
-      },
-    };
-  } else {
-    databasePayload = {
-      type: 'album',
-      data: {
-        ...baseData,
-      },
-    };
+  const { watch, setValue } = useFormContext<CollectorFormData>();
+  const collectedData = watch('collectedData');
+  const block = collectedData.find((block) => block.blockID === blockID);
+  if (!block) {
+    return null;
   }
 
-  //on mount, populate the database data (in the state) with the block information if the information is not already from the database
-  //If the block is populated from the database, add the image to the png collection list
-  useEffect(() => {
-    if (!isDatabase) {
-      dispatch(populateDatabaseData(databasePayload));
-    } else {
-      dispatch(addToPNGCollectionList({ type, spineColor, url: images[0] }));
-    }
+  //setup connection to redux slice
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
+  //establish variables for icons
+  const icons = {
+    book: <BookIcon />,
+    movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
+    videoGame: (
+      <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
+    ),
+    album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
+  };
 
   //div to pick a color for the spine.
   //this is used in png creation and is required for each media type in the database
-  const handleColorPick = async (blockID: string, type: MediaType) => {
+  const handleColorPick = async (blockID: number) => {
     if (!window.EyeDropper) {
       console.log('EyeDropper API not supported in this browser');
       return;
@@ -172,7 +97,11 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       const { sRGBHex } = await eyeDropper.open();
       const spineColor = sRGBHex;
       setColor(spineColor);
-      dispatch(addToDatabaseData({ blockID, type, spineColor }));
+      const newBlock = {
+        ...info,
+        blockInfo: { ...info.blockInfo, spineColor },
+      };
+      setValue(`collectedData.${blockID}`, newBlock);
     } catch (e) {
       console.log(e);
     }
@@ -181,22 +110,35 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   //if genre is clicked we add it to the data associated with the block and remove if unchecked
   const handleGenreClick = (genreText: string, checked: boolean) => {
     if (checked) {
-      dispatch(addToDatabaseData({ blockID, type: 'book', genreText }));
+      const newGenres = [...genres, genreText];
+      const newBlock = {
+        ...info,
+        blockInfo: { ...info.blockInfo, genres: newGenres },
+      };
+      setValue(`collectedData.${index}`, newBlock);
     } else {
-      dispatch(removeFromDatabaseData({ blockID, type: 'book', genreText }));
+      const newGenres = genres.filter((genre) => genre !== genreText);
+      const newBlock = {
+        ...info,
+        blockInfo: { ...info.blockInfo, genres: newGenres },
+      };
+      setValue(`collectedData.${index}`, newBlock);
     }
   };
 
   return (
     <div
-      className={`relative flex h-fit min-w-sm flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${mediaTypeBlockClasses[type]}`}
+      className={`relative flex h-fit min-w-sm flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
     >
       {isDatabase && (
         <p className="absolute top-1 right-1 m-0 rounded-sm border-2 border-black bg-gray-700 p-1.25 tracking-wider text-white">
           Database
         </p>
       )}
-      {icons[type]}
+      <div className="absolute top-1 left-1">
+        {icons[type]} block: {index + 1}
+      </div>
+
       <IconButton
         aria-label="delete"
         sx={{
@@ -204,28 +146,22 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           bottom: '4px',
           right: '4px',
           padding: '0',
-          color: type === 'movie' ? 'white' : '',
+          // color: type === 'movie' ? 'white' : '',
         }}
-        onClick={() => handleDeleteBlock(blockID, type, true, images)}
+        onClick={() => handleDeleteBlock(blockID)}
       >
         <DeleteIcon />
       </IconButton>
-      <CBBImages
-        images={images}
-        isDatabase={isDatabase}
-        blockID={blockID}
-        type={type}
-        spineColor={color}
-      />
-      {type !== 'album' ? (
-        <div
-          className="h-5 w-1/2 cursor-pointer"
-          style={{ backgroundColor: color }}
-          onClick={() => handleColorPick(blockID, type)}
-        ></div>
-      ) : (
+      <CBBImages blockID={index} />
+      {/* {type !== 'album' ? ( */}
+      <div
+        className="h-5 w-1/2 cursor-pointer"
+        style={{ backgroundColor: color }}
+        onClick={() => handleColorPick(index)}
+      ></div>
+      {/* ) : (
         <></>
-      )}
+      )} */}
 
       <MyTextArea
         name="title"
@@ -241,21 +177,21 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
             label="Author"
             type={type}
             blockID={blockID}
-            value={info.BlockInfo.author || ''}
+            value={info.blockInfo.author || ''}
           />
           <MyTextArea
             name="pubYear"
             label="Pub Year"
             type={type}
             blockID={blockID}
-            value={info.BlockInfo.pubYear || ''}
+            value={info.blockInfo.pubYear || ''}
           />
           <MyTextArea
             name="pageCount"
             label="Page Count"
             type={type}
             blockID={blockID}
-            value={info.BlockInfo.pageCount || ''}
+            value={info.blockInfo.pageCount || ''}
           />
         </>
       ) : (
@@ -263,8 +199,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       )}
       {type === 'book' ? (
         <GenreCheckboxes
-          genres={genres}
-          databaseGenres={databaseGenres}
+          allGenres={allGenres}
+          blockGenres={genres}
           handleGenreClick={handleGenreClick}
         />
       ) : (

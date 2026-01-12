@@ -1,18 +1,13 @@
 'use client';
 
-// react, redux imports
-import { Provider } from 'react-redux';
-import { store } from '@/lib/state/store';
+// react imports
 import { useEffect, useState } from 'react';
 
-// library imports
-// axios no longer needed for genres; using tRPC
-
 // context
-import GenreContext from '@/lib/context/GenreContext';
+import GenreContext from 'lib/context/GenreContext';
 
 // interfaces and types
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   //get genres for use around the app
@@ -24,8 +19,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     if (data?.genres) setGenres(data.genres);
   }, [data]);
   return (
-    <Provider store={store}>
-      <GenreContext.Provider value={genres}>{children}</GenreContext.Provider>
-    </Provider>
+    <GenreContext.Provider value={genres}>{children}</GenreContext.Provider>
   );
 }

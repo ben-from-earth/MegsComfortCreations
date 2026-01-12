@@ -1,318 +1,183 @@
 'use client';
 // image collection from assets
-import backgroundImage from '@/public/FlowerBackground.png';
-import MediaCollectorTitle from '@/public/MegsMediaCollector.png';
+import backgroundImage from 'public/FlowerBackground.png';
+import MediaCollectorTitle from 'public/MegsMediaCollector.png';
 
 // react and redux
-import { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { useAppDispatch } from '@/lib/state/store';
+import { useState } from 'react';
 
 // library imports
-import { trpc } from '@/lib/trpc/client';
+import { trpc } from 'lib/trpc/client';
 
 // components
 import Image from 'next/image';
-import QueryCounter from '@/app/components/QueryCounter';
-import MediaCheckboxes from '@/app/mediacollector/MediaCheckboxes';
-import MediaInputs from '@/app/mediacollector/MediaInputs';
-import PNGFormatPicker from '@/app/mediacollector/PNGFormatPicker';
-import ButtonGroup from '@/app/mediacollector/ButtonGroup';
-import LoadingWidget from '@/app/components/LoadingWidget';
-import DatabaseSavedWidget from '@/app/mediacollector/DatabaseSavedWidget';
-import TitleBlockContainer from '@/app/mediacollector/TitleBlockContainer';
-
-// imports from the collector state slice
-import {
-  collectBlockInformation,
-  CollectedBlockInformation,
-  finishedFetch,
-  finishedLoad,
-  getFetchStatus,
-  getLoadingStatus,
-  mediaData,
-  mediaTypeDefinitions,
-  setCollectList,
-  startFetch,
-  startLoad,
-} from '@/lib/state/slices/collectorSlice';
-
-// imports from the database state slice
-import {
-  clearDatabaseData,
-  DatabaseDataPerType,
-  removeFromDatabaseData,
-} from '@/lib/state/slices/databaseDataSlice';
-
-// imports from the png state slice
-import {
-  clearPNGCollectionList,
-  ImageData,
-  removeFromPNGCollectionList,
-  selectPNGList,
-} from '@/lib/state/slices/pngCollectionSlice';
+import QueryCounter from '@/shared/QueryCounter';
+// import MediaCheckboxes from '@/mediacollector/MediaCheckboxes';
+// import MediaInputs from '@/mediacollector/MediaInputs';
+import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
+import LoadingWidget from '@/shared/LoadingWidget';
+import InformationalDialog from '@/mediacollector/InformationalDialog';
+import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
+import TextInput from '@/shared/TextInput';
 
 //interfaces and types
-import {
-  DatabaseSaveServerResponse,
-  MediaType,
-  BookInsert,
-  MovieInsert,
-  VideoGameInsert,
-  AlbumInsert,
-} from '@/lib/interfaces/globalInterfaces';
-import { titleOutputObj } from '@/lib/helpers/titleCollectionListConversion';
+import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
+import Button from '@/shared/Button';
+import { useCollectorForm } from './collector-form/use-collector-form';
+import type { CollectorFormData } from './collector-form/collectorFormSchema';
+import { FormProvider, useFormContext } from 'react-hook-form';
+import titleCollectionListConversion from 'lib/helpers/titleCollectionListConversion';
 
-export default function MediaCollector() {
-  //setup connection to the redux slice and associated variables
-  const dispatch = useAppDispatch();
-  const stateData: mediaTypeDefinitions[] = useSelector(mediaData);
-  const shouldFetch: boolean = useSelector(getFetchStatus);
-  const isLoading: boolean = useSelector(getLoadingStatus);
-  const pngCollectionList: ImageData[] = useSelector(selectPNGList);
+function MediaCollectorContent() {
+  const { onSubmit } = useCollectorForm();
 
   // setup states used throughout the component
-  const [CollectedCoversBlocks, setCollectedCoversBlocks] = useState<
-    CollectedBlockInformation[]
-  >([]);
-  const [searchData, setSearchData] = useState<
-    { type: MediaType; titleSearchList: titleOutputObj[] }[]
-  >(stateData.map((media) => ({ type: media.type, titleSearchList: [] })));
-  const [pngTemplateChecks, setPNGTemplateChecks] = useState<boolean[]>([
-    false,
-    false,
-  ]);
-  const [pngTemplate, setPNGTemplate] = useState<number | undefined>();
+  const { watch, setValue } = useFormContext<CollectorFormData>();
+
+  const formValues = watch();
+
   const [pngError, setPNGError] = useState<boolean>(false);
+  const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
+  const [showInformationalDialog, setShowInformationalDialog] =
+    useState<boolean>(false);
+  const [informationalDialogText, setInformationalDialogText] =
+    useState<string>('');
+  const [isSavingToDatabase, setIsSavingToDatabase] = useState<boolean>(false);
   const [databaseSavedData, setDatabaseSavedData] =
     useState<DatabaseSaveServerResponse>([]);
 
   //refs for useEffect
-  const mediaTypesRef = useRef(stateData);
+  // const mediaTypesRef = useRef(stateData);
 
   // trpc functions
-  const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
-  const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
-  const { mutateAsync: createPNG } = trpc.png.create.useMutation();
-
-  //update ref whenever stateData updates
-  //stateData holds data about showing checkboxes, and the titleCollectionList data.
-  useEffect(() => {
-    mediaTypesRef.current = stateData;
-  }, [stateData]);
-
-  //on mount, reset query count in local storage if its a new day
-  //on unmount reset the visual state
-  useEffect(() => {
-    const lastQueryDate = localStorage.getItem('lastQueryDate');
-    const today = new Date().toISOString().split('T')[0];
-    if (lastQueryDate !== today) {
-      localStorage.setItem('queryCount', '0');
-      localStorage.setItem('lastQueryDate', today);
-    }
-  }, []);
-
-  //if should fetch comes true, set off chain of events to collect media covers
-  useEffect(() => {
-    if (!shouldFetch) return;
-
-    let cancelled = false;
-    setCollectedCoversBlocks([]);
-
-    const work = mediaTypesRef.current
-      .filter((m) => m.titleCollectionList.length > 0)
-      .flatMap(({ type, titleCollectionList }) =>
-        titleCollectionList.map((t) => ({ type, toCollectItem: t })),
-      );
-
-    // Kick off thunks
-    const tasks = work.map(({ type, toCollectItem }) =>
-      dispatch(collectBlockInformation({ type, toCollectItem })),
-    );
-
-    //IIFE for async promise collection and collected covers block setting
-    (async () => {
-      try {
-        // unwrap in parallel
-        const results = await Promise.allSettled(tasks.map((t) => t.unwrap()));
-        if (cancelled) return;
-
-        const blocks = results
-          .filter((r) => r.status === 'fulfilled')
-          .map((r) => r.value);
-        setCollectedCoversBlocks(blocks);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (!cancelled) dispatch(finishedFetch());
-      }
-    })();
-
-    // on unmount/refresh: cancel thunks + mark cancelled
-    return () => {
-      cancelled = true;
-      tasks.forEach((t) => t.abort?.());
-    };
-  }, [shouldFetch, dispatch]);
+  const { mutateAsync: createPNG, isPending: isCreatingPNG } =
+    trpc.png.create.useMutation();
+  const utils = trpc.useUtils();
+  const { mutateAsync: collectMedia, isPending: isCollectingMedia } =
+    trpc.collect.collectMedia.useMutation({
+      onSuccess: () => {
+        const date = new Date().toLocaleDateString('en-CA', {
+          timeZone: 'America/New_York',
+        });
+        // Invalidate today's query count so QueryCounter refetches
+        void utils.database.getQueryCount.invalidate({ date });
+      },
+    });
 
   //Set of actions that set of Media Cover Collection
-  const handleCollectClick = (): void => {
-    //clear database information and PNG collection list if any information persists so blocks can populate appropriately
-    dispatch(clearDatabaseData());
-    dispatch(clearPNGCollectionList());
-
-    //Set the collection list from the text areas
-    dispatch(setCollectList(searchData));
-
-    //count number of items for loading widget
+  const handleCollectClick = async (): Promise<void> => {
+    setValue('collectedData', []);
     let count = 0;
-    searchData.map((type) => {
-      count += type.titleSearchList.length;
-    });
+    for (const searchList of Object.values(formValues.collectionList)) {
+      count += searchList.length;
+    }
+
+    if (count === 0) {
+      alert('No media titles to collect. Please add titles first.');
+      return;
+    }
+
     setLoadingMessage(`Gathering ${count} media covers`);
 
-    //tell UI were loading and to kick off fetch in the above useEffect
-    dispatch(startLoad());
-    dispatch(startFetch());
-  };
-
-  //Send block information to the database and give responses to the Database Saved Widget to appropriately show successes and errors
-  const handleDatabaseClick = async (
-    databaseData: DatabaseDataPerType[],
-  ): Promise<void> => {
-    const responses: DatabaseSaveServerResponse = [];
-    for (const media of databaseData) {
-      if (media.type === 'book') {
-        for (const book of media.data) {
-          const title = book.title; // titleRearrange already applied earlier upstream
-          const bookData = {
-            title,
-            author: book.author,
-            pageCount: book.pageCount,
-            pubYear: book.pubYear,
-            imageUrls: book.images.map((item) => item.src),
-            spineColor: book.spineColor,
-            genres: book.genres,
-            blockID: book.blockID,
-          };
-          try {
-            const res = await databaseSave({
-              type: 'book',
-              mediaData: bookData as BookInsert,
-            });
-            if ('error' in res) {
-              responses.push(res);
-            } else {
-              const bookDatabaseID = res.actionAttemptItem.id;
-              const linkRes = await linkGenres({
-                bookID: bookDatabaseID,
-                genres: book.genres ?? [],
-              });
-              responses.push({ ...res, ...linkRes });
-            }
-          } catch {
-            responses.push({
-              actionAttemptItem: bookData,
-              type: 'book',
-              errors: [
-                'Server Error during save',
-                `${bookData.title} did not save to the database`,
-              ],
-              error: 'Server Error',
-              message: `There was a server error during save attempt for ${bookData.title}`,
-            });
-          }
-        }
-      } else {
-        for (const other of media.data) {
-          const title = other.title;
-          const otherData: MovieInsert | VideoGameInsert | AlbumInsert = {
-            title,
-            imageUrls: other.images.map((img) => img.src),
-            spineColor: other.spineColor,
-            blockID: other.blockID,
-          };
-          try {
-            const res = await databaseSave({
-              type: media.type,
-              mediaData: otherData,
-            });
-            responses.push(res);
-          } catch {
-            responses.push({
-              actionAttemptItem: otherData,
-              type: media.type,
-              errors: [
-                'Server Error during save',
-                `${otherData.title} did not save to the database`,
-              ],
-              error: 'Server Error',
-              message: `There was a server error during save attempt for ${otherData.title}`,
-            });
-          }
-        }
-      }
+    const blocks = await collectMedia(formValues.collectionList);
+    if (!blocks) {
+      return;
+    } else {
+      setValue('collectedData', blocks);
     }
-    setDatabaseSavedData(responses);
-    setDatabaseSaved(true);
   };
-
-  //Handle creation of PNG from all covers. This is the main finishing product of the app
 
   const handlePNGClick = async (): Promise<void> => {
-    if (!pngTemplate) {
+    setLoadingMessage(`Adding items to database`);
+    setIsSavingToDatabase(true);
+    setBlockIdsWithErrors([]);
+    const itemsWithoutImages = formValues.collectedData.filter((block) => {
+      const selectedImages = block.images.filter((img) => img.selected);
+      if (block.isDatabase) {
+        return false;
+      }
+      return selectedImages.length === 0;
+    });
+    const numWithoutImages = itemsWithoutImages.length;
+    if (numWithoutImages > 0) {
+      setInformationalDialogText(
+        `There are ${numWithoutImages} blocks without selected images that will not be saved to the database. Please select at least one image per block or delete the block.`,
+      );
+      setBlockIdsWithErrors(itemsWithoutImages.map((block) => block.blockID));
+      setShowInformationalDialog(true);
+      return;
+    }
+
+    if (!formValues.pngFormat) {
       setPNGError(true);
       return;
     }
 
-    setLoadingMessage(`Putting together PNG export`);
-    dispatch(startLoad());
-
-    try {
-      const res = await createPNG({
-        template: pngTemplate as number as 3 | 5,
-        images: pngCollectionList,
-      });
-      const { mime, filename, dataBase64 } = res as {
-        mime: string;
-        filename: string;
-        dataBase64: string;
-      };
-      const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
-        c.charCodeAt(0),
-      );
-      const blob = new Blob([byteArray], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download failed:', err);
-    } finally {
-      dispatch(finishedLoad());
+    if (formValues.bookClubRepeat < 1) {
+      setInformationalDialogText(`Book Club Repeat Number must be at least 1.`);
+      setShowInformationalDialog(true);
+      return;
     }
+
+    const result = await onSubmit(formValues);
+
+    const someHaveDatabaseErrors = result.some((res) => 'error' in res);
+
+    if (someHaveDatabaseErrors) {
+      setInformationalDialogText(
+        `There were database errors when saving some of the media blocks. Check status of database`,
+      );
+      setShowInformationalDialog(true);
+      return;
+    }
+
+    setLoadingMessage(`Putting together PNG export`);
+    const images = formValues.collectedData.map((block) => {
+      let keptImages: { url: string; selected: boolean }[] = [];
+      if (block.isDatabase) {
+        keptImages = block.images;
+      } else {
+        keptImages = block.images.filter((img) => img.selected);
+      }
+
+      const url = keptImages.map((img) => img.url)[0];
+      const type = block.type;
+      const spineColor = block.blockInfo.spineColor;
+      return {
+        url,
+        type,
+        spineColor,
+      };
+    });
+
+    const { mime, filename, dataBase64 } = await createPNG({
+      template: Number(formValues.pngFormat) as 3 | 5,
+      images,
+      customerName: formValues.customerName,
+      orderNumber: formValues.orderNumber,
+      repeatCount: formValues.bookClubRepeat,
+    });
+    setIsSavingToDatabase(false);
+
+    const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
+    const blob = new Blob([byteArray], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
-  //Delete a block action for if any end up uneeded or user has any reason to not want to add information to database or PNG export.
-  const handleDeleteBlock = (
-    blockID: string,
-    type: MediaType,
-    deleteBlock: boolean,
-    urls: string[],
-  ) => {
-    setCollectedCoversBlocks((prev) =>
-      prev.filter((block) => block.blockID !== blockID),
+  const handleDeleteBlock = (blockID: string) => {
+    setValue(
+      'collectedData',
+      formValues.collectedData.filter((block) => block.blockID !== blockID),
     );
-    dispatch(removeFromDatabaseData({ blockID, type, deleteBlock }));
-    for (const url of urls) {
-      dispatch(removeFromPNGCollectionList({ url }));
-    }
   };
 
   return (
@@ -329,36 +194,97 @@ export default function MediaCollector() {
           src={MediaCollectorTitle}
           width={576}
         />
-        <MediaCheckboxes mediaTypes={stateData} setSearchData={setSearchData} />
+        <div className="mt-2 flex flex-col items-center gap-4">
+          <TextInput
+            onChange={(e) => {
+              setValue('customerName', e.target.value);
+            }}
+            label={'Customer Full Name'}
+            variant="normal"
+            value={formValues.customerName}
+          />
+          <TextInput
+            onChange={(e) => {
+              setValue('orderNumber', e.target.value);
+            }}
+            label={'Order Number'}
+            variant="normal"
+            value={formValues.orderNumber}
+          />
+          <TextInput
+            onChange={(e) => {
+              setValue('bookClubRepeat', Number(e.target.value));
+            }}
+            label={'Book Club Repeat Number'}
+            variant="normal"
+            value={formValues.bookClubRepeat.toString()}
+          />
 
-        <ButtonGroup
-          onCollect={handleCollectClick}
-          onPNG={handlePNGClick}
-          onDatabase={handleDatabaseClick}
-        />
+          {/* <MediaCheckboxes mediaTypes={stateData} /> */}
 
-        <MediaInputs mediaTypes={stateData} setSearchData={setSearchData} />
-        <PNGFormatPicker
-          pngTemplateChecks={pngTemplateChecks}
-          pngError={pngError}
-          setPNGError={setPNGError}
-          setPNGTemplate={setPNGTemplate}
-          setPNGTemplateChecks={setPNGTemplateChecks}
-        />
+          <div className="flex flex-row items-center gap-4">
+            <Button
+              onClick={() => {
+                handleCollectClick();
+              }}
+              label={'Collect Media Covers'}
+              width={175}
+              fontSize={25}
+            />
+            <Button
+              onClick={() => handlePNGClick()}
+              label={'Create PNG Export'}
+              width={175}
+              fontSize={25}
+            />
+          </div>
+
+          <TextInput
+            variant="multiline"
+            label={`Book Titles`}
+            rows={5}
+            onChange={(e) => {
+              const titleSearchList = titleCollectionListConversion(
+                e.target.value,
+              );
+              setValue(`collectionList.book`, titleSearchList);
+            }}
+          />
+        </div>
+        <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>
-      {isLoading && <LoadingWidget message={loadingMessage} />}
+      {(isCollectingMedia || isCreatingPNG || isSavingToDatabase) && (
+        <LoadingWidget message={loadingMessage} />
+      )}
       {databaseSaved && (
-        <DatabaseSavedWidget
+        <InformationalDialog
+          variant="databaseSave"
           data={databaseSavedData}
           close={() => setDatabaseSaved(false)}
         />
       )}
-      {CollectedCoversBlocks.length > 0 && (
+      {showInformationalDialog && (
+        <InformationalDialog
+          variant="informationalOnly"
+          infoText={informationalDialogText}
+          close={() => setShowInformationalDialog(false)}
+        />
+      )}
+      {formValues.collectedData.length > 0 && (
         <TitleBlockContainer
-          blocks={CollectedCoversBlocks}
           handleDeleteBlock={handleDeleteBlock}
+          blockIdsWithErrors={blockIdsWithErrors}
         />
       )}
     </>
+  );
+}
+
+export default function MediaCollector() {
+  const { form } = useCollectorForm();
+  return (
+    <FormProvider {...form}>
+      <MediaCollectorContent />
+    </FormProvider>
   );
 }

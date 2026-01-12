@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Formik, Form, useField } from 'formik';
 import * as Yup from 'yup';
-import { authClient } from '@/lib/auth-client';
+import { authClient } from 'lib/auth-client';
 import { useRouter } from 'next/navigation';
 
 // ---- Formik input component ----
@@ -104,7 +104,6 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (values: LoginValues) => {
     setLoginError(false);
-    console.log(values);
 
     const { error } = await authClient.signIn.email({
       email: values.email,

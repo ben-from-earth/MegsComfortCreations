@@ -2,10 +2,10 @@
 import { Dispatch, SetStateAction } from 'react';
 
 // components
-import Button from '@/app/components/Button';
+import Button from '@/shared/Button';
 
 // helpers
-import { titleRearrange } from '@/lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 export interface AreYouSureProps {
   setAreYouSure: Dispatch<SetStateAction<boolean>>;

@@ -5,9 +5,6 @@ import sharp, { OverlayOptions, RGBA } from 'sharp';
 import axios from 'axios';
 import JSZip from 'jszip';
 
-// interfaces and types
-import { ImageData } from '@/lib/state/slices/pngCollectionSlice';
-
 /*
   PNG/ZIP renderer (paginated)
 
@@ -22,7 +19,7 @@ import { ImageData } from '@/lib/state/slices/pngCollectionSlice';
   Input:
   {
     template: 3 | 5,
-    images: Array<{ url: string, spineColor: string, type: string }>
+    images: ImageData[];
   }
 */
 
@@ -38,6 +35,12 @@ export interface AutoOutput {
   filename: string;
   buffer: Buffer;
 }
+
+export type ImageData = {
+  url: string;
+  type: 'book' | 'movie' | 'videoGame' | 'album';
+  spineColor: string;
+};
 
 interface Slot {
   x: number;
@@ -116,14 +119,14 @@ const COMBOS: Record<
   3: {
     book: variation1,
     movie: variation1,
-    video_game: variation1,
+    videoGame: variation1,
     album: variation2,
     default: variation1,
   },
   5: {
     book: variation3,
     movie: variation4,
-    video_game: variation4,
+    videoGame: variation4,
     album: variation5,
     default: variation4,
   },
@@ -212,6 +215,8 @@ function layoutSlots({
   const slots: Slot[] = [];
   let x = marginX;
   let y = marginY;
+  // Track the start index of the current row so we can right-align the last cell
+  let rowStartIdx = 0;
 
   for (let i = 0; i < images.length; i++) {
     const type = images[i].type;
@@ -221,13 +226,28 @@ function layoutSlots({
 
     // Wrap if this cell would overflow the row
     if (x > marginX && x + w > canvasW - marginX) {
+      // Right-align the last cell of the previous row
+      if (slots.length > rowStartIdx) {
+        const lastIdx = slots.length - 1;
+        const last = slots[lastIdx];
+        slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
+      }
       x = marginX;
       y += h + yGap;
       if (y + h > canvasH - marginY) break; // no more vertical room
+      // New row starts at current slots length
+      rowStartIdx = slots.length;
     }
 
     slots.push({ x, y, w, h });
     x += w + xGap;
+  }
+
+  // After placing all cells, right-align the last cell of the final row
+  if (slots.length > rowStartIdx) {
+    const lastIdx = slots.length - 1;
+    const last = slots[lastIdx];
+    slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
   }
 
   return slots;
@@ -262,6 +282,8 @@ function layoutPage({
   let x = marginX;
   let y = marginY;
   let countUsed = 0;
+  // Track the start index of the current row so we can right-align the last cell
+  let rowStartIdx = 0;
 
   for (let i = startIndex; i < images.length; i++) {
     const type = images[i]?.type;
@@ -270,9 +292,17 @@ function layoutPage({
     const h = rowHeight;
 
     if (x > marginX && x + w > canvasW - marginX) {
+      // Right-align the last cell of the previous row
+      if (slots.length > rowStartIdx) {
+        const lastIdx = slots.length - 1;
+        const last = slots[lastIdx];
+        slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
+      }
       x = marginX;
       y += h + yGap;
       if (y + h > canvasH - marginY) break; // full
+      // New row starts at current slots length
+      rowStartIdx = slots.length;
     }
 
     if (y + h <= canvasH - marginY) {
@@ -282,6 +312,13 @@ function layoutPage({
     } else {
       break;
     }
+  }
+
+  // After placing all cells, right-align the last cell of the final row
+  if (slots.length > rowStartIdx) {
+    const lastIdx = slots.length - 1;
+    const last = slots[lastIdx];
+    slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
   }
 
   return { slots, countUsed };
@@ -335,11 +372,11 @@ async function renderPage({
 export async function outputPNGs({
   template,
   images = [],
-  namePrefix = 'MMC_Output',
+  fileOutputName,
 }: {
   template: Template;
   images: ImageData[];
-  namePrefix?: string;
+  fileOutputName: string;
 }): Promise<OutputFile[]> {
   const metrics = TEMPLATE_METRICS[template];
   if (!metrics) throw new Error('Unsupported template (use 3 or 5)');
@@ -353,7 +390,7 @@ export async function outputPNGs({
       images: [],
       startIndex: 0,
     });
-    results.push({ filename: `${namePrefix}_001.png`, buffer });
+    results.push({ filename: `${fileOutputName}.png`, buffer });
     return results;
   }
 
@@ -366,7 +403,10 @@ export async function outputPNGs({
       images,
       startIndex: idx,
     });
-    const filename = `${namePrefix}_${String(pageNo).padStart(3, '0')}.png`;
+    const filename =
+      pageNo === 1 && countUsed >= images.length
+        ? `${fileOutputName}.png`
+        : `${fileOutputName}_${String(pageNo).padStart(3, '0')}.png`;
     results.push({ filename, buffer });
     if (countUsed === 0) break;
     idx += countUsed;
@@ -380,14 +420,14 @@ export async function outputPNGs({
 export async function outputZIP({
   template,
   images = [],
-  prefix = 'grid',
+  fileOutputName,
 }: {
   template: Template;
   images: ImageData[];
-  prefix?: string;
+  fileOutputName: string;
 }): Promise<Buffer> {
   const zip = new JSZip();
-  const pages = await outputPNGs({ template, images, namePrefix: prefix });
+  const pages = await outputPNGs({ template, images, fileOutputName });
   for (const { filename, buffer } of pages) {
     zip.file(filename, buffer);
   }
@@ -405,13 +445,13 @@ export async function outputZIP({
 export async function outputAuto({
   template,
   images = [],
-  prefix = 'grid',
+  fileOutputName,
 }: {
   template: Template;
   images: ImageData[];
-  prefix?: string;
+  fileOutputName: string;
 }): Promise<AutoOutput> {
-  const pages = await outputPNGs({ template, images, namePrefix: prefix });
+  const pages = await outputPNGs({ template, images, fileOutputName });
 
   if (pages.length === 1) {
     return {
@@ -420,10 +460,10 @@ export async function outputAuto({
       buffer: pages[0].buffer,
     };
   }
-  const zipBuf = await outputZIP({ template, images, prefix });
+  const zipBuf = await outputZIP({ template, images, fileOutputName });
   return {
     mime: 'application/zip',
-    filename: `${prefix}_pages.zip`,
+    filename: `${fileOutputName}_pages.zip`,
     buffer: zipBuf,
   };
 }

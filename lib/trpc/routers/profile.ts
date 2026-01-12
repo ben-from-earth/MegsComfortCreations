@@ -1,4 +1,4 @@
-import { router, publicProcedure } from '@/lib/trpc/trpc';
+import { router, publicProcedure } from 'lib/trpc/trpc';
 
 export const profileRouter = router({
   get: publicProcedure.query(async () => {

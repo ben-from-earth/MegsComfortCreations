@@ -2,8 +2,8 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 
 //schemas
-import bookSaveSchema from '@/lib/database/schemas/bookCreateSchema.json';
-import otherSaveSchema from '@/lib/database/schemas/otherMediaCreateSchema.json';
+import bookSaveSchema from 'lib/database/schemas/bookCreateSchema.json';
+import otherSaveSchema from 'lib/database/schemas/otherMediaCreateSchema.json';
 
 //database routes
 import databaseSave from '@databaseDocs/databaseSave';

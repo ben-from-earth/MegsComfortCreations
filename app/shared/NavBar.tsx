@@ -1,14 +1,14 @@
 // components
 import Image from 'next/image';
 import Link from 'next/link';
-import Button from '@/app/components/Button';
-import ProfileButton from '@/app/components/ProfileButton';
+import Button from '@/shared/Button';
+import ProfileButton from '@/shared/ProfileButton';
 
 // public image imports
-import Logo from '@/public/Comfort.png';
+import Logo from 'public/Comfort.png';
 
 // auth
-import { auth } from '@/lib/auth';
+import { auth } from 'lib/auth';
 import { headers } from 'next/headers';
 
 export default async function NavBar() {
