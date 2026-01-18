@@ -1,20 +1,25 @@
 import { router, publicProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
 import Genre from 'lib/database/models/genre';
+import { Genre as GenreEnum } from '@/lib/enums/genreEnums';
 import type {
   BookRow,
   SuccessfulGenreLinkUnlinkResponse,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
-import { link } from 'fs';
-import { linkGenres } from './actions/linkGenres';
+// database import
+import { db } from '@/db/client';
+
+// interfaces and types
+import { genres, genresBooks } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const genresRouter = router({
   getAll: publicProcedure.query(async () => {
     const genres = await Genre.getAllGenres();
     return { message: 'Success', genres } as {
       message: string;
-      genres: string[];
+      genres: GenreEnum[];
     };
   }),
 
@@ -36,8 +41,34 @@ export const genresRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const responses = await linkGenres(input.bookID, input.genres);
-      return responses;
+      const responses: SuccessfulGenreLinkUnlinkResponse[] = [];
+      for (const genre of input.genres) {
+        const [genreRow] = await db
+          .select({ id: genres.id })
+          .from(genres)
+          .where(eq(genres.genre, genre));
+
+        if (!genreRow) {
+          responses.push({
+            message: `Genre "${genre}" not found in database.`,
+            genre,
+            bookID: input.bookID,
+          });
+          continue;
+        }
+
+        // 2. Insert into join table
+        await db.insert(genresBooks).values({
+          bookId: input.bookID,
+          genreId: genreRow.id,
+        });
+        responses.push({
+          message: 'Successful genre link',
+          genre,
+          bookID: input.bookID,
+        });
+      }
+      return { genreResponses: responses };
     }),
 
   unlink: publicProcedure

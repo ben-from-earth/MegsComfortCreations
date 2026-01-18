@@ -8,10 +8,11 @@ import GenreContext from 'lib/context/GenreContext';
 
 // interfaces and types
 import { trpc } from 'lib/trpc/client';
+import { Genre } from './lib/enums/genreEnums';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   //get genres for use around the app
-  const [genres, setGenres] = useState<string[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   const { data } = trpc.genres.getAll.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
   });

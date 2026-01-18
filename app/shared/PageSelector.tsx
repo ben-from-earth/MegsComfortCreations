@@ -1,5 +1,5 @@
 // components
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 
 // context
 import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
@@ -19,6 +19,7 @@ export default function PageSelector() {
       </p>
       <div className="ml-auto flex gap-2">
         <Button
+          variant="primary"
           label={'<- Prev Page'}
           width={125}
           fontSize={24}
@@ -29,6 +30,7 @@ export default function PageSelector() {
           }}
         />
         <Button
+          variant="primary"
           disabled={page === numPages || total === 0}
           width={125}
           fontSize={24}

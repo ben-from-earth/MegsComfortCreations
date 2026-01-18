@@ -1,5 +1,5 @@
 import { publicProcedure, router } from 'lib/trpc/trpc';
-import { asc, desc, ilike, sql, eq } from 'drizzle-orm';
+import { and, asc, desc, ilike, isNull, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import {
@@ -21,6 +21,7 @@ import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
+import { allGenres } from '@/lib/enums/genreEnums';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 
@@ -44,15 +45,17 @@ export const databaseRouter = router({
     .input(
       z.object({
         type: mediaType,
+        title: z.string().optional(),
         limit: z.number().int().positive(),
         page: z.number().int().positive(),
         sort: z.enum(['title', 'author', 'pubYear', 'spineColor']),
         ascDesc: z.enum(['asc', 'desc']),
+        genre: z.enum([...allGenres, '', 'None']),
       }),
     )
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const { type, limit, page, sort, ascDesc } = input;
+      const { limit, page, sort, ascDesc, genre, title } = input;
       // const table = tableMap[type];
       const offset = (page - 1) * limit;
 
@@ -72,9 +75,36 @@ export const databaseRouter = router({
 
       const orderExpr = ascDesc === 'asc' ? asc(sortColumn) : desc(sortColumn);
 
+      const genreFilter = (() => {
+        if (genre === '') {
+          // no filter
+          return undefined;
+        }
+
+        if (genre === 'None') {
+          // only books with no row in the link table
+          return isNull(genresBooks.bookId); // or isNull(genresBooks.genreId)
+        }
+
+        // specific genre
+        return eq(genres.genre, genre);
+      })();
+
       const rows = await db
-        .select()
+        .select({
+          id: books.id,
+          title: books.title,
+          author: books.author,
+          pageCount: books.pageCount,
+          pubYear: books.pubYear,
+          spineColor: books.spineColor,
+          imageUrls: books.imageUrls,
+          genre: genres.genre, // will be null when no link
+        })
         .from(books)
+        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+        .where(and(genreFilter, ilike(books.title, `%${title}%`)))
         .orderBy(orderExpr)
         .limit(limit)
         .offset(offset);

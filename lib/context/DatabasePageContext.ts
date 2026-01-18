@@ -2,7 +2,7 @@
 import { createContext, Dispatch, SetStateAction, useContext } from 'react';
 
 // interfaces and types
-import { displayDatabaseItems } from '@/showdatabase/page';
+import { displayDatabaseItems, genreInput } from '@/showdatabase/page';
 import { SortOptions } from '@/showdatabase/PaginationInputs';
 import { MediaType } from 'lib/interfaces/globalInterfaces';
 
@@ -16,8 +16,8 @@ export interface DatabasePageContextValue {
   setLimit: Dispatch<SetStateAction<3 | 5 | 10>>;
   sortBy: SortOptions;
   setSortBy: Dispatch<SetStateAction<SortOptions>>;
-  genre: string;
-  setGenre: Dispatch<SetStateAction<string>>;
+  genre: genreInput;
+  setGenre: Dispatch<SetStateAction<genreInput>>;
   ascDesc: 'asc' | 'desc';
   setAscDesc: Dispatch<SetStateAction<'asc' | 'desc'>>;
   setTitleSearch: Dispatch<SetStateAction<string>>;

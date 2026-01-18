@@ -2,7 +2,7 @@
 
 import { useContext, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 import GenreContext from 'lib/context/GenreContext';
 import { authClient } from 'lib/auth-client';
 
@@ -34,6 +34,7 @@ const ProfileClient = ({ user }: Props) => {
       <h3 className="mb-5 text-3xl">Favorite genre: {favoriteGenre}</h3>
 
       <Button
+        variant="primary"
         onClick={async () => {
           await authClient.signOut();
           router.replace('/');

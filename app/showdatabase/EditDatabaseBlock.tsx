@@ -13,7 +13,7 @@ import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 
 // components
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
@@ -28,7 +28,6 @@ import {
   MediaType,
   PostSavedMediaItem,
 } from 'lib/interfaces/globalInterfaces';
-import { ErrorResponse } from '@/api/api-Errors';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -162,6 +161,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   const { mutateAsync: databaseEdit } = trpc.database.edit.useMutation();
   const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
+  const utils = trpc.useUtils();
 
   const handleEditSubmit = async () => {
     const res = await databaseEdit({ type, item: databaseData });
@@ -180,6 +180,7 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     if (linkGenresList.length > 0) {
       try {
         await linkGenres({ bookID: id, genres: linkGenresList });
+        console.log('Linked genres');
       } catch {
         console.log('Genre link error');
       }
@@ -196,7 +197,10 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       }
     }
 
-    handleGetMedia();
+    // Ensure per-item genre display updates by invalidating its query cache
+    await utils.genres.getForBook.invalidate({ bookID: id });
+
+    await handleGetMedia();
     setEdit(false);
   };
 
@@ -278,12 +282,14 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       </div>
       <div className="flex gap-2">
         <Button
+          variant="primary"
           label="Close"
           onClick={() => setEdit(false)}
           width={100}
           fontSize={25}
         />
         <Button
+          variant="primary"
           label="Submit Changes"
           onClick={handleEditSubmit}
           width={150}

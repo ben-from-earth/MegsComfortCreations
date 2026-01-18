@@ -2,7 +2,7 @@
 import { Dispatch, SetStateAction } from 'react';
 
 // components
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
@@ -26,17 +26,19 @@ export default function AreYouSure({
       </p>
       <div className="flex gap-2">
         <Button
+          variant="primary"
           label={'Yes'}
           width={75}
           fontSize={30}
           onClick={() => onDelete()}
-          additionalStyling="bg-emerald-300 hover:bg-green-400"
+          className="bg-emerald-300 hover:bg-green-400"
         />
         <Button
+          variant="primary"
           label={'No'}
           width={75}
           fontSize={30}
-          additionalStyling="bg-red-300 hover:bg-red-400"
+          className="bg-red-300 hover:bg-red-400"
           onClick={() => setAreYouSure(false)}
         />
       </div>
