@@ -1,5 +1,5 @@
 // components
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 
 // interfaces and types
 import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
@@ -25,7 +25,8 @@ export default function InformationalDialog({
       <div className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex max-h-100 w-fit -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center overflow-y-auto rounded-md border-3 p-2 text-4xl tracking-wider text-black">
         <div className="mb-2 flex w-full">
           <Button
-            additionalStyling={'ml-auto'}
+            variant="primary"
+            className={'ml-auto'}
             onClick={close}
             label={'Close'}
             width={100}
@@ -57,7 +58,8 @@ export default function InformationalDialog({
       <div className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex max-h-100 w-5/12 -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center overflow-y-auto rounded-md border-3 px-6 py-2 text-4xl tracking-wider text-black">
         <div className="mb-2 flex w-full">
           <Button
-            additionalStyling={'ml-auto'}
+            variant="primary"
+            className={'ml-auto'}
             onClick={close}
             label={'Close'}
             width={100}

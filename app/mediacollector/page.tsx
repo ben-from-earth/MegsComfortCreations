@@ -22,7 +22,7 @@ import TextInput from '@/shared/TextInput';
 
 //interfaces and types
 import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
@@ -225,6 +225,7 @@ function MediaCollectorContent() {
 
           <div className="flex flex-row items-center gap-4">
             <Button
+              variant="primary"
               onClick={() => {
                 handleCollectClick();
               }}
@@ -233,6 +234,7 @@ function MediaCollectorContent() {
               fontSize={25}
             />
             <Button
+              variant="primary"
               onClick={() => handlePNGClick()}
               label={'Create PNG Export'}
               width={175}

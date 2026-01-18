@@ -1,7 +1,7 @@
 // components
 import Image from 'next/image';
 import Link from 'next/link';
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 import ProfileButton from '@/shared/ProfileButton';
 
 // public image imports
@@ -30,16 +30,26 @@ export default async function NavBar() {
       </h2>
       <div className="ml-auto flex h-full flex-row items-center gap-5 pr-5">
         <Link href={'/'}>
-          <Button label="Home" width={180} fontSize={36} />
+          <Button variant="primary" label="Home" width={180} fontSize={36} />
         </Link>
         {session?.user.role === 'admin' && (
           <Link href={'/mediacollector'}>
-            <Button label="Media Collector" width={180} fontSize={36} />
+            <Button
+              variant="primary"
+              label="Media Collector"
+              width={180}
+              fontSize={36}
+            />
           </Link>
         )}
         {session?.user.role === 'admin' && (
           <Link href={'/showdatabase'}>
-            <Button label="Show Database" width={180} fontSize={36} />
+            <Button
+              variant="primary"
+              label="Show Database"
+              width={180}
+              fontSize={36}
+            />
           </Link>
         )}
         <ProfileButton />

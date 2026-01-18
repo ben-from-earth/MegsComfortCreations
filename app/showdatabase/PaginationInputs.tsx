@@ -6,7 +6,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 
 // context
 import GenreContext from 'lib/context/GenreContext';
@@ -70,7 +70,7 @@ export default function PaginationInputs() {
   };
   const handleGenreChange = (e: SelectChangeEvent) => {
     setPage(1);
-    setGenre(e.target.value);
+    setGenre(e.target.value as (typeof genres)[number] | '' | 'None');
   };
   const handleAscDescChange = (e: SelectChangeEvent) => {
     setPage(1);
@@ -162,6 +162,7 @@ export default function PaginationInputs() {
         </Select>
       </FormControl>
       <Button
+        variant="primary"
         onClick={handleGetMedia}
         label={'Search'}
         width={100}

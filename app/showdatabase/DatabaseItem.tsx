@@ -7,7 +7,7 @@ import { trpc } from 'lib/trpc/client';
 
 // components
 import AreYouSure from '@/shared/AreYouSure';
-import Button from '@/shared/Button';
+import Button from '@/components/ui/Button';
 import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
 
@@ -141,12 +141,14 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
       )}
       <div className="ml-auto flex flex-col gap-2">
         <Button
+          variant="primary"
           label={'Edit'}
           width={75}
           fontSize={24}
           onClick={() => setEdit(true)}
         />
         <Button
+          variant="primary"
           label={'Delete'}
           width={75}
           fontSize={24}

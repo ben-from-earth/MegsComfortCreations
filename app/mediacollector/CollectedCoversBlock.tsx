@@ -122,13 +122,14 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         ...info,
         blockInfo: { ...info.blockInfo, genres: newGenres },
       };
+      console.log('newBlock in genre select', newBlock);
       setValue(`collectedData.${index}`, newBlock);
     }
   };
 
   return (
     <div
-      className={`relative flex h-fit min-w-sm flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
+      className={`relative flex h-fit w-lg flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
     >
       {isDatabase && (
         <p className="absolute top-1 right-1 m-0 rounded-sm border-2 border-black bg-gray-700 p-1.25 tracking-wider text-white">
@@ -200,8 +201,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       {type === 'book' ? (
         <GenreCheckboxes
           allGenres={allGenres}
-          blockGenres={genres}
           handleGenreClick={handleGenreClick}
+          blockGenres={genres}
         />
       ) : (
         <></>

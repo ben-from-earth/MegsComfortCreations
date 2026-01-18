@@ -20,11 +20,11 @@ import { titleRearrange } from 'lib/helpers/titleRearrange';
 import {
   MediaType,
   PostSavedMediaItem,
-  SuccessfulMediaSearchResponse,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
 import { SortOptions } from '@/showdatabase/PaginationInputs';
+import { allGenres } from '@/lib/enums/genreEnums';
 
 export interface displayDatabaseItems {
   type: MediaType;
@@ -33,6 +33,8 @@ export interface displayDatabaseItems {
   min: number;
   max: number;
 }
+
+export type genreInput = (typeof allGenres)[number] | '' | 'None';
 
 export default function ShowDatabase() {
   const [databaseItems, setDatabaseItems] = useState<displayDatabaseItems>({
@@ -48,7 +50,7 @@ export default function ShowDatabase() {
   const [sortBy, setSortBy] = useState<SortOptions>('title');
   const [page, setPage] = useState<number>(1);
   const [titleSearch, setTitleSearch] = useState('');
-  const [genre, setGenre] = useState('');
+  const [genre, setGenre] = useState<genreInput>('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
   const effectiveSort = useMemo(() => {
     if (type === 'book') {
@@ -59,76 +61,27 @@ export default function ShowDatabase() {
     return 'title';
   }, [type, sortBy]);
 
-  const searchQuery = trpc.database.searchByTitle.useQuery(
-    { type, title: titleRearrange(titleSearch) },
-    { enabled: titleSearch.length > 0 },
-  );
-  const paginatedQuery = trpc.database.getPaginated.useQuery(
-    { type, sort: effectiveSort, limit, page, ascDesc },
-    { enabled: titleSearch.length === 0 && (type !== 'book' || genre === '') },
-  );
-  const noGenresQuery = trpc.genres.paginateNoGenres.useQuery(
-    { sort: effectiveSort, limit, page, ascDesc },
-    {
-      enabled: titleSearch.length === 0 && type === 'book' && genre === 'none',
-    },
-  );
-  const byGenreQuery = trpc.genres.paginateByGenre.useQuery(
-    { genre, sort: effectiveSort, limit, page, ascDesc },
-    {
-      enabled:
-        titleSearch.length === 0 &&
-        type === 'book' &&
-        genre !== '' &&
-        genre !== 'none',
-    },
-  );
+  const paginatedQuery = trpc.database.getPaginated.useQuery({
+    type,
+    sort: effectiveSort,
+    limit,
+    page,
+    ascDesc,
+    genre,
+    title: titleRearrange(titleSearch),
+  });
 
   useEffect(() => {
-    if (searchQuery.data) {
-      const r = searchQuery.data as SuccessfulMediaSearchResponse;
-      setDatabaseItems({
-        type,
-        items: r.foundMediaList,
-        total: r.total,
-        min: 1,
-        max: r.total,
-      });
-    } else if (paginatedQuery.data) {
-      const r = paginatedQuery.data as SuccessfulPaginationResponse;
-      setDatabaseItems({
-        type,
-        items: r.paginatedList,
-        total: r.total,
-        min: (page - 1) * limit + 1,
-        max: page * limit,
-      });
-    } else if (noGenresQuery.data) {
-      const r = noGenresQuery.data as SuccessfulPaginationResponse;
-      setDatabaseItems({
-        type,
-        items: r.paginatedList,
-        total: r.total,
-        min: (page - 1) * limit + 1,
-        max: page * limit,
-      });
-    } else if (byGenreQuery.data) {
-      const r = byGenreQuery.data as SuccessfulPaginationResponse;
-      setDatabaseItems({
-        type,
-        items: r.paginatedList,
-        total: r.total,
-        min: (page - 1) * limit + 1,
-        max: page * limit,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    searchQuery.data,
-    paginatedQuery.data,
-    noGenresQuery.data,
-    byGenreQuery.data,
-  ]);
+    if (!paginatedQuery.data) return;
+    const r = paginatedQuery.data as SuccessfulPaginationResponse;
+    setDatabaseItems({
+      type,
+      items: r.paginatedList,
+      total: r.total,
+      min: (page - 1) * limit + 1,
+      max: Math.min(page * limit, r.total),
+    });
+  }, [paginatedQuery.data, page, limit, type]);
 
   const DatabasePageContextValue: DatabasePageContextValue = useMemo(
     () => ({
@@ -148,26 +101,10 @@ export default function ShowDatabase() {
       setTitleSearch,
       handleGetMedia: async () => {
         // trigger refetches based on current inputs
-        searchQuery.refetch();
-        paginatedQuery.refetch();
-        noGenresQuery.refetch();
-        byGenreQuery.refetch();
-        return Promise.resolve();
+        await paginatedQuery.refetch();
       },
     }),
-    [
-      page,
-      databaseItems,
-      type,
-      limit,
-      sortBy,
-      genre,
-      ascDesc,
-      searchQuery,
-      paginatedQuery,
-      noGenresQuery,
-      byGenreQuery,
-    ],
+    [page, databaseItems, type, limit, sortBy, genre, ascDesc, paginatedQuery],
   );
 
   return (

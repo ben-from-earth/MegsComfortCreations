@@ -1,5 +1,6 @@
-import { createContext } from "react";
+import { createContext } from 'react';
+import { Genre } from '@/lib/enums/genreEnums';
 
-const GenreContext = createContext<string[]>([]);
+const GenreContext = createContext<Genre[]>([]);
 
 export default GenreContext;
