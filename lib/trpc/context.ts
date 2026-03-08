@@ -2,11 +2,15 @@ import { db } from '@/db/client';
 import { auth } from 'lib/auth';
 
 type AuthSession = Awaited<ReturnType<typeof auth.api.getSession>>;
+type AuthenticatedSession = NonNullable<AuthSession>;
+type SessionUser = AuthenticatedSession extends { user: infer User }
+  ? User
+  : never;
 
 export type Context = {
   db: typeof db;
   authSession: AuthSession | null;
-  user: AuthSession extends { user: infer U } ? U | null : unknown;
+  user: SessionUser | null;
 };
 
 export async function createContext(opts?: { headers?: Headers }): Promise<Context> {
