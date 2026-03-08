@@ -5,7 +5,7 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 
 ## Critical
 
-### 1) Unauthenticated tRPC mutations and data access
+### 1) Unauthenticated tRPC mutations and data access (COMPLETED)
 - **Paths**
   - `lib/trpc/context.ts`
   - `lib/trpc/trpc.ts`
@@ -43,7 +43,7 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 
 ## High
 
-### 4) Pagination total count ignores active filters
+### 4) Pagination total count ignores active filters (COMPLETED)
 - **Path**
   - `lib/trpc/routers/database/_.ts`
 - **Issue**
@@ -51,7 +51,7 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 - **Fix suggestion**
   - Build a mirrored count query using the same `where` filters and joins as the page query.
 
-### 5) Genre "None" mismatch between UI and backend
+### 5) Genre "None" mismatch between UI and backend (COMPLETED)
 - **Paths**
   - `app/showdatabase/PaginationInputs.tsx`
   - `lib/trpc/routers/database/_.ts`

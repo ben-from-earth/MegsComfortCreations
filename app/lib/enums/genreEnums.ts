@@ -22,3 +22,4 @@ export const allGenres = [
 ] as const;
 
 export type Genre = (typeof allGenres)[number];
+export const NO_GENRE_FILTER = 'none' as const;

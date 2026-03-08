@@ -21,7 +21,7 @@ import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
-import { allGenres } from '@/lib/enums/genreEnums';
+import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 
@@ -50,7 +50,7 @@ export const databaseRouter = router({
         page: z.number().int().positive(),
         sort: z.enum(['title', 'author', 'pubYear', 'spineColor']),
         ascDesc: z.enum(['asc', 'desc']),
-        genre: z.enum([...allGenres, '', 'None']),
+        genre: z.enum([...allGenres, '', NO_GENRE_FILTER] as const),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -81,7 +81,7 @@ export const databaseRouter = router({
           return undefined;
         }
 
-        if (genre === 'None') {
+        if (genre === NO_GENRE_FILTER) {
           // only books with no row in the link table
           return isNull(genresBooks.bookId); // or isNull(genresBooks.genreId)
         }
@@ -89,6 +89,12 @@ export const databaseRouter = router({
         // specific genre
         return eq(genres.genre, genre);
       })();
+
+      const titleFilter =
+        title && title.trim().length > 0
+          ? ilike(books.title, `%${title}%`)
+          : undefined;
+      const whereFilter = and(genreFilter, titleFilter);
 
       const rows = await db
         .select({
@@ -104,14 +110,17 @@ export const databaseRouter = router({
         .from(books)
         .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
         .leftJoin(genres, eq(genresBooks.genreId, genres.id))
-        .where(and(genreFilter, ilike(books.title, `%${title}%`)))
+        .where(whereFilter)
         .orderBy(orderExpr)
         .limit(limit)
         .offset(offset);
 
       const [{ count }] = await db
-        .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(books);
+        .select({ count: sql<number>`cast(count(distinct ${books.id}) as int)` })
+        .from(books)
+        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+        .where(whereFilter);
 
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
