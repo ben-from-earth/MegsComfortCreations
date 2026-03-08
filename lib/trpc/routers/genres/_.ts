@@ -1,4 +1,4 @@
-import { router, publicProcedure } from 'lib/trpc/trpc';
+import { router, adminProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
 import Genre from 'lib/database/models/genre';
 import { Genre as GenreEnum } from '@/lib/enums/genreEnums';
@@ -15,7 +15,7 @@ import { genres, genresBooks } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const genresRouter = router({
-  getAll: publicProcedure.query(async () => {
+  getAll: adminProcedure.query(async () => {
     const genres = await Genre.getAllGenres();
     return { message: 'Success', genres } as {
       message: string;
@@ -23,7 +23,7 @@ export const genresRouter = router({
     };
   }),
 
-  getForBook: publicProcedure
+  getForBook: adminProcedure
     .input(z.object({ bookID: z.uuid() }))
     .query(async ({ input }) => {
       const genres = await Genre.getforbook(input.bookID);
@@ -33,7 +33,7 @@ export const genresRouter = router({
       };
     }),
 
-  link: publicProcedure
+  link: adminProcedure
     .input(
       z.object({
         bookID: z.uuid(),
@@ -71,7 +71,7 @@ export const genresRouter = router({
       return { genreResponses: responses };
     }),
 
-  unlink: publicProcedure
+  unlink: adminProcedure
     .input(
       z.object({
         bookID: z.uuid(),
@@ -91,7 +91,7 @@ export const genresRouter = router({
       return { genreResponses: responses };
     }),
 
-  paginateByGenre: publicProcedure
+  paginateByGenre: adminProcedure
     .input(
       z.object({
         genre: z.string().min(1),
@@ -119,7 +119,7 @@ export const genresRouter = router({
       return res;
     }),
 
-  paginateNoGenres: publicProcedure
+  paginateNoGenres: adminProcedure
     .input(
       z.object({
         limit: z.number().int().positive(),

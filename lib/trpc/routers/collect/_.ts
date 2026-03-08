@@ -1,4 +1,4 @@
-import { publicProcedure, router } from 'lib/trpc/trpc';
+import { adminProcedure, router } from 'lib/trpc/trpc';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
@@ -41,7 +41,7 @@ export type CollectedBlockInformation = {
 //   };
 
 export const collectRouter = router({
-  collectMedia: publicProcedure
+  collectMedia: adminProcedure
     .input(
       z.object({
         book: z.array(

@@ -1,4 +1,4 @@
-import { publicProcedure, router } from 'lib/trpc/trpc';
+import { adminProcedure, router } from 'lib/trpc/trpc';
 import { and, asc, desc, ilike, isNull, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
@@ -33,7 +33,7 @@ const tableMap = {
 } as const;
 
 export const databaseRouter = router({
-  searchByTitle: publicProcedure
+  searchByTitle: adminProcedure
     .input(z.object({ type: mediaType, title: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
@@ -41,7 +41,7 @@ export const databaseRouter = router({
 
       return await searchByTitle(db, type, title);
     }),
-  getPaginated: publicProcedure
+  getPaginated: adminProcedure
     .input(
       z.object({
         type: mediaType,
@@ -121,7 +121,7 @@ export const databaseRouter = router({
       return res;
     }),
 
-  deleteByTitle: publicProcedure
+  deleteByTitle: adminProcedure
     .input(z.object({ type: mediaType, title: z.string().min(1) }))
     .mutation(async ({ input, ctx }) => {
       const { type, title } = input;
@@ -141,7 +141,7 @@ export const databaseRouter = router({
       return { message: `Successfully deleted ${title}` };
     }),
 
-  getQueryCount: publicProcedure
+  getQueryCount: adminProcedure
     .input(z.object({ date: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
       const { date } = input;
@@ -159,7 +159,7 @@ export const databaseRouter = router({
       return { date: row.date, queryCount: row.queryCount };
     }),
 
-  save: publicProcedure
+  save: adminProcedure
     .input(z.array(collectedBlockInformationSchema))
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
@@ -234,7 +234,7 @@ export const databaseRouter = router({
       return results;
     }),
 
-  edit: publicProcedure
+  edit: adminProcedure
     .input(z.object({ type: mediaType, item: z.unknown() }))
     .mutation(async ({ input, ctx }) => {
       const { type, item } = input;

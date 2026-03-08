@@ -129,6 +129,26 @@ Please see .env.example files in both /client and /server for full required file
     3. DB_PORT - whichever port psql database is hosted on your machine (typically 5432)
     4. Create the main (/lib/database/databaseSeed/MegsComfortCreations.sql) and test (/lib/database/databaseSeed/MegsComfortCreations_test.sql) databases: `bash psql < [filename]`
 
+## Neon Branch Safety (Dev vs Prod)
+
+When using Neon branches, keep DB targets explicit:
+
+1. Local app runtime URL in `.env.local`
+2. Dev migration URL in `.env.development.local`
+3. Prod migration URL in `.env.production.local`
+
+Commands:
+
+- Verify target DB and row counts:
+  - `npm run db:check:local`
+  - `npm run db:check:dev`
+  - `npm run db:check:prod`
+- Apply migrations intentionally:
+  - `npm run db:migrate:dev`
+  - `npm run db:migrate:prod`
+- Full release sequence checklist:
+  - `ai-assistance/RELEASE_CHECKLIST.md`
+
 ## Route Documentation
 
 Route documentation can be found by hitting localhost:3000/docs, and the write up is found at /docs
