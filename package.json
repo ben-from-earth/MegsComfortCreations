@@ -10,8 +10,13 @@
     "test": "jest",
     "test:ci": "NODE_ENV=test jest --runInBand",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "npx drizzle-kit migrate",
-    "db:generate": "npx drizzle-kit generate"
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "npm run db:migrate:dev",
+    "db:migrate:dev": "node drizzle-migrate-with-env.mjs .env.development.local",
+    "db:migrate:prod": "node drizzle-migrate-with-env.mjs .env.production.local",
+    "db:check:local": "node db-target-check.mjs .env.local",
+    "db:check:dev": "node db-target-check.mjs .env.development.local",
+    "db:check:prod": "node db-target-check.mjs .env.production.local"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

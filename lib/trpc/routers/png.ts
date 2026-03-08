@@ -1,4 +1,4 @@
-import { router, publicProcedure } from 'lib/trpc/trpc';
+import { router, adminProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
 import { outputAuto } from 'lib/helpers/outputPNG';
 
@@ -10,7 +10,7 @@ const imageSchema = z.object({
 });
 
 export const pngRouter = router({
-  create: publicProcedure
+  create: adminProcedure
     .input(
       z.object({
         template: templateSchema,

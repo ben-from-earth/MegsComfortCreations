@@ -24,7 +24,7 @@ import {
 } from 'lib/interfaces/globalInterfaces';
 import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
 import { SortOptions } from '@/showdatabase/PaginationInputs';
-import { allGenres } from '@/lib/enums/genreEnums';
+import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 
 export interface displayDatabaseItems {
   type: MediaType;
@@ -34,7 +34,7 @@ export interface displayDatabaseItems {
   max: number;
 }
 
-export type genreInput = (typeof allGenres)[number] | '' | 'None';
+export type genreInput = (typeof allGenres)[number] | '' | typeof NO_GENRE_FILTER;
 
 export default function ShowDatabase() {
   const [databaseItems, setDatabaseItems] = useState<displayDatabaseItems>({

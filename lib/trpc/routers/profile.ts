@@ -1,7 +1,7 @@
-import { router, publicProcedure } from 'lib/trpc/trpc';
+import { router, adminProcedure } from 'lib/trpc/trpc';
 
 export const profileRouter = router({
-  get: publicProcedure.query(async () => {
+  get: adminProcedure.query(async () => {
     const user = {
       id: 123,
       firstName: 'Ben',

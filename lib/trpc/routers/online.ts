@@ -1,4 +1,4 @@
-import { router, publicProcedure } from 'lib/trpc/trpc';
+import { router, adminProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
 import axios from 'axios';
 
@@ -13,7 +13,7 @@ export interface OpenLibrarySuccess {
 }
 
 export const onlineRouter = router({
-  openLibrary: publicProcedure
+  openLibrary: adminProcedure
     .input(
       z.object({
         title: z.string().min(1),
@@ -52,7 +52,7 @@ export const onlineRouter = router({
       return { title: input.title, author: input.author, pubYear, pageCount };
     }),
 
-  mediaCovers: publicProcedure
+  mediaCovers: adminProcedure
     .input(
       z.object({
         title: z.string().min(1),

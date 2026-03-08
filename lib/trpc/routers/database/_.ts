@@ -1,4 +1,4 @@
-import { publicProcedure, router } from 'lib/trpc/trpc';
+import { adminProcedure, router } from 'lib/trpc/trpc';
 import { and, asc, desc, ilike, isNull, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
@@ -21,7 +21,7 @@ import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
-import { allGenres } from '@/lib/enums/genreEnums';
+import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 
@@ -33,7 +33,7 @@ const tableMap = {
 } as const;
 
 export const databaseRouter = router({
-  searchByTitle: publicProcedure
+  searchByTitle: adminProcedure
     .input(z.object({ type: mediaType, title: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
@@ -41,7 +41,7 @@ export const databaseRouter = router({
 
       return await searchByTitle(db, type, title);
     }),
-  getPaginated: publicProcedure
+  getPaginated: adminProcedure
     .input(
       z.object({
         type: mediaType,
@@ -50,7 +50,7 @@ export const databaseRouter = router({
         page: z.number().int().positive(),
         sort: z.enum(['title', 'author', 'pubYear', 'spineColor']),
         ascDesc: z.enum(['asc', 'desc']),
-        genre: z.enum([...allGenres, '', 'None']),
+        genre: z.enum([...allGenres, '', NO_GENRE_FILTER] as const),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -81,7 +81,7 @@ export const databaseRouter = router({
           return undefined;
         }
 
-        if (genre === 'None') {
+        if (genre === NO_GENRE_FILTER) {
           // only books with no row in the link table
           return isNull(genresBooks.bookId); // or isNull(genresBooks.genreId)
         }
@@ -89,6 +89,12 @@ export const databaseRouter = router({
         // specific genre
         return eq(genres.genre, genre);
       })();
+
+      const titleFilter =
+        title && title.trim().length > 0
+          ? ilike(books.title, `%${title}%`)
+          : undefined;
+      const whereFilter = and(genreFilter, titleFilter);
 
       const rows = await db
         .select({
@@ -104,14 +110,17 @@ export const databaseRouter = router({
         .from(books)
         .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
         .leftJoin(genres, eq(genresBooks.genreId, genres.id))
-        .where(and(genreFilter, ilike(books.title, `%${title}%`)))
+        .where(whereFilter)
         .orderBy(orderExpr)
         .limit(limit)
         .offset(offset);
 
       const [{ count }] = await db
-        .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(books);
+        .select({ count: sql<number>`cast(count(distinct ${books.id}) as int)` })
+        .from(books)
+        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+        .where(whereFilter);
 
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
@@ -121,7 +130,7 @@ export const databaseRouter = router({
       return res;
     }),
 
-  deleteByTitle: publicProcedure
+  deleteByTitle: adminProcedure
     .input(z.object({ type: mediaType, title: z.string().min(1) }))
     .mutation(async ({ input, ctx }) => {
       const { type, title } = input;
@@ -141,7 +150,7 @@ export const databaseRouter = router({
       return { message: `Successfully deleted ${title}` };
     }),
 
-  getQueryCount: publicProcedure
+  getQueryCount: adminProcedure
     .input(z.object({ date: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
       const { date } = input;
@@ -159,7 +168,7 @@ export const databaseRouter = router({
       return { date: row.date, queryCount: row.queryCount };
     }),
 
-  save: publicProcedure
+  save: adminProcedure
     .input(z.array(collectedBlockInformationSchema))
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
@@ -234,7 +243,7 @@ export const databaseRouter = router({
       return results;
     }),
 
-  edit: publicProcedure
+  edit: adminProcedure
     .input(z.object({ type: mediaType, item: z.unknown() }))
     .mutation(async ({ input, ctx }) => {
       const { type, item } = input;

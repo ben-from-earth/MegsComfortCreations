@@ -19,6 +19,7 @@ import {
 } from 'lib/context/DatabasePageContext';
 
 import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 
 export type SortOptions = 'title' | 'author' | 'pageCount' | 'pubYear';
 export type SortOptionsLabels = 'Title' | 'Author' | 'Page Count' | 'Pub. Year';
@@ -70,7 +71,7 @@ export default function PaginationInputs() {
   };
   const handleGenreChange = (e: SelectChangeEvent) => {
     setPage(1);
-    setGenre(e.target.value as (typeof genres)[number] | '' | 'None');
+    setGenre(e.target.value as (typeof genres)[number] | '' | typeof NO_GENRE_FILTER);
   };
   const handleAscDescChange = (e: SelectChangeEvent) => {
     setPage(1);
@@ -139,7 +140,7 @@ export default function PaginationInputs() {
           onChange={handleGenreChange}
         >
           <MenuItem value={''}>---</MenuItem>
-          <MenuItem value={'none'}>None</MenuItem>
+          <MenuItem value={NO_GENRE_FILTER}>None</MenuItem>
 
           {genres.map((option) => (
             <MenuItem key={option} value={option}>
