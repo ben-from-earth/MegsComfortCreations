@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { fileTypeFromBuffer } from 'file-type';
 import { createHash } from 'node:crypto';
 import { PutObjectCommand, S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
 import { MediaType } from 'lib/constants/mediaTypes';
@@ -178,6 +177,22 @@ function resolveExtension(mimeType: string | null): string | null {
   return MIME_EXTENSION_MAP[mimeType] ?? null;
 }
 
+type FileTypeDetection = { ext: string; mime: string } | null;
+
+async function detectFileTypeFromBuffer(imageBuffer: Buffer): Promise<FileTypeDetection> {
+  try {
+    const { fileTypeFromBuffer } = await import('file-type');
+    return (await fileTypeFromBuffer(imageBuffer)) ?? null;
+  } catch (error) {
+    // Keep router/module loading resilient in test environments where the optional
+    // detector package may be unavailable, and fall back to response headers.
+    if (error instanceof Error && error.message.includes("Cannot find module 'file-type'")) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function persistExternalImageToS3(
   input: PersistExternalImageInput,
 ): Promise<PersistedImageFile> {
@@ -206,7 +221,7 @@ export async function persistExternalImageToS3(
     );
   }
 
-  const detectedFileType = await fileTypeFromBuffer(imageBuffer);
+  const detectedFileType = await detectFileTypeFromBuffer(imageBuffer);
   const headerMimeType = resolveMimeType(response.headers['content-type']);
   const mimeType = detectedFileType?.mime ?? headerMimeType ?? null;
   const allowedMimeTypes = getAllowedMimeTypes();
