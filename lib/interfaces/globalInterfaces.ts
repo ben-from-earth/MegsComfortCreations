@@ -1,17 +1,17 @@
 // drizzle types
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { books, movies, videoGames, albums } from '@/db/schema';
+import { books, otherMedia } from '@/db/schema';
+import type { MediaType, OtherMediaType } from 'lib/constants/mediaTypes';
 
 import { DatabaseSaveEditErrorResponse } from '@/api/api-Errors';
 
-export type MediaType = 'book' | 'movie' | 'videoGame' | 'album';
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
 // 1. Map Drizzle row types
 export type BookRow = InferSelectModel<typeof books>;
-export type MovieRow = InferSelectModel<typeof movies>;
-export type VideoGameRow = InferSelectModel<typeof videoGames>;
-export type AlbumRow = InferSelectModel<typeof albums>;
+export type OtherMediaRow = InferSelectModel<typeof otherMedia> & {
+  mediaType: OtherMediaType;
+};
 
 // 2. Extras that don’t live in the DB but you still want on responses
 interface MediaExtras {
@@ -21,23 +21,25 @@ interface MediaExtras {
 
 export type BookInsert = Omit<InferInsertModel<typeof books>, 'id'> &
   MediaExtras;
-export type MovieInsert = Omit<InferInsertModel<typeof movies>, 'id'> &
-  MediaExtras;
-export type VideoGameInsert = Omit<InferInsertModel<typeof videoGames>, 'id'> &
-  MediaExtras;
-export type AlbumInsert = Omit<InferInsertModel<typeof albums>, 'id'> &
+export type OtherMediaInsert = Omit<InferInsertModel<typeof otherMedia>, 'id'> &
   MediaExtras;
 
 // 3. “Pre-saved” (create/edit body) – based on INSERT types, no id
 //    You *can* keep title/spineColor etc. here if your JSON schema
 //    is slightly different from the DB, but this keeps you close to Drizzle.
-export type PreSavedMediaItem = BookInsert;
-// | MovieInsert
-// | VideoGameInsert
-// | AlbumInsert;
+export type PreSavedMediaItem = BookInsert | OtherMediaInsert;
 
-// 4. “Post-saved” (what comes back from DB) – based on SELECT types
-export type PostSavedMediaItem = BookRow;
+// 4. “Post-saved” (what comes back from DB)
+export interface PostSavedMediaItem {
+  id: string;
+  title: string;
+  spineColor: string;
+  imageUrls: string[];
+  mediaType?: string;
+  author?: string;
+  pageCount?: number | null;
+  pubYear?: number | null;
+}
 
 // 5. Response shapes now use these types
 
@@ -73,10 +75,11 @@ export interface SuccessfulGenreLinkUnlinkResponse {
 // 6. Make this match your camelCase DB schema (or keep snake_case if your rows do)
 export interface BlockInfo {
   title: string;
-  author: string | null;
-  pubYear: number | null;
-  pageCount: number | null;
+  author?: string | null;
+  pubYear?: number | null;
+  pageCount?: number | null;
   spineColor: string;
+  genres?: string[];
   databaseGenres?: string[];
 }
 

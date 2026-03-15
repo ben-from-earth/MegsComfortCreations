@@ -4,12 +4,11 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import ProfileButton from '@/shared/ProfileButton';
 
-// public image imports
-import Logo from 'public/Comfort.png';
-
 // auth
 import { auth } from 'lib/auth';
 import { headers } from 'next/headers';
+
+const logoImagePath = '/Comfort.png';
 
 export default async function NavBar() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -18,7 +17,7 @@ export default async function NavBar() {
     <nav className="bg-lightpink border-b-darkpink relative z-10 flex h-20 items-center gap-4 border-b-5 p-1.25">
       <Link href={'/'}>
         <Image
-          src={Logo}
+          src={logoImagePath}
           alt="Megs Comfort Creations Logo"
           width={65}
           className="rounded-sm"

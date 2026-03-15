@@ -1,30 +1,29 @@
-// // react, redux imports
-// import { useDispatch } from 'react-redux';
+import { MEDIA_TYPE_DEFINITIONS, MediaType } from 'lib/constants/mediaTypes';
 
-// interface MediaCheckboxesProps {
-//   mediaTypes: mediaTypeDefinitions[];
-// }
+export type MediaVisibilityMap = Record<MediaType, boolean>;
 
-// export default function MediaCheckboxes({ mediaTypes }: MediaCheckboxesProps) {
-//   //setup connection to redux slice
-//   const dispatch = useDispatch();
+interface MediaCheckboxesProps {
+  visibility: MediaVisibilityMap;
+  onToggle: (mediaType: MediaType) => void;
+}
 
-//   return (
-//     <div className="m-6 flex flex-row content-center gap-5">
-//       {mediaTypes.map(({ type, label, show }, idx) => (
-//         <label key={type} className="text-3xl tracking-wider">
-//           <input
-//             checked={show}
-//             className="m-1.5"
-//             id={`${idx}`}
-//             type="checkbox"
-//             onChange={() => {
-//               dispatch(setChecks(idx));
-//             }}
-//           />
-//           {`${label}s`}
-//         </label>
-//       ))}
-//     </div>
-//   );
-// }
+export default function MediaCheckboxes({
+  visibility,
+  onToggle,
+}: MediaCheckboxesProps) {
+  return (
+    <div className="m-2 flex flex-row flex-wrap content-center justify-center gap-5">
+      {MEDIA_TYPE_DEFINITIONS.map(({ mediaType, plural }) => (
+        <label key={mediaType} className="text-3xl tracking-wider">
+          <input
+            checked={visibility[mediaType]}
+            className="m-1.5"
+            type="checkbox"
+            onChange={() => onToggle(mediaType)}
+          />
+          {plural}
+        </label>
+      ))}
+    </div>
+  );
+}

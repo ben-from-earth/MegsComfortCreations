@@ -12,7 +12,7 @@ const databaseEdit = {
         description: 'Type of media being edited',
         schema: {
           type: 'string',
-          enum: ['book', 'movie', 'video_game', 'album'],
+          enum: ['book', 'movie', 'videoGame', 'album'],
         },
       },
     ],
@@ -44,7 +44,7 @@ const databaseEdit = {
                 imageUrls: ['123url.com'],
               },
             },
-            video_game: {
+            videoGame: {
               value: {
                 title: 'Video Game title edit',
                 spineColor: '#hexcode',
@@ -126,7 +126,7 @@ const databaseEdit = {
                   type: 'movie',
                 },
               },
-              video_game: {
+              videoGame: {
                 value: {
                   message: 'Video Game title edit successfully edited',
                   actionAttemptItem: {
@@ -135,7 +135,7 @@ const databaseEdit = {
                     spineColor: '#hexcode',
                     imageUrls: ['123url.com'],
                   },
-                  type: 'video_game',
+                  type: 'videoGame',
                 },
               },
               album: {

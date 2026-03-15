@@ -12,7 +12,7 @@ const databaseSearch = {
         description: 'Type of media being searched',
         schema: {
           type: 'string',
-          enum: ['book', 'movie', 'video_game', 'album'],
+          enum: ['book', 'movie', 'videoGame', 'album'],
         },
       },
       {
@@ -104,10 +104,10 @@ const databaseSearch = {
                   total: 1,
                 },
               },
-              video_game: {
+              videoGame: {
                 value: {
                   message:
-                    'Successfully found 1 video_game(s) with title Rocket League',
+                    'Successfully found 1 videoGame(s) with title Rocket League',
                   foundMediaList: [
                     {
                       id: 'uuid string',

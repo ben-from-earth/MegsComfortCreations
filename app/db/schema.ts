@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   uuid,
   text,
   integer,
@@ -9,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { OTHER_MEDIA_TYPES } from 'lib/constants/mediaTypes';
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -66,29 +68,27 @@ export const books = pgTable(
   ],
 );
 
-// ---------- movies ----------
-export const movies = pgTable('movies', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  title: text('title').notNull().unique(),
-  spineColor: text('spine_color').notNull(),
-  imageUrls: text('image_urls').array().notNull(), // nullable in SQL
-});
+export const otherMediaTypeEnum = pgEnum('other_media_type', OTHER_MEDIA_TYPES);
 
-// ---------- video_games ----------
-export const videoGames = pgTable('video_games', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  title: text('title').notNull().unique(),
-  spineColor: text('spine_color').notNull(),
-  imageUrls: text('image_urls').array().notNull(),
-});
-
-// ---------- albums ----------
-export const albums = pgTable('albums', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  title: text('title').notNull().unique(),
-  spineColor: text('spine_color').notNull(),
-  imageUrls: text('image_urls').array().notNull(),
-});
+// ---------- other_media ----------
+export const otherMedia = pgTable(
+  'other_media',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    mediaType: otherMediaTypeEnum('media_type').notNull(),
+    title: text('title').notNull(),
+    spineColor: text('spine_color').notNull(),
+    imageUrls: text('image_urls').array().notNull(),
+  },
+  (table) => [
+    uniqueIndex('other_media_media_type_title_unique').on(
+      table.mediaType,
+      table.title,
+    ),
+    index('other_media_media_type_idx').on(table.mediaType),
+    index('other_media_title_idx').on(table.title),
+  ],
+);
 
 // ---------- genres ----------
 export const genres = pgTable('genres', {

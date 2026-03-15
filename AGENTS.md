@@ -11,6 +11,7 @@ Provide shared operating instructions for AI agents working in this repository.
 - Follow repository conventions in `CLAUDE.md`.
 - Keep changes scoped and minimal to the requested task.
 - Run targeted validation (tests/lint/type checks) for edited areas.
+- When fixing a bug or shipping a feature, add or update automated tests in the same work so behavior is protected from regression.
 
 ## Learnings Discipline
 

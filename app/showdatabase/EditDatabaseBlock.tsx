@@ -23,11 +23,8 @@ import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 
 // interfaces and types
-import {
-  BlockInfo,
-  MediaType,
-  PostSavedMediaItem,
-} from 'lib/interfaces/globalInterfaces';
+import { BlockInfo, PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';

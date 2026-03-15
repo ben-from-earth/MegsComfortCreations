@@ -1,7 +1,4 @@
 'use client';
-// image collection from assets
-import backgroundImage from 'public/FlowerBackground.png';
-import MediaCollectorTitle from 'public/MegsMediaCollector.png';
 
 // react and redux
 import { useState } from 'react';
@@ -12,8 +9,10 @@ import { trpc } from 'lib/trpc/client';
 // components
 import Image from 'next/image';
 import QueryCounter from '@/shared/QueryCounter';
-// import MediaCheckboxes from '@/mediacollector/MediaCheckboxes';
-// import MediaInputs from '@/mediacollector/MediaInputs';
+import MediaCheckboxes, {
+  MediaVisibilityMap,
+} from '@/mediacollector/MediaCheckboxes';
+import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
 import InformationalDialog from '@/mediacollector/InformationalDialog';
@@ -26,7 +25,9 @@ import Button from '@/components/ui/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
-import titleCollectionListConversion from 'lib/helpers/titleCollectionListConversion';
+
+const backgroundImage = '/FlowerBackground.png';
+const mediaCollectorTitleImage = '/MegsMediaCollector.png';
 
 function MediaCollectorContent() {
   const { onSubmit } = useCollectorForm();
@@ -47,6 +48,12 @@ function MediaCollectorContent() {
   const [isSavingToDatabase, setIsSavingToDatabase] = useState<boolean>(false);
   const [databaseSavedData, setDatabaseSavedData] =
     useState<DatabaseSaveServerResponse>([]);
+  const [visibleMediaInputs, setVisibleMediaInputs] = useState<MediaVisibilityMap>({
+    book: true,
+    movie: false,
+    videoGame: false,
+    album: false,
+  });
 
   //refs for useEffect
   // const mediaTypesRef = useRef(stateData);
@@ -181,18 +188,28 @@ function MediaCollectorContent() {
     );
   };
 
+  const handleToggleMediaInput = (mediaType: keyof MediaVisibilityMap) => {
+    setVisibleMediaInputs((prev) => {
+      const next = { ...prev, [mediaType]: !prev[mediaType] };
+      if (!next[mediaType]) {
+        setValue(`collectionList.${mediaType}`, []);
+      }
+      return next;
+    });
+  };
+
   return (
     <>
       <div
         className="border-b-darkpink relative box-border flex h-fit w-full flex-col items-center border-b-5 bg-cover pt-1 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]"
         style={{
-          backgroundImage: `url(${backgroundImage.src})`,
+          backgroundImage: `url(${backgroundImage})`,
         }}
       >
         <QueryCounter />
         <Image
           alt="Megs Media Collector Title"
-          src={MediaCollectorTitle}
+          src={mediaCollectorTitleImage}
           width={576}
         />
         <div className="mt-2 flex flex-col items-center gap-4">
@@ -221,7 +238,10 @@ function MediaCollectorContent() {
             value={formValues.bookClubRepeat.toString()}
           />
 
-          {/* <MediaCheckboxes mediaTypes={stateData} /> */}
+          <MediaCheckboxes
+            visibility={visibleMediaInputs}
+            onToggle={handleToggleMediaInput}
+          />
 
           <div className="flex flex-row items-center gap-4">
             <Button
@@ -242,17 +262,7 @@ function MediaCollectorContent() {
             />
           </div>
 
-          <TextInput
-            variant="multiline"
-            label={`Book Titles`}
-            rows={5}
-            onChange={(e) => {
-              const titleSearchList = titleCollectionListConversion(
-                e.target.value,
-              );
-              setValue(`collectionList.book`, titleSearchList);
-            }}
-          />
+          <MediaInputs visibility={visibleMediaInputs} />
         </div>
         <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>

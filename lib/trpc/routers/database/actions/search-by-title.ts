@@ -1,23 +1,26 @@
-import { ilike } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import { Db } from '@/db/client';
-import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { albums, books, movies, videoGames } from '@/db/schema';
+import { books, otherMedia } from '@/db/schema';
 
 export async function searchByTitle(db: Db, type: MediaType, title: string) {
-  const tableMap = {
-    book: books,
-    movie: movies,
-    videoGame: videoGames,
-    album: albums,
-  } as const;
-
-  const table = tableMap[type];
   const rearrangedTitle = titleRearrange(title);
-  const result = await db
-    .select()
-    .from(table)
-    .where(ilike(table.title, rearrangedTitle));
+  const result =
+    type === 'book'
+      ? await db.select().from(books).where(ilike(books.title, rearrangedTitle))
+      : await (() => {
+          const otherType = type;
+          return db
+            .select()
+            .from(otherMedia)
+            .where(
+              and(
+                eq(otherMedia.mediaType, otherType),
+                ilike(otherMedia.title, rearrangedTitle),
+              ),
+            );
+        })();
   const total = result.length;
 
   const message =

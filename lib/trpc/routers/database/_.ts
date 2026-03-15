@@ -1,36 +1,42 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
+import { TRPCError } from '@trpc/server';
 import { and, asc, desc, ilike, isNull, sql, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import {
-  albums,
   books,
   genres,
   genresBooks,
   googleApiQueryUsage,
-  movies,
-  videoGames,
+  otherMedia,
 } from '@/db/schema';
 import type {
   DatabaseSaveServerResponse,
   SuccessfulPaginationResponse,
-  BookRow,
 } from 'lib/interfaces/globalInterfaces';
-import { validate } from 'jsonschema';
-import bookCreateSchema from 'lib/database/schemas/bookCreateSchema.json';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
+import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
-
-const tableMap = {
-  book: books,
-  movie: movies,
-  videoGame: videoGames,
-  album: albums,
-} as const;
+const sortKey = z.enum(DATABASE_SORT_OPTIONS);
+const bookEditSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1),
+  author: z.string().nullable(),
+  pageCount: z.number().nullable(),
+  pubYear: z.number().nullable(),
+  spineColor: z.string().min(1),
+  imageUrls: z.array(z.string()),
+});
+const otherMediaEditSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1),
+  spineColor: z.string().min(1),
+  imageUrls: z.array(z.string()),
+});
 
 export const databaseRouter = router({
   searchByTitle: adminProcedure
@@ -48,78 +54,125 @@ export const databaseRouter = router({
         title: z.string().optional(),
         limit: z.number().int().positive(),
         page: z.number().int().positive(),
-        sort: z.enum(['title', 'author', 'pubYear', 'spineColor']),
+        sort: sortKey,
         ascDesc: z.enum(['asc', 'desc']),
         genre: z.enum([...allGenres, '', NO_GENRE_FILTER] as const),
       }),
     )
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const { limit, page, sort, ascDesc, genre, title } = input;
-      // const table = tableMap[type];
+      const { type, limit, page, sort, ascDesc, genre, title } = input;
       const offset = (page - 1) * limit;
 
-      // Determine the correct sort column per media type
-      const sortColumn = (() => {
-        switch (sort) {
-          case 'author':
-            return books.author;
-          case 'pubYear':
-            return books.pubYear;
-          case 'spineColor':
-            return books.spineColor;
-          default:
-            return books.title;
-        }
-      })();
+      if (type === 'book') {
+        const sortColumn = (() => {
+          switch (sort) {
+            case 'title':
+              return books.title;
+            case 'author':
+              return books.author;
+            case 'pageCount':
+              return books.pageCount;
+            case 'pubYear':
+              return books.pubYear;
+            default:
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Sort "${sort}" is not supported for books`,
+              });
+          }
+        })();
 
-      const orderExpr = ascDesc === 'asc' ? asc(sortColumn) : desc(sortColumn);
+        const orderExpression =
+          ascDesc === 'asc' ? asc(sortColumn) : desc(sortColumn);
+        const genreFilter = (() => {
+          if (genre === '') {
+            return undefined;
+          }
+          if (genre === NO_GENRE_FILTER) {
+            return isNull(genresBooks.bookId);
+          }
+          return eq(genres.genre, genre);
+        })();
+        const titleFilter =
+          title && title.trim().length > 0
+            ? ilike(books.title, `%${title}%`)
+            : undefined;
+        const whereFilter = and(genreFilter, titleFilter);
 
-      const genreFilter = (() => {
-        if (genre === '') {
-          // no filter
-          return undefined;
-        }
+        const rows = await db
+          .select({
+            id: books.id,
+            title: books.title,
+            author: books.author,
+            pageCount: books.pageCount,
+            pubYear: books.pubYear,
+            spineColor: books.spineColor,
+            imageUrls: books.imageUrls,
+            mediaType: sql<'book'>`'book'`,
+          })
+          .from(books)
+          .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+          .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+          .where(whereFilter)
+          .orderBy(orderExpression)
+          .limit(limit)
+          .offset(offset);
 
-        if (genre === NO_GENRE_FILTER) {
-          // only books with no row in the link table
-          return isNull(genresBooks.bookId); // or isNull(genresBooks.genreId)
-        }
+        const [{ count }] = await db
+          .select({
+            count: sql<number>`cast(count(distinct ${books.id}) as int)`,
+          })
+          .from(books)
+          .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+          .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+          .where(whereFilter);
 
-        // specific genre
-        return eq(genres.genre, genre);
-      })();
+        const res: SuccessfulPaginationResponse = {
+          message: 'Successful database gather',
+          paginatedList: rows,
+          total: count,
+        };
+        return res;
+      }
 
+      if (genre !== '') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Genre filter is only supported for books',
+        });
+      }
+      if (sort !== 'title') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Sort "${sort}" is not supported for ${type}`,
+        });
+      }
+
+      const orderExpression =
+        ascDesc === 'asc' ? asc(otherMedia.title) : desc(otherMedia.title);
       const titleFilter =
         title && title.trim().length > 0
-          ? ilike(books.title, `%${title}%`)
+          ? ilike(otherMedia.title, `%${title}%`)
           : undefined;
-      const whereFilter = and(genreFilter, titleFilter);
+      const whereFilter = and(eq(otherMedia.mediaType, type), titleFilter);
 
       const rows = await db
         .select({
-          id: books.id,
-          title: books.title,
-          author: books.author,
-          pageCount: books.pageCount,
-          pubYear: books.pubYear,
-          spineColor: books.spineColor,
-          imageUrls: books.imageUrls,
-          genre: genres.genre, // will be null when no link
+          id: otherMedia.id,
+          mediaType: otherMedia.mediaType,
+          title: otherMedia.title,
+          spineColor: otherMedia.spineColor,
+          imageUrls: otherMedia.imageUrls,
         })
-        .from(books)
-        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
-        .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+        .from(otherMedia)
         .where(whereFilter)
-        .orderBy(orderExpr)
+        .orderBy(orderExpression)
         .limit(limit)
         .offset(offset);
-
       const [{ count }] = await db
-        .select({ count: sql<number>`cast(count(distinct ${books.id}) as int)` })
-        .from(books)
-        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
-        .leftJoin(genres, eq(genresBooks.genreId, genres.id))
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(otherMedia)
         .where(whereFilter);
 
       const res: SuccessfulPaginationResponse = {
@@ -130,24 +183,33 @@ export const databaseRouter = router({
       return res;
     }),
 
-  deleteByTitle: adminProcedure
-    .input(z.object({ type: mediaType, title: z.string().min(1) }))
+  delete: adminProcedure
+    .input(z.object({ type: mediaType, id: z.string().min(1) }))
     .mutation(async ({ input, ctx }) => {
-      const { type, title } = input;
-      const table = tableMap[type];
+      const { type, id } = input;
       const db = ctx.db ?? defaultDb;
-
-      const deleted = await db
-        .delete(table)
-        .where(ilike(table.title, title))
-        .returning({ id: table.id });
+      const deleted =
+        type === 'book'
+          ? await db
+              .delete(books)
+              .where(eq(books.id, id))
+              .returning({ id: books.id })
+          : await db
+              .delete(otherMedia)
+              .where(
+                and(
+                  eq(otherMedia.mediaType, type),
+                  eq(otherMedia.id, id),
+                ),
+              )
+              .returning({ id: otherMedia.id });
 
       if (deleted.length === 0) {
         return {
-          message: `No item with title: ${title} in the ${type} database exists`,
+          message: `No ${type} item with id: ${id} exists`,
         };
       }
-      return { message: `Successfully deleted ${title}` };
+      return { message: `Successfully deleted ${type} item` };
     }),
 
   getQueryCount: adminProcedure
@@ -175,61 +237,62 @@ export const databaseRouter = router({
 
       const results: DatabaseSaveServerResponse = [];
 
-      for (const book of input) {
-        if (book.isDatabase) {
+      for (const mediaItem of input) {
+        if (mediaItem.isDatabase) {
           continue;
         }
-        book.images = book.images.filter((img) => img.selected);
-        const validatedData = collectedBlockInformationSchema.safeParse(book);
+        const selectedImages = mediaItem.images.filter((img) => img.selected);
+        const payload = { ...mediaItem, images: selectedImages };
+        const validatedData =
+          collectedBlockInformationSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
           results.push({
             error: 'Schema Violation',
             message: 'Schema violation(s) during save request',
             errors: tree.errors,
-            title: book.blockInfo.title,
+            title: mediaItem.blockInfo.title,
           });
-        } else {
-          const data = validatedData.data;
+          continue;
+        }
 
-          const insertData = {
-            title: titleRearrange(data.blockInfo.title),
-            author: data.blockInfo.author!,
-            pageCount: data.blockInfo.pageCount ?? null,
-            pubYear: data.blockInfo.pubYear ?? null,
-            spineColor: data.blockInfo.spineColor,
-            imageUrls: data.images.map((img) => img.url),
-          };
+        const data = validatedData.data;
+        if (data.type === 'book') {
+          try {
+            const book = await db.transaction(async (tx) => {
+              const [createdBook] = await tx
+                .insert(books)
+                .values({
+                  title: titleRearrange(data.blockInfo.title),
+                  author: data.blockInfo.author ?? '',
+                  pageCount: data.blockInfo.pageCount ?? null,
+                  pubYear: data.blockInfo.pubYear ?? null,
+                  spineColor: data.blockInfo.spineColor,
+                  imageUrls: data.images.map((img) => img.url),
+                })
+                .returning();
 
-          const [book] = await db.insert(books).values(insertData).returning();
+              if (!createdBook) {
+                throw new Error('Book insertion failed');
+              }
 
-          if (!book) {
-            results.push({
-              title: data.blockInfo.title,
-              error: 'Database Insertion Error',
-              message: 'An error occurred while trying to save to the database',
-              errors: [
-                `${titleRearrange(insertData.title)} could not be saved to the database.`,
-              ],
+              for (const genreName of data.blockInfo.genres) {
+                const [genreRow] = await tx
+                  .select()
+                  .from(genres)
+                  .where(eq(genres.genre, genreName));
+                if (!genreRow) {
+                  throw new Error(`Genre "${genreName}" does not exist`);
+                }
+                await tx.insert(genresBooks).values({
+                  bookId: createdBook.id,
+                  genreId: genreRow.id,
+                });
+              }
+              return createdBook;
             });
-          } else {
-            for (const genreName of data.blockInfo.genres) {
-              //check if genre exists
-              const [genreRow] = await db
-                .select()
-                .from(genres)
-                .where(eq(genres.genre, genreName));
-
-              const genreId = genreRow.id;
-
-              //insert into genresBooks junction table
-              await db.insert(genresBooks).values({
-                bookId: book.id,
-                genreId: genreId,
-              });
-            }
             results.push({
-              message: `${titleRearrange(insertData.title)} successfully added to database.`,
+              message: `${titleRearrange(book.title)} successfully added to database.`,
               actionAttemptItem: {
                 ...book,
                 genres: data.blockInfo.genres,
@@ -237,7 +300,50 @@ export const databaseRouter = router({
               },
               type: data.type,
             });
+          } catch (error) {
+            const message =
+              error instanceof Error
+                ? error.message
+                : 'An error occurred while trying to save to the database';
+            results.push({
+              title: data.blockInfo.title,
+              error: 'Database Insertion Error',
+              message: 'An error occurred while trying to save to the database',
+              errors: [message],
+            });
           }
+          continue;
+        }
+
+        const insertData = {
+          mediaType: data.type,
+          title: titleRearrange(data.blockInfo.title),
+          spineColor: data.blockInfo.spineColor,
+          imageUrls: data.images.map((img) => img.url),
+        };
+        const [savedOtherMedia] = await db
+          .insert(otherMedia)
+          .values(insertData)
+          .returning();
+
+        if (!savedOtherMedia) {
+          results.push({
+            title: data.blockInfo.title,
+            error: 'Database Insertion Error',
+            message: 'An error occurred while trying to save to the database',
+            errors: [
+              `${titleRearrange(insertData.title)} could not be saved to the database.`,
+            ],
+          });
+        } else {
+          results.push({
+            message: `${titleRearrange(insertData.title)} successfully added to database.`,
+            actionAttemptItem: {
+              ...savedOtherMedia,
+              blockID: data.blockID,
+            },
+            type: data.type,
+          });
         }
       }
       return results;
@@ -249,33 +355,75 @@ export const databaseRouter = router({
       const { type, item } = input;
       const db = ctx.db ?? defaultDb;
 
-      const validation = validate(item, bookCreateSchema);
-      if (!validation.valid) {
+      if (type === 'book') {
+        const validation = bookEditSchema.safeParse(item);
+        if (!validation.success) {
+          return {
+            error: 'Schema Violation',
+            message: 'Schema violation(s) during edit request',
+            errors: validation.error.issues.map((issue) => issue.message),
+            actionAttemptItem: item,
+            type,
+          };
+        }
+        const data = validation.data;
+        const whereExpression = data.id
+          ? eq(books.id, data.id)
+          : eq(books.title, data.title);
+        const [book] = await db
+          .update(books)
+          .set({
+            title: data.title,
+            author: data.author ?? '',
+            pageCount: data.pageCount ?? null,
+            pubYear: data.pubYear ?? null,
+            spineColor: data.spineColor,
+            imageUrls: data.imageUrls,
+          })
+          .where(whereExpression)
+          .returning();
+        if (!book) {
+          return {
+            error: 'Media Not Found',
+            message:
+              'Edit requested on an item that does not exist in the database',
+            actionAttemptItem: data,
+            type,
+            errors: [`${data.title} does not exist in the database.`],
+          };
+        }
         return {
-          error: 'Schema Violation',
-          message: 'Schema violation(s) during edit request',
-          errors: validation.errors.map((e) => e.stack),
-          actionAttemptItem: item as BookRow,
+          message: `${titleRearrange(book.title)} successfully edited.`,
+          actionAttemptItem: book,
           type,
         };
       }
-      const data = item as BookRow;
-      const whereExpr = data.id
-        ? eq(books.id, data.id)
-        : eq(books.title, data.title);
-      const [book] = await db
-        .update(books)
+
+      const validation = otherMediaEditSchema.safeParse(item);
+      if (!validation.success) {
+        return {
+          error: 'Schema Violation',
+          message: 'Schema violation(s) during edit request',
+          errors: validation.error.issues.map((issue) => issue.message),
+          actionAttemptItem: item,
+          type,
+        };
+      }
+      const data = validation.data;
+      const whereExpression = data.id
+        ? and(eq(otherMedia.id, data.id), eq(otherMedia.mediaType, type))
+        : and(eq(otherMedia.title, data.title), eq(otherMedia.mediaType, type));
+      const [savedOtherMedia] = await db
+        .update(otherMedia)
         .set({
+          mediaType: type,
           title: data.title,
-          author: data.author,
-          pageCount: data.pageCount ?? null,
-          pubYear: data.pubYear ?? null,
           spineColor: data.spineColor,
           imageUrls: data.imageUrls,
         })
-        .where(whereExpr)
+        .where(whereExpression)
         .returning();
-      if (!book) {
+      if (!savedOtherMedia) {
         return {
           error: 'Media Not Found',
           message:
@@ -286,8 +434,8 @@ export const databaseRouter = router({
         };
       }
       return {
-        message: `${titleRearrange(book.title)} successfully edited.`,
-        actionAttemptItem: book,
+        message: `${titleRearrange(savedOtherMedia.title)} successfully edited.`,
+        actionAttemptItem: savedOtherMedia,
         type,
       };
     }),

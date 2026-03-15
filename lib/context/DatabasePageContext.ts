@@ -3,8 +3,8 @@ import { createContext, Dispatch, SetStateAction, useContext } from 'react';
 
 // interfaces and types
 import { displayDatabaseItems, genreInput } from '@/showdatabase/page';
-import { SortOptions } from '@/showdatabase/PaginationInputs';
-import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
+import { DatabaseSortOption } from 'lib/constants/databaseSortOptions';
 
 export interface DatabasePageContextValue {
   page: number;
@@ -14,8 +14,8 @@ export interface DatabasePageContextValue {
   setType: Dispatch<SetStateAction<MediaType>>;
   limit: number;
   setLimit: Dispatch<SetStateAction<3 | 5 | 10>>;
-  sortBy: SortOptions;
-  setSortBy: Dispatch<SetStateAction<SortOptions>>;
+  sortBy: DatabaseSortOption;
+  setSortBy: Dispatch<SetStateAction<DatabaseSortOption>>;
   genre: genreInput;
   setGenre: Dispatch<SetStateAction<genreInput>>;
   ascDesc: 'asc' | 'desc';

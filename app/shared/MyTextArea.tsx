@@ -1,5 +1,5 @@
 // interfaces and types
-import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 import { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
 
 import { useFormContext } from 'react-hook-form';

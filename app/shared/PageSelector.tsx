@@ -9,7 +9,6 @@ export default function PageSelector() {
     databaseItems: { min, max, total },
     page,
     setPage,
-    handleGetMedia,
   } = useDatabasePageContext();
   const numPages = Math.ceil(total / (max - min + 1));
   return (
@@ -26,7 +25,6 @@ export default function PageSelector() {
           disabled={page === 1 || total === 0}
           onClick={() => {
             setPage((prev: number) => prev - 1);
-            handleGetMedia();
           }}
         />
         <Button
@@ -37,7 +35,6 @@ export default function PageSelector() {
           label={'Next Page ->'}
           onClick={() => {
             setPage((prev: number) => prev + 1);
-            handleGetMedia();
           }}
         />
       </div>

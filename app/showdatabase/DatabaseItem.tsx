@@ -20,6 +20,7 @@ import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 // interfaces and types
 import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { isBookRow } from 'lib/helpers/handleMediaTyping';
+import { MEDIA_TYPES } from 'lib/constants/mediaTypes';
 
 export interface DatabaseItemProps {
   info: PostSavedMediaItem;
@@ -27,9 +28,15 @@ export interface DatabaseItemProps {
 
 const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   // get necessary information from context
-  const { type, handleGetMedia } = useDatabasePageContext();
+  const {
+    databaseItems: { type: displayedListType },
+    handleGetMedia,
+  } = useDatabasePageContext();
 
   const { id, title, spineColor, imageUrls } = info;
+  const itemType =
+    MEDIA_TYPES.find((mediaType) => mediaType === info.mediaType) ??
+    displayedListType;
 
   //set up local state
   const [areYouSure, setAreYouSure] = useState(false);
@@ -38,17 +45,19 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
-  const genresQuery = trpc.genres.getForBook.useQuery({ bookID: id });
+  const genresQuery = trpc.genres.getForBook.useQuery(
+    { bookID: id },
+    { enabled: itemType === 'book' },
+  );
   useEffect(() => {
     if (genresQuery.data?.genres) setGenres(genresQuery.data.genres);
   }, [genresQuery.data]);
 
   //handle deletion of the media from the database
-  const { mutateAsync: databaseDelete } =
-    trpc.database.deleteByTitle.useMutation();
+  const { mutateAsync: databaseDelete } = trpc.database.delete.useMutation();
   const onDelete = async () => {
     try {
-      await databaseDelete({ title, type });
+      await databaseDelete({ id, type: itemType });
       handleGetMedia();
     } catch {
       console.log('There was an error deleting, try again.');
@@ -61,10 +70,11 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
     style: 'long',
     type: 'conjunction',
   });
+  const bookDetails = isBookRow(info) ? info : null;
 
   return (
     <div
-      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${blockClasses[type]}`}
+      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${blockClasses[itemType]}`}
     >
       {areYouSure && (
         <AreYouSure
@@ -79,13 +89,13 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           info={
             // isBookRow(type, info)
             {
-              type,
+              type: itemType,
               images: imageUrls ?? [],
               blockInfo: {
                 title,
-                author: info.author,
-                pubYear: info.pubYear,
-                pageCount: info.pageCount,
+                author: bookDetails?.author,
+                pubYear: bookDetails?.pubYear,
+                pageCount: bookDetails?.pageCount,
                 spineColor,
                 initialGenres: [...genres],
               },
@@ -106,7 +116,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           }
         />
       )}
-      {type !== 'album' ? (
+      {itemType !== 'album' ? (
         <div
           className={`h-36 w-6 rounded-sm`}
           style={{ backgroundColor: spineColor }}
@@ -119,21 +129,21 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
         <img
           key={idx}
           className={
-            type === 'album'
+            itemType === 'album'
               ? 'mr-7 h-36 w-36 rounded-sm'
               : 'mr-7 ml-2 h-36 w-24 rounded-sm'
           }
           src={src}
         ></img>
       ))}
-      {type === 'book' && isBookRow(type, info) ? (
+      {itemType === 'book' && bookDetails ? (
         <div className="flex flex-col">
           <p className="text-3xl">{titleRearrange(title)}</p>
-          <p className="text-2xl">{info.author}</p>
+          <p className="text-2xl">{bookDetails.author}</p>
           <hr className="my-1 border-t border-black" />
-          <p className="text-xl">Pages: {info.pageCount}</p>
+          <p className="text-xl">Pages: {bookDetails.pageCount}</p>
 
-          <p className="text-xl">Publication Date: {info.pubYear}</p>
+          <p className="text-xl">Publication Date: {bookDetails.pubYear}</p>
           <p className="text-xl">Genres: {list.format(genres)}</p>
         </div>
       ) : (

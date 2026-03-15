@@ -1,12 +1,13 @@
 import {
-  BookRow,
-  MediaType,
   PostSavedMediaItem,
 } from '../interfaces/globalInterfaces';
 
 export function isBookRow(
-  type: MediaType,
   info: PostSavedMediaItem,
-): info is BookRow {
-  return type === 'book';
+): info is PostSavedMediaItem & {
+  author: string;
+  pageCount: number | null;
+  pubYear: number | null;
+} {
+  return typeof info.author === 'string';
 }

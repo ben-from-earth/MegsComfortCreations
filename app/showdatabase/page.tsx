@@ -1,7 +1,7 @@
 'use client';
 
 // react, redux imports
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
@@ -18,13 +18,13 @@ import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // interfaces and types
 import {
-  MediaType,
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
-import { SortOptions } from '@/showdatabase/PaginationInputs';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
+import { DatabaseSortOption } from 'lib/constants/databaseSortOptions';
 
 export interface displayDatabaseItems {
   type: MediaType;
@@ -34,7 +34,10 @@ export interface displayDatabaseItems {
   max: number;
 }
 
-export type genreInput = (typeof allGenres)[number] | '' | typeof NO_GENRE_FILTER;
+export type genreInput =
+  | (typeof allGenres)[number]
+  | ''
+  | typeof NO_GENRE_FILTER;
 
 export default function ShowDatabase() {
   const [databaseItems, setDatabaseItems] = useState<displayDatabaseItems>({
@@ -47,16 +50,15 @@ export default function ShowDatabase() {
 
   const [type, setType] = useState<MediaType>('book');
   const [limit, setLimit] = useState<3 | 5 | 10>(5);
-  const [sortBy, setSortBy] = useState<SortOptions>('title');
+  const [sortBy, setSortBy] = useState<DatabaseSortOption>('title');
   const [page, setPage] = useState<number>(1);
   const [titleSearch, setTitleSearch] = useState('');
   const [genre, setGenre] = useState<genreInput>('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
+  const latestPaginationStateRef = useRef({ type, page, limit });
   const effectiveSort = useMemo(() => {
     if (type === 'book') {
-      if (sortBy === 'title') return 'title';
-      if (sortBy === 'pubYear') return 'pubYear';
-      return 'spineColor';
+      return sortBy;
     }
     return 'title';
   }, [type, sortBy]);
@@ -72,16 +74,22 @@ export default function ShowDatabase() {
   });
 
   useEffect(() => {
+    latestPaginationStateRef.current = { type, page, limit };
+  }, [type, page, limit]);
+
+  useEffect(() => {
     if (!paginatedQuery.data) return;
+    const { type: currentType, page: currentPage, limit: currentLimit } =
+      latestPaginationStateRef.current;
     const r = paginatedQuery.data as SuccessfulPaginationResponse;
     setDatabaseItems({
-      type,
+      type: currentType,
       items: r.paginatedList,
       total: r.total,
-      min: (page - 1) * limit + 1,
-      max: Math.min(page * limit, r.total),
+      min: (currentPage - 1) * currentLimit + 1,
+      max: Math.min(currentPage * currentLimit, r.total),
     });
-  }, [paginatedQuery.data, page, limit, type]);
+  }, [paginatedQuery.data]);
 
   const DatabasePageContextValue: DatabasePageContextValue = useMemo(
     () => ({
