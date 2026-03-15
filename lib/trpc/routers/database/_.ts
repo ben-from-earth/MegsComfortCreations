@@ -312,7 +312,6 @@ export const databaseRouter = router({
                   pageCount: data.blockInfo.pageCount ?? null,
                   pubYear: data.blockInfo.pubYear ?? null,
                   spineColor: data.blockInfo.spineColor,
-                  imageUrls: [],
                 })
                 .returning();
 
@@ -382,7 +381,6 @@ export const databaseRouter = router({
           mediaType: data.type,
           title: titleRearrange(data.blockInfo.title),
           spineColor: data.blockInfo.spineColor,
-          imageUrls: [],
         };
         const [savedOtherMedia] = await db
           .insert(otherMedia)

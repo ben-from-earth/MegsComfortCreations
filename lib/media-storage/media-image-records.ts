@@ -1,8 +1,8 @@
 import { Db } from '@/db/client';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
-import { books, mediaImageItems, otherMedia } from '@/db/schema';
+import { mediaImageItems } from '@/db/schema';
 import { MediaType } from 'lib/constants/mediaTypes';
-import { isExternalImageUrl, normalizeImagePath } from './image-path-utils';
+import { normalizeImagePath } from './image-path-utils';
 import {
   PersistedImageFile,
   persistExternalImageToS3,
@@ -162,65 +162,4 @@ export async function loadOtherMediaImageUrlsById(db: Db, otherMediaIds: string[
     imageUrlsByOtherMediaId.set(otherMediaId, currentList);
   }
   return imageUrlsByOtherMediaId;
-}
-
-export type MigrationStatus = {
-  totalItems: number;
-  externalUrlCount: number;
-  missingReferenceCount: number;
-  isCompleted: boolean;
-};
-
-export async function getImageMigrationStatus(db: Db): Promise<MigrationStatus> {
-  const [bookRowsWithIds, otherMediaRowsWithIds, imageReferenceRows] = await Promise.all([
-    db.select({ id: books.id, imageUrls: books.imageUrls }).from(books),
-    db.select({ id: otherMedia.id, imageUrls: otherMedia.imageUrls }).from(otherMedia),
-    db
-      .select({
-        bookId: mediaImageItems.bookId,
-        otherMediaId: mediaImageItems.otherMediaId,
-      })
-      .from(mediaImageItems),
-  ]);
-
-  let externalUrlCount = 0;
-  for (const row of [...bookRowsWithIds, ...otherMediaRowsWithIds]) {
-    for (const imageUrl of row.imageUrls) {
-      if (isExternalImageUrl(imageUrl)) {
-        externalUrlCount += 1;
-      }
-    }
-  }
-
-  const referencedBookIds = new Set(
-    imageReferenceRows
-      .map((row) => row.bookId)
-      .filter((bookId): bookId is string => typeof bookId === 'string'),
-  );
-  const referencedOtherMediaIds = new Set(
-    imageReferenceRows
-      .map((row) => row.otherMediaId)
-      .filter((otherMediaId): otherMediaId is string => typeof otherMediaId === 'string'),
-  );
-
-  let missingReferenceCount = 0;
-  for (const row of bookRowsWithIds) {
-    if (row.imageUrls.length > 0 && !referencedBookIds.has(row.id)) {
-      missingReferenceCount += 1;
-    }
-  }
-  for (const row of otherMediaRowsWithIds) {
-    if (row.imageUrls.length > 0 && !referencedOtherMediaIds.has(row.id)) {
-      missingReferenceCount += 1;
-    }
-  }
-
-  const totalItems = bookRowsWithIds.length + otherMediaRowsWithIds.length;
-
-  return {
-    totalItems,
-    externalUrlCount,
-    missingReferenceCount,
-    isCompleted: externalUrlCount === 0 && missingReferenceCount === 0,
-  };
 }
