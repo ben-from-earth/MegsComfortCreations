@@ -5,33 +5,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 
 ## Critical
 
-### 1) Unauthenticated tRPC mutations and data access (COMPLETED)
-
-- **Paths**
-    - `lib/trpc/context.ts`
-    - `lib/trpc/trpc.ts`
-    - `lib/trpc/routers/_app.ts`
-    - `lib/trpc/routers/database/_.ts`
-    - `lib/trpc/routers/collect/_.ts`
-    - `lib/trpc/routers/genres/_.ts`
-    - `lib/trpc/routers/png.ts`
-- **Issue**
-    - Most procedures are exposed via `publicProcedure` with no server-side session/role checks.
-- **Fix suggestion**
-    - Add auth/session to tRPC context.
-    - Implement `protectedProcedure` and `adminProcedure` middleware.
-    - Restrict write/destructive procedures (save/edit/delete/link/unlink/png/create/collect) to authenticated roles.
-
-### 2) `getPaginated` ignores media type and always queries books (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - API accepts `type` (`book|movie|videoGame|album`) but query logic is book-specific.
-- **Fix suggestion**
-    - Branch by `type` with dedicated query builders per table.
-    - Align selected columns and sort options to each media type.
-
 ### 3) SSRF risk in PNG image fetching
 
 - **Paths**
@@ -46,44 +19,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 
 ## High
 
-### 4) Pagination total count ignores active filters (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - `total` is computed from all books, not the filtered query.
-- **Fix suggestion**
-    - Build a mirrored count query using the same `where` filters and joins as the page query.
-
-### 5) Genre "None" mismatch between UI and backend (COMPLETED)
-
-- **Paths**
-    - `app/showdatabase/PaginationInputs.tsx`
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - UI sends `'none'`, backend expects `'None'`.
-- **Fix suggestion**
-    - Centralize shared filter constants/enums in one module and consume from both UI and router input schema.
-
-### 6) `database.edit` ignores `type` and updates books only (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - Non-book edits are accepted by API contract but not actually handled correctly.
-- **Fix suggestion**
-    - Split edit handling by media type with per-type validation schema and table mapping.
-
-### 7) Partial writes possible during save (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - Book insert + genre link inserts are not transactional; failures can leave partial state.
-- **Fix suggestion**
-    - Wrap insert and genre-link loop in a DB transaction.
-    - Validate `genreRow` presence before insert; fail fast with clear error result.
-
 ### 8) Weak protection on internal admin seed endpoint
 
 - **Path**
@@ -95,17 +30,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
     - Add additional controls: short-lived signed token, rate limiting, source restriction, and generic error responses.
 
 ## Medium
-
-### 9) Pagination page-change fetch race
-
-- **Paths**
-    - `app/shared/PageSelector.tsx`
-    - `app/showdatabase/page.tsx`
-- **Issue**
-    - `setPage(...)` followed by immediate fetch can use stale page state.
-- **Fix suggestion**
-    - Remove immediate manual fetch from button handlers.
-    - Let query react to state change or pass explicit next page to refetch logic.
 
 ### 10) Sort option drift causes unexpected ordering
 
@@ -119,15 +43,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
     - Use one shared sort contract source for both client and server.
     - Reject unsupported sorts explicitly instead of silent fallback.
 
-### 11) Query usage counter can lose updates (larger look at query count functionality) (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/collect/_.ts`
-- **Issue**
-    - Read-modify-write for daily count is non-atomic and may no-op if row missing.
-- **Fix suggestion**
-    - Use atomic increment/upsert in a transaction (or single SQL upsert statement).
-
 ### 12) Potential crash on missing env vars
 
 - **Paths**
@@ -139,15 +54,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
     - Add startup env validation with explicit errors and required var checks.
 
 ## Cleanup and Maintainability Opportunities
-
-### 15) Brittle direct node_modules import (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/collect/actions/get-media-covers.ts`
-- **Issue**
-    - `import axios from 'node_modules/axios'`.
-- **Fix suggestion**
-    - Replace with `import axios from 'axios'`.
 
 ### 16) Stale ESLint override path
 
@@ -189,27 +95,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
     - `__tests__` excluded from TypeScript checks.
 - **Fix suggestion**
     - Include tests in a dedicated test tsconfig (CI) or include them in main typecheck path.
-
-### 20) `.env.local` not ignored by git (COMPLETED)
-
-- **Path**
-    - `.gitignore`
-- **Issue**
-    - `.env` ignored, but `.env.local` not explicitly ignored.
-- **Fix suggestion**
-    - Add `.env.local` and optionally `.env.*` patterns to `.gitignore`.
-    - Rotate secrets if any sensitive values were committed/shared previously.
-
-### 21) Rename and harden database delete route (COMPLETED)
-
-- **Path**
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - Deletion route naming and payload are too weak (`deleteByTitle` + `title`) and can be ambiguous.
-- **Fix suggestion**
-    - Use a single `delete` procedure that accepts `{ type, id }`.
-    - Perform deletion by primary key (`id`) while still validating type for non-book rows.
-    - Keep UI/API callers aligned to the new contract.
 
 ## Suggested Fix Order (Practical)
 

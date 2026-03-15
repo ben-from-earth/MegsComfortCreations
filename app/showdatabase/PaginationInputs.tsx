@@ -1,5 +1,5 @@
 // react, redux imports
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 
 // import icons and items from Material UI
 import InputLabel from '@mui/material/InputLabel';
@@ -20,9 +20,11 @@ import {
 
 import { MediaType } from 'lib/constants/mediaTypes';
 import { NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
-
-export type SortOptions = 'title' | 'author' | 'pageCount' | 'pubYear';
-export type SortOptionsLabels = 'Title' | 'Author' | 'Page Count' | 'Pub. Year';
+import {
+  BOOK_SORT_SELECT_OPTIONS,
+  NON_BOOK_SORT_SELECT_OPTIONS,
+  type DatabaseSortOption,
+} from 'lib/constants/databaseSortOptions';
 
 export default function PaginationInputs() {
   const {
@@ -38,20 +40,11 @@ export default function PaginationInputs() {
     ascDesc,
     setAscDesc,
     setTitleSearch,
-    handleGetMedia,
   }: DatabasePageContextValue = useDatabasePageContext();
   const genres = useContext(GenreContext);
-  let sortOptions: { label: SortOptionsLabels; value: SortOptions }[];
-  if (type === 'book') {
-    sortOptions = [
-      { label: 'Title', value: 'title' },
-      { label: 'Author', value: 'author' },
-      { label: 'Page Count', value: 'pageCount' },
-      { label: 'Pub. Year', value: 'pubYear' },
-    ];
-  } else {
-    sortOptions = [{ label: 'Title', value: 'title' }];
-  }
+  const [titleInput, setTitleInput] = useState('');
+  const sortOptions =
+    type === 'book' ? BOOK_SORT_SELECT_OPTIONS : NON_BOOK_SORT_SELECT_OPTIONS;
   const handleTypeChange = (e: SelectChangeEvent) => {
     setPage(1);
     setType(e.target.value as MediaType);
@@ -67,7 +60,7 @@ export default function PaginationInputs() {
   };
   const handleSortByChange = (e: SelectChangeEvent) => {
     setPage(1);
-    setSortBy(e.target.value as SortOptions);
+    setSortBy(e.target.value as DatabaseSortOption);
   };
   const handleGenreChange = (e: SelectChangeEvent) => {
     setPage(1);
@@ -83,7 +76,7 @@ export default function PaginationInputs() {
     <div className="border-darkpink bg-lightpink mt-6 flex w-fit items-center justify-between rounded-lg border-3 p-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]">
       <input
         id="titleSearch"
-        onChange={(e) => setTitleSearch(e.target.value)}
+        onChange={(e) => setTitleInput(e.target.value)}
         placeholder="Title"
         className="bg-lightpink w-xxs h-10 rounded-sm border border-[rgba(0,0,0,0.23)] pl-2 font-[Arial] text-sm"
       ></input>
@@ -174,7 +167,10 @@ export default function PaginationInputs() {
       </FormControl>
       <Button
         variant="primary"
-        onClick={handleGetMedia}
+        onClick={() => {
+          setPage(1);
+          setTitleSearch(titleInput);
+        }}
         label={'Search'}
         width={100}
         fontSize={25}

@@ -18,15 +18,10 @@ import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
+import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
-const sortKey = z.enum([
-  'title',
-  'author',
-  'pageCount',
-  'pubYear',
-  'spineColor',
-]);
+const sortKey = z.enum(DATABASE_SORT_OPTIONS);
 const bookEditSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1),
@@ -72,16 +67,19 @@ export const databaseRouter = router({
       if (type === 'book') {
         const sortColumn = (() => {
           switch (sort) {
+            case 'title':
+              return books.title;
             case 'author':
               return books.author;
             case 'pageCount':
               return books.pageCount;
             case 'pubYear':
               return books.pubYear;
-            case 'spineColor':
-              return books.spineColor;
             default:
-              return books.title;
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Sort "${sort}" is not supported for books`,
+              });
           }
         })();
 
@@ -144,17 +142,15 @@ export const databaseRouter = router({
           message: 'Genre filter is only supported for books',
         });
       }
-      if (sort !== 'title' && sort !== 'spineColor') {
+      if (sort !== 'title') {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Sort "${sort}" is not supported for ${type}`,
         });
       }
 
-      const sortColumn =
-        sort === 'spineColor' ? otherMedia.spineColor : otherMedia.title;
       const orderExpression =
-        ascDesc === 'asc' ? asc(sortColumn) : desc(sortColumn);
+        ascDesc === 'asc' ? asc(otherMedia.title) : desc(otherMedia.title);
       const titleFilter =
         title && title.trim().length > 0
           ? ilike(otherMedia.title, `%${title}%`)
