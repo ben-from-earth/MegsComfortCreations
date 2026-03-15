@@ -1,6 +1,5 @@
 import { router, adminProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
-import Genre from 'lib/database/models/genre';
 import { Genre as GenreEnum } from '@/lib/enums/genreEnums';
 import type {
   BookRow,
@@ -8,16 +7,27 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 // database import
-import { db } from '@/db/client';
+import { db as defaultDb } from '@/db/client';
 
 // interfaces and types
-import { genres, genresBooks } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { books, genres, genresBooks } from '@/db/schema';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+
+const validSortKeys = ['title', 'pubYear', 'spineColor'] as const;
+type SortKey = (typeof validSortKeys)[number];
+
+function resolveSortColumn(sortKey: SortKey) {
+  if (sortKey === 'title') return books.title;
+  if (sortKey === 'pubYear') return books.pubYear;
+  return books.spineColor;
+}
 
 export const genresRouter = router({
-  getAll: adminProcedure.query(async () => {
-    const genres = await Genre.getAllGenres();
-    return { message: 'Success', genres } as {
+  getAll: adminProcedure.query(async ({ ctx }) => {
+    const db = ctx.db ?? defaultDb;
+    const rows = await db.select({ genre: genres.genre }).from(genres);
+    const genreList = rows.map((row) => row.genre);
+    return { message: 'Success', genres: genreList } as {
       message: string;
       genres: GenreEnum[];
     };
@@ -25,11 +35,17 @@ export const genresRouter = router({
 
   getForBook: adminProcedure
     .input(z.object({ bookID: z.uuid() }))
-    .query(async ({ input }) => {
-      const genres = await Genre.getforbook(input.bookID);
+    .query(async ({ input, ctx }) => {
+      const db = ctx.db ?? defaultDb;
+      const rows = await db
+        .select({ genre: genres.genre })
+        .from(genres)
+        .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
+        .where(eq(genresBooks.bookId, input.bookID));
+      const genreList = rows.map((row) => row.genre);
       return {
         message: `Successfully grabbed genres for bookID ${input.bookID}`,
-        genres,
+        genres: genreList,
       };
     }),
 
@@ -40,7 +56,8 @@ export const genresRouter = router({
         genres: z.array(z.string().min(1)),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const db = ctx.db ?? defaultDb;
       const responses: SuccessfulGenreLinkUnlinkResponse[] = [];
       for (const genre of input.genres) {
         const [genreRow] = await db
@@ -78,10 +95,25 @@ export const genresRouter = router({
         genres: z.array(z.string().min(1)),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const db = ctx.db ?? defaultDb;
       const responses: SuccessfulGenreLinkUnlinkResponse[] = [];
       for (const g of input.genres) {
-        await Genre.unlink(g, input.bookID);
+        const [genreRow] = await db
+          .select({ id: genres.id })
+          .from(genres)
+          .where(eq(genres.genre, g));
+
+        if (genreRow) {
+          await db
+            .delete(genresBooks)
+            .where(
+              and(
+                eq(genresBooks.bookId, input.bookID),
+                eq(genresBooks.genreId, genreRow.id),
+              ),
+            );
+        }
         responses.push({
           message: 'Successful genre unlink',
           genre: g,
@@ -101,16 +133,42 @@ export const genresRouter = router({
         ascDesc: z.enum(['asc', 'desc']),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const db = ctx.db ?? defaultDb;
       const offset = (input.page - 1) * input.limit;
-      const genreRes: { books: BookRow[]; total: number } =
-        await Genre.getBooksWithGenre(
-          input.genre,
-          input.sort,
-          offset,
-          input.limit,
-          input.ascDesc,
+      const sortKey = input.sort as SortKey;
+      const direction = input.ascDesc.toLowerCase() === 'desc' ? 'desc' : 'asc';
+
+      if (!validSortKeys.includes(sortKey)) {
+        throw new Error(
+          `Invalid sort key: ${input.sort}. Must be one of ${validSortKeys.join(', ')}`,
         );
+      }
+
+      const sortColumn = resolveSortColumn(sortKey);
+      const orderByExpr = direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
+
+      const rows = await db
+        .select({ book: books })
+        .from(books)
+        .innerJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .innerJoin(genres, eq(genres.id, genresBooks.genreId))
+        .where(eq(genres.genre, input.genre))
+        .orderBy(orderByExpr)
+        .limit(input.limit)
+        .offset(offset);
+
+      const [{ value: total }] = await db
+        .select({ value: sql<number>`count(*)` })
+        .from(books)
+        .innerJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .innerJoin(genres, eq(genres.id, genresBooks.genreId))
+        .where(eq(genres.genre, input.genre));
+
+      const genreRes: { books: BookRow[]; total: number } = {
+        books: rows.map((row) => row.book) as BookRow[],
+        total,
+      };
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
         paginatedList: genreRes.books,
@@ -128,14 +186,40 @@ export const genresRouter = router({
         ascDesc: z.enum(['asc', 'desc']),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const db = ctx.db ?? defaultDb;
       const offset = (input.page - 1) * input.limit;
-      const genreRes = await Genre.getNoGenreBooks(
-        input.sort,
-        offset,
-        input.limit,
-        input.ascDesc,
-      );
+      const sortKey = input.sort as SortKey;
+      const direction = input.ascDesc.toLowerCase() === 'desc' ? 'desc' : 'asc';
+
+      if (!validSortKeys.includes(sortKey)) {
+        throw new Error(
+          `Invalid sort key: ${input.sort}. Must be one of ${validSortKeys.join(', ')}`,
+        );
+      }
+
+      const sortColumn = resolveSortColumn(sortKey);
+      const orderByExpr = direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
+
+      const rows = await db
+        .select({ book: books })
+        .from(books)
+        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .where(isNull(genresBooks.bookId))
+        .orderBy(orderByExpr)
+        .limit(input.limit)
+        .offset(offset);
+
+      const [{ value: total }] = await db
+        .select({ value: sql<number>`count(*)` })
+        .from(books)
+        .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
+        .where(isNull(genresBooks.bookId));
+
+      const genreRes: { books: BookRow[]; total: number } = {
+        books: rows.map((row) => row.book) as BookRow[],
+        total,
+      };
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
         paginatedList: genreRes.books,

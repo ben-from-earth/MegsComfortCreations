@@ -31,18 +31,6 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 
 ## Medium
 
-### 10) Sort option drift causes unexpected ordering
-
-- **Paths**
-    - `app/showdatabase/PaginationInputs.tsx`
-    - `app/showdatabase/page.tsx`
-    - `lib/trpc/routers/database/_.ts`
-- **Issue**
-    - UI and backend sort contracts do not fully match (`pageCount` and fallback behavior mismatch).
-- **Fix suggestion**
-    - Use one shared sort contract source for both client and server.
-    - Reject unsupported sorts explicitly instead of silent fallback.
-
 ### 12) Potential crash on missing env vars
 
 - **Paths**
