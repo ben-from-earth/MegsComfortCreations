@@ -13,9 +13,9 @@ const defaultValues: CollectorFormData = {
   bookClubRepeat: 1,
   collectionList: {
     book: [],
-    // movie: [],
-    // videoGame: [],
-    // album: [],
+    movie: [],
+    videoGame: [],
+    album: [],
   },
   collectedData: [],
   pngFormat: undefined,

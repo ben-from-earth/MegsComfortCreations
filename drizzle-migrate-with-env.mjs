@@ -25,10 +25,12 @@ const targetHost = new URL(process.env.DRIZZLE_DATABASE_URL).hostname;
 console.log(`Running Drizzle migrate against host: ${targetHost}`);
 console.log(`Source env file: ${envFilePath}`);
 
-const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const migrationRun = spawnSync(command, ['drizzle-kit', 'migrate'], {
+const command = process.platform === 'win32' ? 'npx drizzle-kit migrate' : 'npx';
+const commandArgs = process.platform === 'win32' ? [] : ['drizzle-kit', 'migrate'];
+const migrationRun = spawnSync(command, commandArgs, {
   stdio: 'inherit',
   env: process.env,
+  shell: process.platform === 'win32',
 });
 
 if (migrationRun.error) {

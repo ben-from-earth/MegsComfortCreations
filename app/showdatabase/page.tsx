@@ -54,9 +54,7 @@ export default function ShowDatabase() {
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
   const effectiveSort = useMemo(() => {
     if (type === 'book') {
-      if (sortBy === 'title') return 'title';
-      if (sortBy === 'pubYear') return 'pubYear';
-      return 'spineColor';
+      return sortBy;
     }
     return 'title';
   }, [type, sortBy]);

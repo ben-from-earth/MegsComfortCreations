@@ -11,7 +11,7 @@ const databaseSave = {
         description: 'Type of media being saved',
         schema: {
           type: 'string',
-          enum: ['book', 'movie', 'video_game', 'album'],
+          enum: ['book', 'movie', 'videoGame', 'album'],
         },
       },
     ],
@@ -43,7 +43,7 @@ const databaseSave = {
                 imageUrls: ['123url.com'],
               },
             },
-            video_game: {
+            videoGame: {
               value: {
                 title: 'Video Game title',
                 spineColor: '#hexcode',
@@ -125,7 +125,7 @@ const databaseSave = {
                   type: 'movie',
                 },
               },
-              video_game: {
+              videoGame: {
                 value: {
                   message:
                     'Video Game title successfully added to the database',
@@ -135,7 +135,7 @@ const databaseSave = {
                     spineColor: '#hexcode',
                     imageUrls: ['123url.com'],
                   },
-                  type: 'video_game',
+                  type: 'videoGame',
                 },
               },
               album: {

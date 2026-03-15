@@ -15,7 +15,7 @@ const onlineMediaCovers = {
               author: { type: 'string' },
               type: {
                 type: 'string',
-                enum: ['book', 'movie', 'video_game', 'album'],
+                enum: ['book', 'movie', 'videoGame', 'album'],
               },
             },
             required: ['title', 'type'],

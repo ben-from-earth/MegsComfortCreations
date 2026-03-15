@@ -71,7 +71,9 @@ export default function PaginationInputs() {
   };
   const handleGenreChange = (e: SelectChangeEvent) => {
     setPage(1);
-    setGenre(e.target.value as (typeof genres)[number] | '' | typeof NO_GENRE_FILTER);
+    setGenre(
+      e.target.value as (typeof genres)[number] | '' | typeof NO_GENRE_FILTER,
+    );
   };
   const handleAscDescChange = (e: SelectChangeEvent) => {
     setPage(1);
@@ -114,7 +116,11 @@ export default function PaginationInputs() {
           <MenuItem value={10}>10</MenuItem>
         </Select>
       </FormControl>
-      <FormControl sx={{ m: 1, minWidth: 100 }} size="small">
+      <FormControl
+        sx={{ m: 1, minWidth: 100 }}
+        size="small"
+        disabled={type !== 'book'}
+      >
         <InputLabel id="sortBy">Sort By</InputLabel>
         <Select
           labelId="sortBy"
@@ -130,7 +136,11 @@ export default function PaginationInputs() {
           ))}
         </Select>
       </FormControl>
-      <FormControl sx={{ m: 1, minWidth: 100 }} size="small">
+      <FormControl
+        sx={{ m: 1, minWidth: 100 }}
+        size="small"
+        disabled={type !== 'book'}
+      >
         <InputLabel id="genre">Genre</InputLabel>
         <Select
           labelId="genre"

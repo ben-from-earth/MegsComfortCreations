@@ -1,5 +1,5 @@
 import { MediaType } from 'lib/interfaces/globalInterfaces';
-import axios from 'node_modules/axios';
+import axios from 'axios';
 
 const API_KEY = process.env.GOOGLE_SEARCH_API_KEY;
 const CX = process.env.GOOGLE_SEARCH_CX;

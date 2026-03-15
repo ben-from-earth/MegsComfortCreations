@@ -12,7 +12,7 @@ const databaseGet = {
         description: 'Type of media being searched',
         schema: {
           type: 'string',
-          enum: ['book', 'movie', 'video_game', 'album'],
+          enum: ['book', 'movie', 'videoGame', 'album'],
         },
       },
       {
@@ -42,7 +42,7 @@ const databaseGet = {
         description: 'Which column to sort the database on',
         schema: {
           type: 'string',
-          enum: ['title', 'author'],
+          enum: ['title', 'author', 'pageCount', 'pubYear', 'spineColor'],
         },
       },
       {

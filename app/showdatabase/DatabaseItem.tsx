@@ -38,7 +38,10 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
-  const genresQuery = trpc.genres.getForBook.useQuery({ bookID: id });
+  const genresQuery = trpc.genres.getForBook.useQuery(
+    { bookID: id },
+    { enabled: type === 'book' },
+  );
   useEffect(() => {
     if (genresQuery.data?.genres) setGenres(genresQuery.data.genres);
   }, [genresQuery.data]);
@@ -61,6 +64,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
     style: 'long',
     type: 'conjunction',
   });
+  const bookDetails = isBookRow(info) ? info : null;
 
   return (
     <div
@@ -83,9 +87,9 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
               images: imageUrls ?? [],
               blockInfo: {
                 title,
-                author: info.author,
-                pubYear: info.pubYear,
-                pageCount: info.pageCount,
+                author: bookDetails?.author,
+                pubYear: bookDetails?.pubYear,
+                pageCount: bookDetails?.pageCount,
                 spineColor,
                 initialGenres: [...genres],
               },
@@ -126,14 +130,14 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           src={src}
         ></img>
       ))}
-      {type === 'book' && isBookRow(type, info) ? (
+      {type === 'book' && bookDetails ? (
         <div className="flex flex-col">
           <p className="text-3xl">{titleRearrange(title)}</p>
-          <p className="text-2xl">{info.author}</p>
+          <p className="text-2xl">{bookDetails.author}</p>
           <hr className="my-1 border-t border-black" />
-          <p className="text-xl">Pages: {info.pageCount}</p>
+          <p className="text-xl">Pages: {bookDetails.pageCount}</p>
 
-          <p className="text-xl">Publication Date: {info.pubYear}</p>
+          <p className="text-xl">Publication Date: {bookDetails.pubYear}</p>
           <p className="text-xl">Genres: {list.format(genres)}</p>
         </div>
       ) : (

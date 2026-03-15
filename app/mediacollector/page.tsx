@@ -253,6 +253,39 @@ function MediaCollectorContent() {
               setValue(`collectionList.book`, titleSearchList);
             }}
           />
+          <TextInput
+            variant="multiline"
+            label={`Movie Titles`}
+            rows={5}
+            onChange={(e) => {
+              const titleSearchList = titleCollectionListConversion(
+                e.target.value,
+              );
+              setValue(`collectionList.movie`, titleSearchList);
+            }}
+          />
+          <TextInput
+            variant="multiline"
+            label={`Video Game Titles`}
+            rows={5}
+            onChange={(e) => {
+              const titleSearchList = titleCollectionListConversion(
+                e.target.value,
+              );
+              setValue(`collectionList.videoGame`, titleSearchList);
+            }}
+          />
+          <TextInput
+            variant="multiline"
+            label={`Album Titles`}
+            rows={5}
+            onChange={(e) => {
+              const titleSearchList = titleCollectionListConversion(
+                e.target.value,
+              );
+              setValue(`collectionList.album`, titleSearchList);
+            }}
+          />
         </div>
         <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>
