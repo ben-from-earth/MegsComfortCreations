@@ -78,11 +78,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   //establish variables for icons
   const icons = {
     book: <BookIcon />,
-    movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    videoGame: (
-      <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
-    ),
-    album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
+    movie: <MovieIcon />,
+    videoGame: <VideoGameIcon />,
+    album: <AlbumIcon />,
   };
 
   //div to pick a color for the spine.
@@ -132,13 +130,12 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       className={`relative flex h-fit w-lg flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
     >
       {isDatabase && (
-        <p className="absolute top-1 right-1 m-0 rounded-sm border-2 border-black bg-gray-700 p-1.25 tracking-wider text-white">
+        <p className="absolute top-9 left-1 m-0 rounded-sm border-2 border-black bg-gray-700 p-1.25 tracking-wider text-white">
           Database
         </p>
       )}
-      <div className="absolute top-1 left-1">
-        {icons[type]} block: {index + 1}
-      </div>
+      <div className="absolute top-1 left-1">{icons[type]}</div>
+      <div className="absolute top-1 right-1">block: {index + 1}</div>
 
       <IconButton
         aria-label="delete"

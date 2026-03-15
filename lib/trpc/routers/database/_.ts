@@ -19,6 +19,14 @@ import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
+import {
+  loadBookImageUrlsById,
+  loadOtherMediaImageUrlsById,
+  replaceBookImageRecords,
+  replaceOtherMediaImageRecords,
+  resolveAndPersistImageList,
+} from 'lib/media-storage/media-image-records';
+import { DatabaseSaveEditErrorResponse } from '@/api/api-Errors';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 const sortKey = z.enum(DATABASE_SORT_OPTIONS);
@@ -37,6 +45,26 @@ const otherMediaEditSchema = z.object({
   spineColor: z.string().min(1),
   imageUrls: z.array(z.string()),
 });
+
+function formatImagePersistenceErrors(
+  sourceFailures: Array<{ sourceUrl: string; message: string }>,
+) {
+  return sourceFailures.map(
+    ({ sourceUrl, message }) => `Failed to persist "${sourceUrl}" to S3: ${message}`,
+  );
+}
+
+function createImagePersistenceErrorResponse(
+  title: string,
+  sourceFailures: Array<{ sourceUrl: string; message: string }>,
+): DatabaseSaveEditErrorResponse {
+  return {
+    title,
+    error: 'Image Persistence Error',
+    message: 'Failed to persist one or more selected images to S3.',
+    errors: formatImagePersistenceErrors(sourceFailures),
+  };
+}
 
 export const databaseRouter = router({
   searchByTitle: adminProcedure
@@ -108,7 +136,6 @@ export const databaseRouter = router({
             pageCount: books.pageCount,
             pubYear: books.pubYear,
             spineColor: books.spineColor,
-            imageUrls: books.imageUrls,
             mediaType: sql<'book'>`'book'`,
           })
           .from(books)
@@ -128,9 +155,18 @@ export const databaseRouter = router({
           .leftJoin(genres, eq(genresBooks.genreId, genres.id))
           .where(whereFilter);
 
+        const imageUrlsByBookId = await loadBookImageUrlsById(
+          db,
+          rows.map((row) => row.id),
+        );
+        const rowsWithResolvedImages = rows.map((row) => ({
+          ...row,
+          imageUrls: imageUrlsByBookId.get(row.id) ?? [],
+        }));
+
         const res: SuccessfulPaginationResponse = {
           message: 'Successful database gather',
-          paginatedList: rows,
+          paginatedList: rowsWithResolvedImages,
           total: count,
         };
         return res;
@@ -163,7 +199,6 @@ export const databaseRouter = router({
           mediaType: otherMedia.mediaType,
           title: otherMedia.title,
           spineColor: otherMedia.spineColor,
-          imageUrls: otherMedia.imageUrls,
         })
         .from(otherMedia)
         .where(whereFilter)
@@ -175,9 +210,18 @@ export const databaseRouter = router({
         .from(otherMedia)
         .where(whereFilter);
 
+      const imageUrlsByOtherMediaId = await loadOtherMediaImageUrlsById(
+        db,
+        rows.map((row) => row.id),
+      );
+      const rowsWithResolvedImages = rows.map((row) => ({
+        ...row,
+        imageUrls: imageUrlsByOtherMediaId.get(row.id) ?? [],
+      }));
+
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
-        paginatedList: rows,
+        paginatedList: rowsWithResolvedImages,
         total: count,
       };
       return res;
@@ -268,7 +312,7 @@ export const databaseRouter = router({
                   pageCount: data.blockInfo.pageCount ?? null,
                   pubYear: data.blockInfo.pubYear ?? null,
                   spineColor: data.blockInfo.spineColor,
-                  imageUrls: data.images.map((img) => img.url),
+                  imageUrls: [],
                 })
                 .returning();
 
@@ -291,10 +335,29 @@ export const databaseRouter = router({
               }
               return createdBook;
             });
+
+            const resolvedImages = await resolveAndPersistImageList(
+              { mediaType: 'book', mediaId: book.id },
+              data.images.map((img) => img.url),
+            );
+            if (resolvedImages.failures.length > 0) {
+              await db.delete(books).where(eq(books.id, book.id));
+              results.push(
+                createImagePersistenceErrorResponse(
+                  data.blockInfo.title,
+                  resolvedImages.failures,
+                ),
+              );
+              continue;
+            }
+            await replaceBookImageRecords(db, book.id, resolvedImages.images);
+            const imageUrls = resolvedImages.images.map((image) => image.publicPath);
+
             results.push({
               message: `${titleRearrange(book.title)} successfully added to database.`,
               actionAttemptItem: {
                 ...book,
+                imageUrls,
                 genres: data.blockInfo.genres,
                 blockID: data.blockID,
               },
@@ -319,7 +382,7 @@ export const databaseRouter = router({
           mediaType: data.type,
           title: titleRearrange(data.blockInfo.title),
           spineColor: data.blockInfo.spineColor,
-          imageUrls: data.images.map((img) => img.url),
+          imageUrls: [],
         };
         const [savedOtherMedia] = await db
           .insert(otherMedia)
@@ -336,10 +399,32 @@ export const databaseRouter = router({
             ],
           });
         } else {
+          const resolvedImages = await resolveAndPersistImageList(
+            { mediaType: data.type, mediaId: savedOtherMedia.id },
+            data.images.map((img) => img.url),
+          );
+          if (resolvedImages.failures.length > 0) {
+            await db.delete(otherMedia).where(eq(otherMedia.id, savedOtherMedia.id));
+            results.push(
+              createImagePersistenceErrorResponse(
+                data.blockInfo.title,
+                resolvedImages.failures,
+              ),
+            );
+            continue;
+          }
+          await replaceOtherMediaImageRecords(
+            db,
+            savedOtherMedia.id,
+            resolvedImages.images,
+          );
+          const imageUrls = resolvedImages.images.map((image) => image.publicPath);
+
           results.push({
             message: `${titleRearrange(insertData.title)} successfully added to database.`,
             actionAttemptItem: {
               ...savedOtherMedia,
+              imageUrls,
               blockID: data.blockID,
             },
             type: data.type,
@@ -370,19 +455,12 @@ export const databaseRouter = router({
         const whereExpression = data.id
           ? eq(books.id, data.id)
           : eq(books.title, data.title);
-        const [book] = await db
-          .update(books)
-          .set({
-            title: data.title,
-            author: data.author ?? '',
-            pageCount: data.pageCount ?? null,
-            pubYear: data.pubYear ?? null,
-            spineColor: data.spineColor,
-            imageUrls: data.imageUrls,
-          })
+        const [existingBook] = await db
+          .select()
+          .from(books)
           .where(whereExpression)
-          .returning();
-        if (!book) {
+          .limit(1);
+        if (!existingBook) {
           return {
             error: 'Media Not Found',
             message:
@@ -392,9 +470,36 @@ export const databaseRouter = router({
             errors: [`${data.title} does not exist in the database.`],
           };
         }
+        const resolvedImages = await resolveAndPersistImageList(
+          { mediaType: 'book', mediaId: existingBook.id },
+          data.imageUrls,
+        );
+        if (resolvedImages.failures.length > 0) {
+          return createImagePersistenceErrorResponse(
+            data.title,
+            resolvedImages.failures,
+          );
+        }
+        const imageUrls = resolvedImages.images.map((image) => image.publicPath);
+        const [book] = await db
+          .update(books)
+          .set({
+            title: data.title,
+            author: data.author ?? '',
+            pageCount: data.pageCount ?? null,
+            pubYear: data.pubYear ?? null,
+            spineColor: data.spineColor,
+          })
+          .where(whereExpression)
+          .returning();
+        await replaceBookImageRecords(db, book.id, resolvedImages.images);
+
         return {
           message: `${titleRearrange(book.title)} successfully edited.`,
-          actionAttemptItem: book,
+          actionAttemptItem: {
+            ...book,
+            imageUrls,
+          },
           type,
         };
       }
@@ -413,17 +518,12 @@ export const databaseRouter = router({
       const whereExpression = data.id
         ? and(eq(otherMedia.id, data.id), eq(otherMedia.mediaType, type))
         : and(eq(otherMedia.title, data.title), eq(otherMedia.mediaType, type));
-      const [savedOtherMedia] = await db
-        .update(otherMedia)
-        .set({
-          mediaType: type,
-          title: data.title,
-          spineColor: data.spineColor,
-          imageUrls: data.imageUrls,
-        })
+      const [existingOtherMedia] = await db
+        .select()
+        .from(otherMedia)
         .where(whereExpression)
-        .returning();
-      if (!savedOtherMedia) {
+        .limit(1);
+      if (!existingOtherMedia) {
         return {
           error: 'Media Not Found',
           message:
@@ -433,9 +533,35 @@ export const databaseRouter = router({
           errors: [`${data.title} does not exist in the database.`],
         };
       }
+      const resolvedImages = await resolveAndPersistImageList(
+        { mediaType: type, mediaId: existingOtherMedia.id },
+        data.imageUrls,
+      );
+      if (resolvedImages.failures.length > 0) {
+        return createImagePersistenceErrorResponse(data.title, resolvedImages.failures);
+      }
+      const imageUrls = resolvedImages.images.map((image) => image.publicPath);
+      const [savedOtherMedia] = await db
+        .update(otherMedia)
+        .set({
+          mediaType: type,
+          title: data.title,
+          spineColor: data.spineColor,
+        })
+        .where(whereExpression)
+        .returning();
+      await replaceOtherMediaImageRecords(
+        db,
+        savedOtherMedia.id,
+        resolvedImages.images,
+      );
+
       return {
         message: `${titleRearrange(savedOtherMedia.title)} successfully edited.`,
-        actionAttemptItem: savedOtherMedia,
+        actionAttemptItem: {
+          ...savedOtherMedia,
+          imageUrls,
+        },
         type,
       };
     }),

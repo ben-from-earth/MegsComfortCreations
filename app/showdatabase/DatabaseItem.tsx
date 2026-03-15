@@ -42,6 +42,9 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
   const [genres, setGenres] = useState<string[]>([]);
+  const [brokenImageUrls, setBrokenImageUrls] = useState<Record<string, boolean>>(
+    {},
+  );
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
@@ -126,15 +129,31 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
       )}
 
       {imageUrls?.map((src, idx) => (
-        <img
+        <div
           key={idx}
           className={
             itemType === 'album'
               ? 'mr-7 h-36 w-36 rounded-sm'
               : 'mr-7 ml-2 h-36 w-24 rounded-sm'
           }
-          src={src}
-        ></img>
+        >
+          {brokenImageUrls[src] ? (
+            <div className="flex h-full w-full items-center justify-center rounded-sm bg-red-600/65 p-2 text-center text-sm font-bold text-white">
+              Image path broken
+            </div>
+          ) : (
+            <img
+              className="h-full w-full rounded-sm"
+              src={src}
+              onError={() =>
+                setBrokenImageUrls((previous) => ({
+                  ...previous,
+                  [src]: true,
+                }))
+              }
+            ></img>
+          )}
+        </div>
       ))}
       {itemType === 'book' && bookDetails ? (
         <div className="flex flex-col">

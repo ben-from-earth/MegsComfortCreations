@@ -3,6 +3,10 @@ import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/mediaTypes';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { books, otherMedia } from '@/db/schema';
+import {
+  loadBookImageUrlsById,
+  loadOtherMediaImageUrlsById,
+} from 'lib/media-storage/media-image-records';
 
 export async function searchByTitle(db: Db, type: MediaType, title: string) {
   const rearrangedTitle = titleRearrange(title);
@@ -21,16 +25,38 @@ export async function searchByTitle(db: Db, type: MediaType, title: string) {
               ),
             );
         })();
-  const total = result.length;
+  const normalizedResult =
+    type === 'book'
+      ? await (async () => {
+          const imageUrlsByBookId = await loadBookImageUrlsById(
+            db,
+            result.map((row) => row.id),
+          );
+          return result.map((row) => ({
+            ...row,
+            imageUrls: imageUrlsByBookId.get(row.id) ?? [],
+          }));
+        })()
+      : await (async () => {
+          const imageUrlsByOtherMediaId = await loadOtherMediaImageUrlsById(
+            db,
+            result.map((row) => row.id),
+          );
+          return result.map((row) => ({
+            ...row,
+            imageUrls: imageUrlsByOtherMediaId.get(row.id) ?? [],
+          }));
+        })();
+  const total = normalizedResult.length;
 
   const message =
     total === 0
       ? `No ${type} in database with title ${rearrangedTitle}`
-      : `Successfully found ${total} ${type}(s) with title ${titleRearrange(result[0].title)}`;
+      : `Successfully found ${total} ${type}(s) with title ${titleRearrange(normalizedResult[0].title)}`;
 
   return {
     message,
-    foundMediaList: result,
+    foundMediaList: normalizedResult,
     total,
   };
 }

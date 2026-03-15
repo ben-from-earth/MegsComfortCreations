@@ -20,6 +20,7 @@ export default async function NavBar() {
           src={logoImagePath}
           alt="Megs Comfort Creations Logo"
           width={65}
+          height={65}
           className="rounded-sm"
         />
       </Link>

@@ -90,6 +90,40 @@ export const otherMedia = pgTable(
   ],
 );
 
+// ---------- media_image_items ----------
+export const mediaImageItems = pgTable(
+  'media_image_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bookId: uuid('book_id').references(() => books.id, { onDelete: 'cascade' }),
+    otherMediaId: uuid('other_media_id').references(() => otherMedia.id, {
+      onDelete: 'cascade',
+    }),
+    path: text('path').notNull(),
+    sourceUrl: text('source_url'),
+    mimeType: text('mime_type'),
+    sizeBytes: integer('size_bytes'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('media_image_items_book_id_idx').on(table.bookId),
+    index('media_image_items_other_media_id_idx').on(table.otherMediaId),
+    index('media_image_items_book_sort_order_idx').on(
+      table.bookId,
+      table.sortOrder,
+    ),
+    index('media_image_items_other_media_sort_order_idx').on(
+      table.otherMediaId,
+      table.sortOrder,
+    ),
+  ],
+);
+
 // ---------- genres ----------
 export const genres = pgTable('genres', {
   id: uuid('id').defaultRandom().primaryKey(),
