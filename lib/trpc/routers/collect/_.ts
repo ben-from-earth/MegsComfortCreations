@@ -1,5 +1,5 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import { genres, genresBooks } from '@/db/schema';
@@ -52,13 +52,7 @@ export const collectRouter = router({
         timeZone: 'America/New_York',
       });
 
-      const usageRows = await db
-        .select({ queryCount: googleApiQueryUsage.queryCount })
-        .from(googleApiQueryUsage)
-        .where(eq(googleApiQueryUsage.date, todayStr))
-        .limit(1);
-
-      let todayQueryCount = usageRows[0]?.queryCount ?? 0;
+      let googleApiQueryIncrement = 0;
 
       for (const [key, searchList] of Object.entries(input)) {
         const type = key as MediaType;
@@ -125,8 +119,8 @@ export const collectRouter = router({
           } else {
             //if the media wasnt in the database, collect cover images
             const images = await getMediaCovers(title, author, type);
-            //conservative query count update every time we make a request to google search API.
-            todayQueryCount += 1;
+            // Count each Google API lookup; persist atomically after collection.
+            googleApiQueryIncrement += 1;
             if (type === 'book') {
               const bookInfo = await getOpenLibraryData(title, author);
               blocks.push({
@@ -148,11 +142,20 @@ export const collectRouter = router({
           }
         }
       }
-      //update today's google api query count in the database
-      await db
-        .update(googleApiQueryUsage)
-        .set({ queryCount: todayQueryCount })
-        .where(eq(googleApiQueryUsage.date, todayStr));
+      if (googleApiQueryIncrement > 0) {
+        await db
+          .insert(googleApiQueryUsage)
+          .values({
+            date: todayStr,
+            queryCount: googleApiQueryIncrement,
+          })
+          .onConflictDoUpdate({
+            target: googleApiQueryUsage.date,
+            set: {
+              queryCount: sql`${googleApiQueryUsage.queryCount} + ${googleApiQueryIncrement}`,
+            },
+          });
+      }
       const databaseSorted = [...blocks].sort((a, b) =>
         a.isDatabase === b.isDatabase ? 0 : a.isDatabase ? 1 : -1,
       );

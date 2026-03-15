@@ -74,7 +74,7 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
 - **Fix suggestion**
     - Split edit handling by media type with per-type validation schema and table mapping.
 
-### 7) Partial writes possible during save
+### 7) Partial writes possible during save (COMPLETED)
 
 - **Path**
     - `lib/trpc/routers/database/_.ts`
@@ -119,7 +119,7 @@ Scope: Full repository review with bug risk/correctness priority, plus security 
     - Use one shared sort contract source for both client and server.
     - Reject unsupported sorts explicitly instead of silent fallback.
 
-### 11) Query usage counter can lose updates (larger look at query count functionality)
+### 11) Query usage counter can lose updates (larger look at query count functionality) (COMPLETED)
 
 - **Path**
     - `lib/trpc/routers/collect/_.ts`
