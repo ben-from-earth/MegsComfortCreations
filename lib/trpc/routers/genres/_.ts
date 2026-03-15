@@ -146,7 +146,8 @@ export const genresRouter = router({
       }
 
       const sortColumn = resolveSortColumn(sortKey);
-      const orderByExpr = direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
+      const orderByExpr =
+        direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
 
       const rows = await db
         .select({ book: books })
@@ -199,7 +200,8 @@ export const genresRouter = router({
       }
 
       const sortColumn = resolveSortColumn(sortKey);
-      const orderByExpr = direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
+      const orderByExpr =
+        direction === 'desc' ? desc(sortColumn) : asc(sortColumn);
 
       const rows = await db
         .select({ book: books })

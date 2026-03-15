@@ -134,10 +134,8 @@ function MediaCollectorContent() {
     const someHaveDatabaseErrors = result.some((res) => 'error' in res);
 
     if (someHaveDatabaseErrors) {
-      setInformationalDialogText(
-        `There were database errors when saving some of the media blocks. Check status of database`,
-      );
-      setShowInformationalDialog(true);
+      setDatabaseSavedData(result);
+      setDatabaseSaved(true);
       return;
     }
 
@@ -211,6 +209,7 @@ function MediaCollectorContent() {
           alt="Megs Media Collector Title"
           src={mediaCollectorTitleImage}
           width={576}
+          height={128}
         />
         <div className="mt-2 flex flex-col items-center gap-4">
           <TextInput

@@ -1,6 +1,7 @@
 // interfaces and types
 import Image from 'next/image';
 import { CollectorFormData } from './collector-form/collectorFormSchema';
+import { useState } from 'react';
 
 import { useFormContext } from 'react-hook-form';
 
@@ -10,6 +11,9 @@ export interface CBBImageProps {
 
 export default function CBBImages({ blockID }: CBBImageProps) {
   const { watch, setValue } = useFormContext<CollectorFormData>();
+  const [brokenImageUrls, setBrokenImageUrls] = useState<Record<string, boolean>>(
+    {},
+  );
   const collectedData = watch('collectedData');
   const block = collectedData[blockID];
   if (!block) {
@@ -53,7 +57,7 @@ export default function CBBImages({ blockID }: CBBImageProps) {
       {images.map((image, idx) => (
         <div
           className={`relative z-10 overflow-hidden rounded-sm ${
-            type === 'album' ? 'w-31' : 'h-31 w-21'
+            type === 'album' ? 'h-31 w-31' : 'h-31 w-21'
           }`}
           key={image.url}
           onClick={() => {
@@ -62,19 +66,31 @@ export default function CBBImages({ blockID }: CBBImageProps) {
             }
           }}
         >
-          <Image
-            className={
-              type === 'album'
-                ? 'cursor-pointer object-cover outline-2'
-                : 'cursor-pointer'
-            }
-            src={image.url}
-            alt={`${type} image`}
-            fill
-            sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 200px"
-            unoptimized
-            loader={({ src }) => src}
-          />
+          {brokenImageUrls[image.url] ? (
+            <div className="absolute inset-0 flex items-center justify-center rounded-sm bg-red-600/65 p-2 text-center text-sm font-bold text-white">
+              Image path broken
+            </div>
+          ) : (
+            <Image
+              className={
+                type === 'album'
+                  ? 'cursor-pointer object-cover outline-2'
+                  : 'cursor-pointer'
+              }
+              src={image.url}
+              alt={`${type} image`}
+              fill
+              sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 200px"
+              unoptimized
+              loader={({ src }) => src}
+              onError={() =>
+                setBrokenImageUrls((previous) => ({
+                  ...previous,
+                  [image.url]: true,
+                }))
+              }
+            />
+          )}
 
           <div
             className={`pointer-events-none absolute inset-0 flex content-center items-center ${

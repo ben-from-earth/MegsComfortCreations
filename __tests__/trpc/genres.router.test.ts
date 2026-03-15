@@ -116,9 +116,11 @@ describe('genres router', () => {
                 where: jest.fn(() => ({
                   orderBy: jest.fn(() => ({
                     limit: jest.fn(() => ({
-                      offset: jest.fn().mockResolvedValueOnce([
-                        { book: { id: 'book-1', title: 'Dune' } },
-                      ]),
+                      offset: jest
+                        .fn()
+                        .mockResolvedValueOnce([
+                          { book: { id: 'book-1', title: 'Dune' } },
+                        ]),
                     })),
                   })),
                 })),
@@ -163,9 +165,11 @@ describe('genres router', () => {
               where: jest.fn(() => ({
                 orderBy: jest.fn(() => ({
                   limit: jest.fn(() => ({
-                    offset: jest.fn().mockResolvedValueOnce([
-                      { book: { id: 'book-2', title: 'Standalone' } },
-                    ]),
+                    offset: jest
+                      .fn()
+                      .mockResolvedValueOnce([
+                        { book: { id: 'book-2', title: 'Standalone' } },
+                      ]),
                   })),
                 })),
               })),
