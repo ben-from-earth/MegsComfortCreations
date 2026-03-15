@@ -1,10 +1,10 @@
+CREATE TYPE "public"."other_media_type" AS ENUM('movie', 'videoGame', 'album');--> statement-breakpoint
 CREATE TABLE "other_media" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"media_type" text NOT NULL,
+	"media_type" "other_media_type" NOT NULL,
 	"title" text NOT NULL,
 	"spine_color" text NOT NULL,
-	"image_urls" text[] NOT NULL,
-	CONSTRAINT "other_media_media_type_check" CHECK ("other_media"."media_type" IN ('movie', 'videoGame', 'album'))
+	"image_urls" text[] NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX "other_media_media_type_title_unique" ON "other_media" USING btree ("media_type","title");

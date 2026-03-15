@@ -18,10 +18,10 @@ import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // interfaces and types
 import {
-  MediaType,
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
 import { SortOptions } from '@/showdatabase/PaginationInputs';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
@@ -34,7 +34,10 @@ export interface displayDatabaseItems {
   max: number;
 }
 
-export type genreInput = (typeof allGenres)[number] | '' | typeof NO_GENRE_FILTER;
+export type genreInput =
+  | (typeof allGenres)[number]
+  | ''
+  | typeof NO_GENRE_FILTER;
 
 export default function ShowDatabase() {
   const [databaseItems, setDatabaseItems] = useState<displayDatabaseItems>({

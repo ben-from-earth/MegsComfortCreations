@@ -187,33 +187,33 @@ export const databaseRouter = router({
       return res;
     }),
 
-  deleteByTitle: adminProcedure
-    .input(z.object({ type: mediaType, title: z.string().min(1) }))
+  delete: adminProcedure
+    .input(z.object({ type: mediaType, id: z.string().min(1) }))
     .mutation(async ({ input, ctx }) => {
-      const { type, title } = input;
+      const { type, id } = input;
       const db = ctx.db ?? defaultDb;
       const deleted =
         type === 'book'
           ? await db
               .delete(books)
-              .where(ilike(books.title, title))
+              .where(eq(books.id, id))
               .returning({ id: books.id })
           : await db
               .delete(otherMedia)
               .where(
                 and(
                   eq(otherMedia.mediaType, type),
-                  ilike(otherMedia.title, title),
+                  eq(otherMedia.id, id),
                 ),
               )
               .returning({ id: otherMedia.id });
 
       if (deleted.length === 0) {
         return {
-          message: `No item with title: ${title} in the ${type} database exists`,
+          message: `No ${type} item with id: ${id} exists`,
         };
       }
-      return { message: `Successfully deleted ${title}` };
+      return { message: `Successfully deleted ${type} item` };
     }),
 
   getQueryCount: adminProcedure

@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   uuid,
   text,
   integer,
@@ -9,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { OTHER_MEDIA_TYPES } from 'lib/constants/mediaTypes';
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -66,12 +68,14 @@ export const books = pgTable(
   ],
 );
 
+export const otherMediaTypeEnum = pgEnum('other_media_type', OTHER_MEDIA_TYPES);
+
 // ---------- other_media ----------
 export const otherMedia = pgTable(
   'other_media',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    mediaType: text('media_type').notNull(),
+    mediaType: otherMediaTypeEnum('media_type').notNull(),
     title: text('title').notNull(),
     spineColor: text('spine_color').notNull(),
     imageUrls: text('image_urls').array().notNull(),

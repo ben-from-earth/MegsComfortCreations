@@ -1,4 +1,4 @@
-import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 import axios from 'axios';
 
 const API_KEY = process.env.GOOGLE_SEARCH_API_KEY;

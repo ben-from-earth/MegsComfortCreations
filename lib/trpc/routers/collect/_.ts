@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import { genres, genresBooks } from '@/db/schema';
-import type { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 
 import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';

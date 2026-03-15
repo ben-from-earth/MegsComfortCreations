@@ -12,8 +12,10 @@ import { trpc } from 'lib/trpc/client';
 // components
 import Image from 'next/image';
 import QueryCounter from '@/shared/QueryCounter';
-// import MediaCheckboxes from '@/mediacollector/MediaCheckboxes';
-// import MediaInputs from '@/mediacollector/MediaInputs';
+import MediaCheckboxes, {
+  MediaVisibilityMap,
+} from '@/mediacollector/MediaCheckboxes';
+import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
 import InformationalDialog from '@/mediacollector/InformationalDialog';
@@ -26,7 +28,6 @@ import Button from '@/components/ui/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
-import titleCollectionListConversion from 'lib/helpers/titleCollectionListConversion';
 
 function MediaCollectorContent() {
   const { onSubmit } = useCollectorForm();
@@ -47,6 +48,12 @@ function MediaCollectorContent() {
   const [isSavingToDatabase, setIsSavingToDatabase] = useState<boolean>(false);
   const [databaseSavedData, setDatabaseSavedData] =
     useState<DatabaseSaveServerResponse>([]);
+  const [visibleMediaInputs, setVisibleMediaInputs] = useState<MediaVisibilityMap>({
+    book: true,
+    movie: false,
+    videoGame: false,
+    album: false,
+  });
 
   //refs for useEffect
   // const mediaTypesRef = useRef(stateData);
@@ -181,6 +188,16 @@ function MediaCollectorContent() {
     );
   };
 
+  const handleToggleMediaInput = (mediaType: keyof MediaVisibilityMap) => {
+    setVisibleMediaInputs((prev) => {
+      const next = { ...prev, [mediaType]: !prev[mediaType] };
+      if (!next[mediaType]) {
+        setValue(`collectionList.${mediaType}`, []);
+      }
+      return next;
+    });
+  };
+
   return (
     <>
       <div
@@ -221,7 +238,10 @@ function MediaCollectorContent() {
             value={formValues.bookClubRepeat.toString()}
           />
 
-          {/* <MediaCheckboxes mediaTypes={stateData} /> */}
+          <MediaCheckboxes
+            visibility={visibleMediaInputs}
+            onToggle={handleToggleMediaInput}
+          />
 
           <div className="flex flex-row items-center gap-4">
             <Button
@@ -242,50 +262,7 @@ function MediaCollectorContent() {
             />
           </div>
 
-          <TextInput
-            variant="multiline"
-            label={`Book Titles`}
-            rows={5}
-            onChange={(e) => {
-              const titleSearchList = titleCollectionListConversion(
-                e.target.value,
-              );
-              setValue(`collectionList.book`, titleSearchList);
-            }}
-          />
-          <TextInput
-            variant="multiline"
-            label={`Movie Titles`}
-            rows={5}
-            onChange={(e) => {
-              const titleSearchList = titleCollectionListConversion(
-                e.target.value,
-              );
-              setValue(`collectionList.movie`, titleSearchList);
-            }}
-          />
-          <TextInput
-            variant="multiline"
-            label={`Video Game Titles`}
-            rows={5}
-            onChange={(e) => {
-              const titleSearchList = titleCollectionListConversion(
-                e.target.value,
-              );
-              setValue(`collectionList.videoGame`, titleSearchList);
-            }}
-          />
-          <TextInput
-            variant="multiline"
-            label={`Album Titles`}
-            rows={5}
-            onChange={(e) => {
-              const titleSearchList = titleCollectionListConversion(
-                e.target.value,
-              );
-              setValue(`collectionList.album`, titleSearchList);
-            }}
-          />
+          <MediaInputs visibility={visibleMediaInputs} />
         </div>
         <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
       </div>

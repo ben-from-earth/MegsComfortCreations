@@ -4,7 +4,7 @@ import { createContext, Dispatch, SetStateAction, useContext } from 'react';
 // interfaces and types
 import { displayDatabaseItems, genreInput } from '@/showdatabase/page';
 import { SortOptions } from '@/showdatabase/PaginationInputs';
-import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 
 export interface DatabasePageContextValue {
   page: number;

@@ -47,11 +47,10 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   }, [genresQuery.data]);
 
   //handle deletion of the media from the database
-  const { mutateAsync: databaseDelete } =
-    trpc.database.deleteByTitle.useMutation();
+  const { mutateAsync: databaseDelete } = trpc.database.delete.useMutation();
   const onDelete = async () => {
     try {
-      await databaseDelete({ title, type });
+      await databaseDelete({ id, type });
       handleGetMedia();
     } catch {
       console.log('There was an error deleting, try again.');

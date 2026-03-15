@@ -18,7 +18,7 @@ import {
   useDatabasePageContext,
 } from 'lib/context/DatabasePageContext';
 
-import { MediaType } from 'lib/interfaces/globalInterfaces';
+import { MediaType } from 'lib/constants/mediaTypes';
 import { NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 
 export type SortOptions = 'title' | 'author' | 'pageCount' | 'pubYear';
