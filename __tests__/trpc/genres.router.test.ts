@@ -1,4 +1,9 @@
 import { genresRouter } from '../../lib/trpc/routers/genres/_';
+import { loadBookImageUrlsById } from 'lib/media-storage/media-image-records';
+
+jest.mock('lib/media-storage/media-image-records', () => ({
+  loadBookImageUrlsById: jest.fn(),
+}));
 
 function createAdminCaller(db: unknown) {
   return genresRouter.createCaller({
@@ -9,6 +14,11 @@ function createAdminCaller(db: unknown) {
 }
 
 describe('genres router', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (loadBookImageUrlsById as jest.Mock).mockResolvedValue(new Map());
+  });
+
   test('getAll returns full genre list', async () => {
     const mockDb = {
       select: jest.fn(() => ({
@@ -150,7 +160,7 @@ describe('genres router', () => {
 
     expect(response).toEqual({
       message: 'Successful database gather',
-      paginatedList: [{ id: 'book-1', title: 'Dune' }],
+      paginatedList: [{ id: 'book-1', title: 'Dune', imageUrls: [] }],
       total: 1,
     });
   });
@@ -195,7 +205,7 @@ describe('genres router', () => {
 
     expect(response).toEqual({
       message: 'Successful database gather',
-      paginatedList: [{ id: 'book-2', title: 'Standalone' }],
+      paginatedList: [{ id: 'book-2', title: 'Standalone', imageUrls: [] }],
       total: 1,
     });
   });

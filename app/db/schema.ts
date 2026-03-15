@@ -61,7 +61,6 @@ export const books = pgTable(
     pageCount: integer('page_count'),
     pubYear: integer('pub_year'),
     spineColor: text('spine_color').notNull(),
-    imageUrls: text('image_urls').array().notNull(),
   },
   (table) => [
     uniqueIndex('books_title_author_unique').on(table.title, table.author),
@@ -78,7 +77,6 @@ export const otherMedia = pgTable(
     mediaType: otherMediaTypeEnum('media_type').notNull(),
     title: text('title').notNull(),
     spineColor: text('spine_color').notNull(),
-    imageUrls: text('image_urls').array().notNull(),
   },
   (table) => [
     uniqueIndex('other_media_media_type_title_unique').on(
