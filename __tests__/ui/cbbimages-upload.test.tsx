@@ -53,7 +53,14 @@ function CBBImagesUploadHarness({
       collectedData: [
         {
           type: mediaType,
-          images: [{ url: 'https://img/first.png', selected: false }],
+          images: [
+            {
+              url: 'https://img/first.png',
+              selected: true,
+              isDefault: true,
+              spineColor: '#ffffff',
+            },
+          ],
           blockInfo: {
             title: 'Dune',
             author: 'Frank Herbert',
@@ -94,6 +101,9 @@ describe('CBBImages upload slot', () => {
   test('appends uploaded image, selects it, and hides placeholder', async () => {
     mockUploadCoverImage.mockResolvedValueOnce({
       url: 'https://cdn.example.com/custom-cover.png',
+      selected: true,
+      isDefault: false,
+      spineColor: '#ffffff',
     });
 
     render(<CBBImagesUploadHarness mediaType="book" />);

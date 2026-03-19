@@ -17,6 +17,8 @@ export const otherMediaBlockInfoSchema = baseBlockInfoSchema;
 const imageSelectionSchema = z.object({
   url: z.string(),
   selected: z.boolean(),
+  isDefault: z.boolean(),
+  spineColor: z.string(),
 });
 
 export const collectedBlockInformationSchema = z.object({
@@ -29,6 +31,15 @@ export const collectedBlockInformationSchema = z.object({
   }),
   blockID: z.string(),
   isDatabase: z.boolean(),
+}).superRefine((value, ctx) => {
+  const selectedCount = value.images.filter((image) => image.selected).length;
+  if (selectedCount > 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Only one image can be selected at a time.',
+      path: ['images'],
+    });
+  }
 });
 
 export const collectorFormSchema = z.object({

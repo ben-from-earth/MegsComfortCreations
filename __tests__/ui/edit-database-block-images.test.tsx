@@ -86,7 +86,14 @@ describe('EditDatabaseBlock image uploads', () => {
         <EditDatabaseBlock
           info={{
             type: 'book',
-            images: ['https://img/book-1.png'],
+            images: [
+              {
+                url: 'https://img/book-1.png',
+                isDefault: true,
+                selected: true,
+                spineColor: '#ffffff',
+              },
+            ],
             blockInfo: {
               title: 'Dune',
               author: 'Frank Herbert',
@@ -105,9 +112,12 @@ describe('EditDatabaseBlock image uploads', () => {
     expect(screen.getByLabelText('Add uploaded database image')).toBeTruthy();
   });
 
-  test('appends uploaded image and submits updated imageUrls', async () => {
+  test('appends uploaded image and submits updated images', async () => {
     mockUploadCoverImage.mockResolvedValueOnce({
       url: 'https://cdn.example.com/book-uploaded.png',
+      selected: true,
+      isDefault: false,
+      spineColor: '#ffffff',
     });
     mockDatabaseEdit.mockResolvedValueOnce({ message: 'Saved' });
 
@@ -116,7 +126,14 @@ describe('EditDatabaseBlock image uploads', () => {
         <EditDatabaseBlock
           info={{
             type: 'book',
-            images: ['https://img/book-1.png'],
+            images: [
+              {
+                url: 'https://img/book-1.png',
+                isDefault: true,
+                selected: true,
+                spineColor: '#ffffff',
+              },
+            ],
             blockInfo: {
               title: 'Dune',
               author: 'Frank Herbert',
@@ -162,9 +179,13 @@ describe('EditDatabaseBlock image uploads', () => {
         expect.objectContaining({
           type: 'book',
           item: expect.objectContaining({
-            imageUrls: [
-              'https://img/book-1.png',
-              'https://cdn.example.com/book-uploaded.png',
+            images: [
+              expect.objectContaining({
+                url: 'https://img/book-1.png',
+              }),
+              expect.objectContaining({
+                url: 'https://cdn.example.com/book-uploaded.png',
+              }),
             ],
           }),
         }),

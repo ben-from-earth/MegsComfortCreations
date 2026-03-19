@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { mediaImageItems } from '@/db/schema';
 import { MediaType } from 'lib/constants/mediaTypes';
 import { normalizeImagePath } from './image-path-utils';
+import { MediaImageItem } from 'lib/interfaces/globalInterfaces';
 import {
   PersistedImageFile,
   persistExternalImageToS3,
@@ -13,22 +14,78 @@ type ParentMediaReference =
   | { mediaType: Exclude<MediaType, 'book'>; mediaId: string };
 
 export type ImageResolutionResult = {
-  images: PersistedImageFile[];
+  images: PersistedMediaImageRecord[];
   failures: Array<{ sourceUrl: string; message: string }>;
 };
 
+export type SourceImageItem =
+  | string
+  | {
+      url: string;
+      isDefault?: boolean;
+      spineColor?: string;
+    };
+
+export type PersistedMediaImageRecord = PersistedImageFile & {
+  isDefault: boolean;
+  spineColor: string;
+};
+
+function normalizeSourceImage(
+  rawSourceImage: unknown,
+  fallbackSpineColor: string,
+): SourceImageItem | null {
+  if (typeof rawSourceImage === 'string') {
+    return rawSourceImage;
+  }
+  if (
+    typeof rawSourceImage === 'object' &&
+    rawSourceImage !== null &&
+    'url' in rawSourceImage &&
+    typeof rawSourceImage.url === 'string'
+  ) {
+    const imageRecord = rawSourceImage as {
+      url: string;
+      isDefault?: boolean;
+      spineColor?: string;
+    };
+    return {
+      url: imageRecord.url,
+      isDefault: imageRecord.isDefault ?? false,
+      spineColor: imageRecord.spineColor ?? fallbackSpineColor,
+    };
+  }
+  return null;
+}
+
 export async function resolveAndPersistImageList(
   mediaReference: ParentMediaReference,
-  sourceImageUrls: unknown[],
+  sourceImages: unknown[],
+  options?: { defaultSpineColor?: string; defaultImageIndex?: number },
 ): Promise<ImageResolutionResult> {
-  const images: PersistedImageFile[] = [];
+  const images: PersistedMediaImageRecord[] = [];
   const failures: Array<{ sourceUrl: string; message: string }> = [];
+  const fallbackSpineColor = options?.defaultSpineColor ?? '#ffffff';
+  const defaultImageIndex = options?.defaultImageIndex ?? 0;
 
-  for (let index = 0; index < sourceImageUrls.length; index += 1) {
-    const rawSourceUrl = sourceImageUrls[index];
-    const sourceUrl = normalizeImagePath(rawSourceUrl ?? '');
+  const normalizedSourceImages = sourceImages
+    .map((sourceImage) => normalizeSourceImage(sourceImage, fallbackSpineColor))
+    .filter((sourceImage): sourceImage is SourceImageItem => sourceImage !== null);
+  const explicitDefaultIndex = normalizedSourceImages.findIndex(
+    (sourceImage) =>
+      typeof sourceImage === 'object' &&
+      sourceImage !== null &&
+      sourceImage.isDefault === true,
+  );
+  const resolvedDefaultIndex = explicitDefaultIndex >= 0 ? explicitDefaultIndex : defaultImageIndex;
+
+  for (let index = 0; index < normalizedSourceImages.length; index += 1) {
+    const rawSourceImage = normalizedSourceImages[index];
+    const sourceUrl = normalizeImagePath(
+      typeof rawSourceImage === 'string' ? rawSourceImage : rawSourceImage.url,
+    );
     if (!sourceUrl) {
-      if (!(rawSourceUrl == null || rawSourceUrl === '')) {
+      if (!(rawSourceImage == null || rawSourceImage === '')) {
         failures.push({
           sourceUrl: '',
           message: 'Invalid image payload. Expected an image URL string.',
@@ -44,7 +101,15 @@ export async function resolveAndPersistImageList(
         mediaId: mediaReference.mediaId,
         sortOrder: index,
       });
-      images.push(persistedImage);
+      const spineColor =
+        typeof rawSourceImage === 'object' && rawSourceImage.spineColor
+          ? rawSourceImage.spineColor
+          : fallbackSpineColor;
+      images.push({
+        ...persistedImage,
+        isDefault: index === resolvedDefaultIndex,
+        spineColor,
+      });
     } catch (error) {
       const message =
         error instanceof Error
@@ -60,7 +125,7 @@ export async function resolveAndPersistImageList(
 export async function replaceBookImageRecords(
   db: Db,
   bookId: string,
-  imageFiles: PersistedImageFile[],
+  imageFiles: PersistedMediaImageRecord[],
 ) {
   await db.delete(mediaImageItems).where(eq(mediaImageItems.bookId, bookId));
 
@@ -76,6 +141,8 @@ export async function replaceBookImageRecords(
       mimeType: imageFile.mimeType,
       sizeBytes: imageFile.sizeBytes,
       sortOrder,
+      isDefault: imageFile.isDefault,
+      spineColor: imageFile.spineColor,
     })),
   );
 }
@@ -83,7 +150,7 @@ export async function replaceBookImageRecords(
 export async function replaceOtherMediaImageRecords(
   db: Db,
   otherMediaId: string,
-  imageFiles: PersistedImageFile[],
+  imageFiles: PersistedMediaImageRecord[],
 ) {
   await db
     .delete(mediaImageItems)
@@ -101,13 +168,15 @@ export async function replaceOtherMediaImageRecords(
       mimeType: imageFile.mimeType,
       sizeBytes: imageFile.sizeBytes,
       sortOrder,
+      isDefault: imageFile.isDefault,
+      spineColor: imageFile.spineColor,
     })),
   );
 }
 
-export async function loadBookImageUrlsById(db: Db, bookIds: string[]) {
+export async function loadBookImagesById(db: Db, bookIds: string[]) {
   if (bookIds.length === 0) {
-    return new Map<string, string[]>();
+    return new Map<string, MediaImageItem[]>();
   }
 
   const rows = await db
@@ -115,6 +184,8 @@ export async function loadBookImageUrlsById(db: Db, bookIds: string[]) {
       bookId: mediaImageItems.bookId,
       path: mediaImageItems.path,
       sortOrder: mediaImageItems.sortOrder,
+      isDefault: mediaImageItems.isDefault,
+      spineColor: mediaImageItems.spineColor,
     })
     .from(mediaImageItems)
     .where(
@@ -125,22 +196,27 @@ export async function loadBookImageUrlsById(db: Db, bookIds: string[]) {
     )
     .orderBy(asc(mediaImageItems.sortOrder));
 
-  const imageUrlsByBookId = new Map<string, string[]>();
+  const imagesByBookId = new Map<string, MediaImageItem[]>();
   for (const row of rows) {
     const bookId = row.bookId;
     if (!bookId) {
       continue;
     }
-    const currentList = imageUrlsByBookId.get(bookId) ?? [];
-    currentList.push(row.path);
-    imageUrlsByBookId.set(bookId, currentList);
+    const currentList = imagesByBookId.get(bookId) ?? [];
+    currentList.push({
+      url: row.path,
+      isDefault: row.isDefault,
+      spineColor: row.spineColor,
+      selected: false,
+    });
+    imagesByBookId.set(bookId, currentList);
   }
-  return imageUrlsByBookId;
+  return imagesByBookId;
 }
 
-export async function loadOtherMediaImageUrlsById(db: Db, otherMediaIds: string[]) {
+export async function loadOtherMediaImagesById(db: Db, otherMediaIds: string[]) {
   if (otherMediaIds.length === 0) {
-    return new Map<string, string[]>();
+    return new Map<string, MediaImageItem[]>();
   }
 
   const rows = await db
@@ -148,6 +224,8 @@ export async function loadOtherMediaImageUrlsById(db: Db, otherMediaIds: string[
       otherMediaId: mediaImageItems.otherMediaId,
       path: mediaImageItems.path,
       sortOrder: mediaImageItems.sortOrder,
+      isDefault: mediaImageItems.isDefault,
+      spineColor: mediaImageItems.spineColor,
     })
     .from(mediaImageItems)
     .where(
@@ -158,15 +236,40 @@ export async function loadOtherMediaImageUrlsById(db: Db, otherMediaIds: string[
     )
     .orderBy(asc(mediaImageItems.sortOrder));
 
-  const imageUrlsByOtherMediaId = new Map<string, string[]>();
+  const imagesByOtherMediaId = new Map<string, MediaImageItem[]>();
   for (const row of rows) {
     const otherMediaId = row.otherMediaId;
     if (!otherMediaId) {
       continue;
     }
-    const currentList = imageUrlsByOtherMediaId.get(otherMediaId) ?? [];
-    currentList.push(row.path);
-    imageUrlsByOtherMediaId.set(otherMediaId, currentList);
+    const currentList = imagesByOtherMediaId.get(otherMediaId) ?? [];
+    currentList.push({
+      url: row.path,
+      isDefault: row.isDefault,
+      spineColor: row.spineColor,
+      selected: false,
+    });
+    imagesByOtherMediaId.set(otherMediaId, currentList);
   }
-  return imageUrlsByOtherMediaId;
+  return imagesByOtherMediaId;
+}
+
+export async function loadBookImageUrlsById(db: Db, bookIds: string[]) {
+  const imagesByBookId = await loadBookImagesById(db, bookIds);
+  return new Map(
+    [...imagesByBookId.entries()].map(([bookId, images]) => [
+      bookId,
+      images.map((image) => image.url),
+    ]),
+  );
+}
+
+export async function loadOtherMediaImageUrlsById(db: Db, otherMediaIds: string[]) {
+  const imagesByOtherMediaId = await loadOtherMediaImagesById(db, otherMediaIds);
+  return new Map(
+    [...imagesByOtherMediaId.entries()].map(([otherMediaId, images]) => [
+      otherMediaId,
+      images.map((image) => image.url),
+    ]),
+  );
 }

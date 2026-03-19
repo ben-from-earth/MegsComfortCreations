@@ -102,6 +102,8 @@ export const mediaImageItems = pgTable(
     mimeType: text('mime_type'),
     sizeBytes: integer('size_bytes'),
     sortOrder: integer('sort_order').notNull().default(0),
+    isDefault: boolean('is_default').notNull().default(false),
+    spineColor: text('spine_color').notNull().default('#ffffff'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -118,6 +120,11 @@ export const mediaImageItems = pgTable(
     index('media_image_items_other_media_sort_order_idx').on(
       table.otherMediaId,
       table.sortOrder,
+    ),
+    index('media_image_items_book_is_default_idx').on(table.bookId, table.isDefault),
+    index('media_image_items_other_media_is_default_idx').on(
+      table.otherMediaId,
+      table.isDefault,
     ),
   ],
 );

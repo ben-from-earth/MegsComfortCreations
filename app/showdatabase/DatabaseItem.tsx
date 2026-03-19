@@ -9,6 +9,7 @@ import { trpc } from 'lib/trpc/client';
 import AreYouSure from '@/shared/AreYouSure';
 import Button from '@/components/ui/Button';
 import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
+import MediaImageStrip from '@/shared/MediaImageStrip';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
@@ -33,7 +34,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
     handleGetMedia,
   } = useDatabasePageContext();
 
-  const { id, title, spineColor, imageUrls } = info;
+  const { id, title, spineColor, images } = info;
   const itemType =
     MEDIA_TYPES.find((mediaType) => mediaType === info.mediaType) ??
     displayedListType;
@@ -42,9 +43,6 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
   const [genres, setGenres] = useState<string[]>([]);
-  const [brokenImageUrls, setBrokenImageUrls] = useState<
-    Record<string, boolean>
-  >({});
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
@@ -93,7 +91,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
             // isBookRow(type, info)
             {
               type: itemType,
-              images: imageUrls ?? [],
+              images: images ?? [],
               blockInfo: {
                 title,
                 author: bookDetails?.author,
@@ -128,33 +126,13 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
         <></>
       )}
 
-      {imageUrls?.map((src, idx) => (
-        <div
-          key={idx}
-          className={
-            itemType === 'album'
-              ? 'mr-7 h-36 w-36 rounded-sm'
-              : 'mr-7 ml-2 h-36 w-24 rounded-sm'
-          }
-        >
-          {brokenImageUrls[src] ? (
-            <div className="flex h-full w-full items-center justify-center rounded-sm bg-red-600/65 p-2 text-center text-sm font-bold text-white">
-              Image path broken
-            </div>
-          ) : (
-            <img
-              className="h-full w-full rounded-sm"
-              src={src}
-              onError={() =>
-                setBrokenImageUrls((previous) => ({
-                  ...previous,
-                  [src]: true,
-                }))
-              }
-            ></img>
-          )}
-        </div>
-      ))}
+      <MediaImageStrip
+        mediaType={itemType}
+        images={images ?? []}
+        className="mr-7 ml-2 flex flex-row items-center gap-3"
+        albumTileClassName="relative z-10 h-36 w-24 overflow-hidden rounded-sm"
+        defaultTileClassName="relative z-10 h-36 w-24 overflow-hidden rounded-sm"
+      />
       {itemType === 'book' && bookDetails ? (
         <div className="flex flex-col">
           <p className="text-3xl">{titleRearrange(title)}</p>

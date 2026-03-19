@@ -44,7 +44,12 @@ describe('collect router', () => {
       dataBase64: Buffer.from('file-bytes').toString('base64'),
     });
 
-    expect(response).toEqual({ url: 'https://cdn.example.com/uploaded.png' });
+    expect(response).toEqual({
+      url: 'https://cdn.example.com/uploaded.png',
+      isDefault: false,
+      spineColor: '#ffffff',
+      selected: true,
+    });
     expect(mockedPersistUploadedImageToS3).toHaveBeenCalledWith(
       expect.objectContaining({
         mediaType: 'book',
@@ -86,7 +91,14 @@ describe('collect router', () => {
           pageCount: 412,
           pubYear: 1965,
           spineColor: '#fff',
-          imageUrls: ['https://img/book-1.png'],
+          images: [
+            {
+              url: 'https://img/book-1.png',
+              isDefault: true,
+              spineColor: '#fff',
+              selected: false,
+            },
+          ],
         },
       ],
     });

@@ -49,7 +49,14 @@ function CBBImagesTestHarness() {
       collectedData: [
         {
           type: 'book',
-          images: [{ url: '/uploads/covers/2026/03/example.png', selected: true }],
+          images: [
+            {
+              url: '/uploads/covers/2026/03/example.png',
+              selected: true,
+              isDefault: true,
+              spineColor: '#ffffff',
+            },
+          ],
           blockInfo: {
             title: 'Dune',
             author: 'Frank Herbert',

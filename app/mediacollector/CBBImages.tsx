@@ -29,34 +29,24 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
   const { type, images, isDatabase } = block;
   //setup connection to redux slice
 
-  //add the image url to the database data (in the state) or removes it if its there already
-  const handleClick = (
-    image: { url: string; selected: boolean },
-    imageIdx: number,
-  ) => {
-    if (!image.selected) {
-      const newBlockImages = block.images.map((img, idx) => {
-        if (idx === imageIdx) {
-          return { ...img, selected: true };
-        }
-        return img;
-      });
-      setValue(`collectedData.${blockID}`, {
-        ...block,
-        images: newBlockImages,
-      });
-    } else {
-      const newBlockImages = block.images.map((img, idx) => {
-        if (idx === imageIdx) {
-          return { ...img, selected: false };
-        }
-        return img;
-      });
-      setValue(`collectedData.${blockID}`, {
-        ...block,
-        images: newBlockImages,
-      });
+  const handleImageSelection = (imageIdx: number) => {
+    const selectedImage = block.images[imageIdx];
+    if (!selectedImage) {
+      return;
     }
+    const nextImages = block.images.map((image, index) => ({
+      ...image,
+      selected: index === imageIdx,
+    }));
+    setColor(selectedImage.spineColor);
+    setValue(`collectedData.${blockID}`, {
+      ...block,
+      images: nextImages,
+      blockInfo: {
+        ...block.blockInfo,
+        spineColor: selectedImage.spineColor,
+      },
+    });
   };
 
   const handleColorPick = async (blockID: number) => {
@@ -69,7 +59,19 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
       const { sRGBHex } = await eyeDropper.open();
       const spineColor = sRGBHex;
       setColor(spineColor);
-      setValue(`collectedData.${blockID}.blockInfo.spineColor`, spineColor);
+      const selectedImageIndex = block.images.findIndex((image) => image.selected);
+      const imageIndexToUpdate = selectedImageIndex >= 0 ? selectedImageIndex : 0;
+      const nextImages = block.images.map((image, index) =>
+        index === imageIndexToUpdate ? { ...image, spineColor } : image,
+      );
+      setValue(`collectedData.${blockID}`, {
+        ...block,
+        images: nextImages,
+        blockInfo: {
+          ...block.blockInfo,
+          spineColor,
+        },
+      });
     } catch (e) {
       console.log(e);
     }
@@ -102,7 +104,7 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
     setIsUploading(true);
     try {
       const dataBase64 = await convertFileToBase64(file);
-      const { url } = await uploadCoverImage({
+      const uploadedImage = await uploadCoverImage({
         blockID: block.blockID,
         sortOrder: images.length,
         fileName: file.name,
@@ -112,7 +114,19 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
 
       setValue(`collectedData.${blockID}`, {
         ...block,
-        images: [...images, { url, selected: true }],
+        images: [
+          ...images.map((image) => ({ ...image, selected: false })),
+          {
+            url: uploadedImage.url,
+            selected: true,
+            isDefault: images.length === 0,
+            spineColor: color,
+          },
+        ],
+        blockInfo: {
+          ...block.blockInfo,
+          spineColor: color,
+        },
       });
       setHasUploadedCustomImage(true);
     } catch (error) {
@@ -147,9 +161,7 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
         images={images}
         showSelectionOverlay
         onImageClick={(imageIndex) => {
-          if (!isDatabase) {
-            handleClick(images[imageIndex], imageIndex);
-          }
+          handleImageSelection(imageIndex);
         }}
         showUploadButton={showUploadSlot}
         isUploading={isUploading}
