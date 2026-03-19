@@ -19,14 +19,21 @@ export type ImageResolutionResult = {
 
 export async function resolveAndPersistImageList(
   mediaReference: ParentMediaReference,
-  sourceImageUrls: string[],
+  sourceImageUrls: unknown[],
 ): Promise<ImageResolutionResult> {
   const images: PersistedImageFile[] = [];
   const failures: Array<{ sourceUrl: string; message: string }> = [];
 
   for (let index = 0; index < sourceImageUrls.length; index += 1) {
-    const sourceUrl = normalizeImagePath(sourceImageUrls[index] ?? '');
+    const rawSourceUrl = sourceImageUrls[index];
+    const sourceUrl = normalizeImagePath(rawSourceUrl ?? '');
     if (!sourceUrl) {
+      if (!(rawSourceUrl == null || rawSourceUrl === '')) {
+        failures.push({
+          sourceUrl: '',
+          message: 'Invalid image payload. Expected an image URL string.',
+        });
+      }
       continue;
     }
 

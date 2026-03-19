@@ -38,6 +38,18 @@ export function isLocalImagePath(imageUrl: string): boolean {
   );
 }
 
-export function normalizeImagePath(imageUrl: string): string {
-  return imageUrl.trim();
+export function normalizeImagePath(imageUrl: unknown): string {
+  if (typeof imageUrl === 'string') {
+    return imageUrl.trim();
+  }
+  if (imageUrl && typeof imageUrl === 'object') {
+    const record = imageUrl as { url?: unknown; src?: unknown };
+    if (typeof record.url === 'string') {
+      return record.url.trim();
+    }
+    if (typeof record.src === 'string') {
+      return record.src.trim();
+    }
+  }
+  return '';
 }

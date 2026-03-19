@@ -18,15 +18,19 @@ const TitleBlockContainer = memo(function TitleBlockContainer({
   const blocks = watch('collectedData') ?? [];
 
   return (
-    <div className="flex w-full flex-row flex-wrap gap-3 p-2">
+    <div className="grid w-full grid-cols-1 gap-3 p-2 sm:grid-flow-dense sm:grid-cols-[repeat(auto-fill,minmax(30rem,1fr))] sm:auto-rows-[15rem]">
       {blocks.map((block, idx) => (
-        <CollectedCoversBlock
-          index={idx}
-          info={block}
+        <div
           key={block.blockID}
-          handleDeleteBlock={handleDeleteBlock}
-          hasError={blockIdsWithErrors.includes(block.blockID)}
-        />
+          className={block.type === 'book' ? 'sm:row-span-2' : 'sm:row-span-1'}
+        >
+          <CollectedCoversBlock
+            index={idx}
+            info={block}
+            handleDeleteBlock={handleDeleteBlock}
+            hasError={blockIdsWithErrors.includes(block.blockID)}
+          />
+        </div>
       ))}
     </div>
   );

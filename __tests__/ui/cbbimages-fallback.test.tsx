@@ -5,6 +5,20 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import CBBImages from '@/mediacollector/CBBImages';
 import type { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
 
+const mockUploadCoverImage = jest.fn();
+
+jest.mock('lib/trpc/client', () => ({
+  trpc: {
+    collect: {
+      uploadCoverImage: {
+        useMutation: () => ({
+          mutateAsync: mockUploadCoverImage,
+        }),
+      },
+    },
+  },
+}));
+
 jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
@@ -54,7 +68,7 @@ function CBBImagesTestHarness() {
 
   return (
     <FormProvider {...formMethods}>
-      <CBBImages blockID={0} />
+      <CBBImages blockID={0} spineColor="#ffffff" />
     </FormProvider>
   );
 }

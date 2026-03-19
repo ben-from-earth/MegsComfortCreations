@@ -1,19 +1,30 @@
 // interfaces and types
 import Image from 'next/image';
 import { CollectorFormData } from './collector-form/collectorFormSchema';
-import { useState } from 'react';
+import { ChangeEvent, useRef, useState } from 'react';
+import AddToPhotosIcon from '@mui/icons-material/AddToPhotos';
 
 import { useFormContext } from 'react-hook-form';
+import { trpc } from 'lib/trpc/client';
 
 export interface CBBImageProps {
   blockID: number;
+  spineColor: string;
 }
 
-export default function CBBImages({ blockID }: CBBImageProps) {
+export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
+  //set local state for spine color
+  const [color, setColor] = useState(spineColor);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [hasUploadedCustomImage, setHasUploadedCustomImage] = useState(false);
+
   const { watch, setValue } = useFormContext<CollectorFormData>();
-  const [brokenImageUrls, setBrokenImageUrls] = useState<Record<string, boolean>>(
-    {},
-  );
+  const { mutateAsync: uploadCoverImage } =
+    trpc.collect.uploadCoverImage.useMutation();
+  const [brokenImageUrls, setBrokenImageUrls] = useState<
+    Record<string, boolean>
+  >({});
   const collectedData = watch('collectedData');
   const block = collectedData[blockID];
   if (!block) {
@@ -52,8 +63,81 @@ export default function CBBImages({ blockID }: CBBImageProps) {
     }
   };
 
+  const handleColorPick = async (blockID: number) => {
+    if (!window.EyeDropper) {
+      console.log('EyeDropper API not supported in this browser');
+      return;
+    }
+    const eyeDropper = new window.EyeDropper();
+    try {
+      const { sRGBHex } = await eyeDropper.open();
+      const spineColor = sRGBHex;
+      setColor(spineColor);
+      setValue(`collectedData.${blockID}.blockInfo.spineColor`, spineColor);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+          reject(new Error('Unable to read uploaded file.'));
+          return;
+        }
+        const [, dataBase64 = ''] = result.split(',');
+        resolve(dataBase64);
+      };
+      reader.onerror = () => {
+        reject(new Error('Unable to read uploaded file.'));
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const handleUploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const dataBase64 = await convertFileToBase64(file);
+      const { url } = await uploadCoverImage({
+        blockID: block.blockID,
+        sortOrder: images.length,
+        fileName: file.name,
+        mimeType: file.type,
+        dataBase64,
+      });
+
+      setValue(`collectedData.${blockID}`, {
+        ...block,
+        images: [...images, { url, selected: true }],
+      });
+      setHasUploadedCustomImage(true);
+    } catch (error) {
+      console.error('Failed to upload custom book image', error);
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const showUploadSlot = type === 'book' && !isDatabase && !hasUploadedCustomImage;
+
   return (
-    <div className="mx-10 mt-2.5 flex flex-row items-center gap-5">
+    <div className="mx-10 mt-2.5 flex flex-row items-center gap-3">
+      {type !== 'album' ? (
+        <div
+          className="h-full w-5 cursor-pointer rounded-sm"
+          style={{ backgroundColor: color }}
+          onClick={() => handleColorPick(blockID)}
+        ></div>
+      ) : null}
       {images.map((image, idx) => (
         <div
           className={`relative z-10 overflow-hidden rounded-sm ${
@@ -103,6 +187,31 @@ export default function CBBImages({ blockID }: CBBImageProps) {
           </div>
         </div>
       ))}
+      {showUploadSlot ? (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleUploadImage}
+            aria-label="Upload book image"
+          />
+          <button
+            type="button"
+            className="flex h-31 w-21 cursor-pointer items-center justify-center rounded-sm border-2 border-dashed border-black/60 bg-white/45 transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            aria-label="Add uploaded book image"
+          >
+            {isUploading ? (
+              <span className="text-center text-sm font-bold">Uploading...</span>
+            ) : (
+              <AddToPhotosIcon sx={{ fontSize: '2.25rem' }} />
+            )}
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

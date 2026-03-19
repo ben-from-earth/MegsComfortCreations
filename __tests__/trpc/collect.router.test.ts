@@ -2,6 +2,7 @@ import { collectRouter } from 'lib/trpc/routers/collect/_';
 import { getMediaCovers } from 'lib/trpc/routers/collect/actions/get-media-covers';
 import { getOpenLibraryData } from 'lib/trpc/routers/collect/actions/get-open-library-data';
 import { searchByTitle } from 'lib/trpc/routers/database/actions/search-by-title';
+import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 
 jest.mock('lib/trpc/routers/collect/actions/get-media-covers', () => ({
   getMediaCovers: jest.fn(),
@@ -15,7 +16,64 @@ jest.mock('lib/trpc/routers/database/actions/search-by-title', () => ({
   searchByTitle: jest.fn(),
 }));
 
+jest.mock('lib/media-storage/local-image-storage', () => ({
+  persistUploadedImageToS3: jest.fn(),
+}));
+
 describe('collect router', () => {
+  test('uploadCoverImage returns persisted URL', async () => {
+    const mockedPersistUploadedImageToS3 = persistUploadedImageToS3 as jest.Mock;
+    mockedPersistUploadedImageToS3.mockResolvedValueOnce({
+      publicPath: 'https://cdn.example.com/uploaded.png',
+      mimeType: 'image/png',
+      sizeBytes: 10,
+      sourceUrl: 'cover.png',
+    });
+
+    const caller = collectRouter.createCaller({
+      db: {},
+      authSession: { user: { id: '1', role: 'admin' } },
+      user: { id: '1', role: 'admin' },
+    } as never);
+
+    const response = await caller.uploadCoverImage({
+      blockID: 'BLK-1',
+      sortOrder: 3,
+      fileName: 'cover.png',
+      mimeType: 'image/png',
+      dataBase64: Buffer.from('file-bytes').toString('base64'),
+    });
+
+    expect(response).toEqual({ url: 'https://cdn.example.com/uploaded.png' });
+    expect(mockedPersistUploadedImageToS3).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaType: 'book',
+        mediaId: 'BLK-1',
+        sortOrder: 3,
+      }),
+    );
+  });
+
+  test('uploadCoverImage rejects empty payload', async () => {
+    const caller = collectRouter.createCaller({
+      db: {},
+      authSession: { user: { id: '1', role: 'admin' } },
+      user: { id: '1', role: 'admin' },
+    } as never);
+
+    await expect(
+      caller.uploadCoverImage({
+        blockID: 'BLK-1',
+        sortOrder: 0,
+        fileName: 'cover.png',
+        mimeType: 'image/png',
+        dataBase64: '',
+      }),
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    });
+  });
+
   test('collectMedia returns database book block with resolved genres', async () => {
     const mockedSearchByTitle = searchByTitle as jest.Mock;
     mockedSearchByTitle.mockResolvedValueOnce({

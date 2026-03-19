@@ -302,38 +302,37 @@ export const databaseRouter = router({
 
         const data = validatedData.data;
         if (data.type === 'book') {
+          let createdBookId: string | null = null;
           try {
-            const book = await db.transaction(async (tx) => {
-              const [createdBook] = await tx
-                .insert(books)
-                .values({
-                  title: titleRearrange(data.blockInfo.title),
-                  author: data.blockInfo.author ?? '',
-                  pageCount: data.blockInfo.pageCount ?? null,
-                  pubYear: data.blockInfo.pubYear ?? null,
-                  spineColor: data.blockInfo.spineColor,
-                })
-                .returning();
+            const [book] = await db
+              .insert(books)
+              .values({
+                title: titleRearrange(data.blockInfo.title),
+                author: data.blockInfo.author ?? '',
+                pageCount: data.blockInfo.pageCount ?? null,
+                pubYear: data.blockInfo.pubYear ?? null,
+                spineColor: data.blockInfo.spineColor,
+              })
+              .returning();
 
-              if (!createdBook) {
-                throw new Error('Book insertion failed');
-              }
+            if (!book) {
+              throw new Error('Book insertion failed');
+            }
+            createdBookId = book.id;
 
-              for (const genreName of data.blockInfo.genres) {
-                const [genreRow] = await tx
-                  .select()
-                  .from(genres)
-                  .where(eq(genres.genre, genreName));
-                if (!genreRow) {
-                  throw new Error(`Genre "${genreName}" does not exist`);
-                }
-                await tx.insert(genresBooks).values({
-                  bookId: createdBook.id,
-                  genreId: genreRow.id,
-                });
+            for (const genreName of data.blockInfo.genres) {
+              const [genreRow] = await db
+                .select()
+                .from(genres)
+                .where(eq(genres.genre, genreName));
+              if (!genreRow) {
+                throw new Error(`Genre "${genreName}" does not exist`);
               }
-              return createdBook;
-            });
+              await db.insert(genresBooks).values({
+                bookId: book.id,
+                genreId: genreRow.id,
+              });
+            }
 
             const resolvedImages = await resolveAndPersistImageList(
               { mediaType: 'book', mediaId: book.id },
@@ -363,6 +362,9 @@ export const databaseRouter = router({
               type: data.type,
             });
           } catch (error) {
+            if (createdBookId) {
+              await db.delete(books).where(eq(books.id, createdBookId));
+            }
             const message =
               error instanceof Error
                 ? error.message

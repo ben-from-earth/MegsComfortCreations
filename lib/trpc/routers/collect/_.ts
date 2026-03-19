@@ -1,4 +1,5 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
+import { TRPCError } from '@trpc/server';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
@@ -10,11 +11,42 @@ import { getMediaCovers } from './actions/get-media-covers';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
+import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 export type CollectedBlockInformation = z.infer<
   typeof collectedBlockInformationSchema
 >;
 
 export const collectRouter = router({
+  uploadCoverImage: adminProcedure
+    .input(
+      z.object({
+        blockID: z.string().min(1),
+        sortOrder: z.number().int().nonnegative(),
+        fileName: z.string().min(1),
+        mimeType: z.string().min(1),
+        dataBase64: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const fileBuffer = Buffer.from(input.dataBase64, 'base64');
+      if (!fileBuffer || fileBuffer.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Uploaded file payload is empty or invalid.',
+        });
+      }
+
+      const uploadedImage = await persistUploadedImageToS3({
+        imageBuffer: fileBuffer,
+        mediaType: 'book',
+        mediaId: input.blockID,
+        sortOrder: input.sortOrder,
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+      });
+
+      return { url: uploadedImage.publicPath };
+    }),
   collectMedia: adminProcedure
     .input(
       z.object({
