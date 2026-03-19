@@ -2,10 +2,6 @@
 import { memo, useContext } from 'react';
 
 //import icons and items from Material UI
-import BookIcon from '@mui/icons-material/BookTwoTone';
-import MovieIcon from '@mui/icons-material/LocalMoviesTwoTone';
-import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
-import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -20,6 +16,7 @@ import {
   CollectedBlockInformation,
   CollectorFormData,
 } from './collector-form/collectorFormSchema';
+import { blockClasses, icons } from 'lib/constants/typeBlockStyles';
 
 export interface CollectedCoversBlockProps {
   index: number;
@@ -39,13 +36,6 @@ declare global {
 }
 
 //styling of the block itself based on type
-export const blockClasses = {
-  book: 'bg-[#e1b3b5]',
-  movie: 'bg-[#323b43] text-white',
-  album: 'bg-[#7fa5a3]',
-  videoGame: 'bg-[#98ab88]',
-  hasError: 'bg-[#E86C54]',
-};
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
   hasError,
@@ -73,12 +63,6 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   //setup connection to redux slice
 
   //establish variables for icons
-  const icons = {
-    book: <BookIcon />,
-    movie: <MovieIcon />,
-    videoGame: <VideoGameIcon />,
-    album: <AlbumIcon />,
-  };
 
   //div to pick a color for the spine.
   //this is used in png creation and is required for each media type in the database

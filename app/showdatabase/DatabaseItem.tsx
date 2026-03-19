@@ -8,7 +8,6 @@ import { trpc } from 'lib/trpc/client';
 // components
 import AreYouSure from '@/shared/AreYouSure';
 import Button from '@/components/ui/Button';
-import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
 
 // helpers
@@ -21,6 +20,7 @@ import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { isBookRow } from 'lib/helpers/handleMediaTyping';
 import { MEDIA_TYPES } from 'lib/constants/mediaTypes';
+import { blockClasses } from 'lib/constants/typeBlockStyles';
 
 export interface DatabaseItemProps {
   info: PostSavedMediaItem;
@@ -42,9 +42,9 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
   const [genres, setGenres] = useState<string[]>([]);
-  const [brokenImageUrls, setBrokenImageUrls] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [brokenImageUrls, setBrokenImageUrls] = useState<
+    Record<string, boolean>
+  >({});
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   //on mount, get the genres related to the displayed book and make sure to update if the item is edited
@@ -77,7 +77,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
 
   return (
     <div
-      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm border-2 p-2 ${blockClasses[itemType]}`}
+      className={`mr-auto box-border flex w-full items-center justify-start rounded-sm p-2 ${blockClasses[itemType]}`}
     >
       {areYouSure && (
         <AreYouSure

@@ -1,11 +1,10 @@
 // interfaces and types
-import Image from 'next/image';
 import { CollectorFormData } from './collector-form/collectorFormSchema';
 import { ChangeEvent, useRef, useState } from 'react';
-import AddToPhotosIcon from '@mui/icons-material/AddToPhotos';
 
 import { useFormContext } from 'react-hook-form';
 import { trpc } from 'lib/trpc/client';
+import MediaImageStrip from '@/shared/MediaImageStrip';
 
 export interface CBBImageProps {
   blockID: number;
@@ -22,9 +21,6 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
   const { watch, setValue } = useFormContext<CollectorFormData>();
   const { mutateAsync: uploadCoverImage } =
     trpc.collect.uploadCoverImage.useMutation();
-  const [brokenImageUrls, setBrokenImageUrls] = useState<
-    Record<string, boolean>
-  >({});
   const collectedData = watch('collectedData');
   const block = collectedData[blockID];
   if (!block) {
@@ -138,80 +134,29 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
           onClick={() => handleColorPick(blockID)}
         ></div>
       ) : null}
-      {images.map((image, idx) => (
-        <div
-          className={`relative z-10 overflow-hidden rounded-sm ${
-            type === 'album' ? 'h-31 w-31' : 'h-31 w-21'
-          }`}
-          key={image.url}
-          onClick={() => {
-            if (!isDatabase) {
-              handleClick(image, idx);
-            }
-          }}
-        >
-          {brokenImageUrls[image.url] ? (
-            <div className="absolute inset-0 flex items-center justify-center rounded-sm bg-red-600/65 p-2 text-center text-sm font-bold text-white">
-              Image path broken
-            </div>
-          ) : (
-            <Image
-              className={
-                type === 'album'
-                  ? 'cursor-pointer object-cover outline-2'
-                  : 'cursor-pointer'
-              }
-              src={image.url}
-              alt={`${type} image`}
-              fill
-              sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 200px"
-              unoptimized
-              loader={({ src }) => src}
-              onError={() =>
-                setBrokenImageUrls((previous) => ({
-                  ...previous,
-                  [image.url]: true,
-                }))
-              }
-            />
-          )}
-
-          <div
-            className={`pointer-events-none absolute inset-0 flex content-center items-center ${
-              image.selected ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <p className='-translate-x-1 -rotate-65 font-["Just_Another_Hand"] text-5xl font-bold tracking-wider text-[rgb(0,77,0)]'>
-              Selected
-            </p>
-          </div>
-        </div>
-      ))}
-      {showUploadSlot ? (
-        <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleUploadImage}
-            aria-label="Upload book image"
-          />
-          <button
-            type="button"
-            className="flex h-31 w-21 cursor-pointer items-center justify-center rounded-sm border-2 border-dashed border-black/60 bg-white/45 transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            aria-label="Add uploaded book image"
-          >
-            {isUploading ? (
-              <span className="text-center text-sm font-bold">Uploading...</span>
-            ) : (
-              <AddToPhotosIcon sx={{ fontSize: '2.25rem' }} />
-            )}
-          </button>
-        </>
-      ) : null}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleUploadImage}
+        aria-label="Upload book image"
+      />
+      <MediaImageStrip
+        mediaType={type}
+        images={images}
+        showSelectionOverlay
+        onImageClick={(imageIndex) => {
+          if (!isDatabase) {
+            handleClick(images[imageIndex], imageIndex);
+          }
+        }}
+        showUploadButton={showUploadSlot}
+        isUploading={isUploading}
+        onUploadButtonClick={() => fileInputRef.current?.click()}
+        uploadButtonLabel="Add uploaded book image"
+        uploadSlotLabel="Uploading..."
+      />
     </div>
   );
 }
