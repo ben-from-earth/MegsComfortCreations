@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 const runtimeDatabaseUrl = process.env.DATABASE_URL;
 
@@ -9,6 +9,6 @@ if (!runtimeDatabaseUrl) {
   );
 }
 
-const sql = neon(runtimeDatabaseUrl);
-export const db = drizzle({ client: sql });
+const pool = new Pool({ connectionString: runtimeDatabaseUrl });
+export const db = drizzle({ client: pool });
 export type Db = typeof db;
