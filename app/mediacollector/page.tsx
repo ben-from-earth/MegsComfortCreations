@@ -25,6 +25,7 @@ import Button from '@/components/ui/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
+import { buildPNGExportImages } from './png-export-images';
 
 const backgroundImage = '/FlowerBackground.png';
 const mediaCollectorTitleImage = '/MegsMediaCollector.png';
@@ -140,23 +141,7 @@ function MediaCollectorContent() {
     }
 
     setLoadingMessage(`Putting together PNG export`);
-    const images = formValues.collectedData.map((block) => {
-      let keptImages: { url: string; selected: boolean }[] = [];
-      if (block.isDatabase) {
-        keptImages = block.images;
-      } else {
-        keptImages = block.images.filter((img) => img.selected);
-      }
-
-      const url = keptImages.map((img) => img.url)[0];
-      const type = block.type;
-      const spineColor = block.blockInfo.spineColor;
-      return {
-        url,
-        type,
-        spineColor,
-      };
-    });
+    const images = buildPNGExportImages(formValues.collectedData);
 
     const { mime, filename, dataBase64 } = await createPNG({
       template: Number(formValues.pngFormat) as 3 | 5,
