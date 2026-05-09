@@ -53,7 +53,9 @@ export default function MediaImageStrip({
   uploadButtonLabel = 'Add uploaded image',
   uploadSlotLabel = 'Uploading...',
 }: MediaImageStripProps) {
-  const [brokenImageUrls, setBrokenImageUrls] = useState<Record<string, boolean>>({});
+  const [brokenImageUrls, setBrokenImageUrls] = useState<
+    Record<string, boolean>
+  >({});
   const [overflowAnchorElement, setOverflowAnchorElement] =
     useState<HTMLButtonElement | null>(null);
 
@@ -66,7 +68,8 @@ export default function MediaImageStrip({
     0,
   );
   const selectedImageIndex = images.findIndex((image) => image.selected);
-  const primaryImageIndex = selectedImageIndex >= 0 ? selectedImageIndex : defaultImageIndex;
+  const primaryImageIndex =
+    selectedImageIndex >= 0 ? selectedImageIndex : defaultImageIndex;
   const primaryImage = images[primaryImageIndex];
   const secondaryImages = images
     .map((image, index) => ({ image, originalIndex: index }))
@@ -118,12 +121,6 @@ export default function MediaImageStrip({
         />
       )}
 
-      {image.isDefault ? (
-        <div className="pointer-events-none absolute -top-2 -left-2 z-20 overflow-visible rounded-full bg-yellow-400 p-1 text-black shadow-md">
-          <StarsIcon sx={{ fontSize: '1.15rem' }} />
-        </div>
-      ) : null}
-
       {showSelectionOverlay ? (
         <div
           className={`pointer-events-none absolute inset-0 flex content-center items-center ${
@@ -148,7 +145,7 @@ export default function MediaImageStrip({
           )
         : null}
       {secondaryImages.length > 0 ? (
-        <div className="grid h-31 w-21 grid-cols-2 grid-rows-2 gap-1 overflow-visible rounded-sm border border-black/25 bg-black/5 p-1">
+        <div className="grid h-31 w-21 grid-cols-2 grid-rows-2 gap-1 overflow-visible">
           {secondaryVisibleImages.map(({ image, originalIndex }) => (
             <button
               type="button"
@@ -240,7 +237,9 @@ export default function MediaImageStrip({
           aria-label={uploadButtonLabel}
         >
           {isUploading ? (
-            <span className="text-center text-sm font-bold">{uploadSlotLabel}</span>
+            <span className="text-center text-sm font-bold">
+              {uploadSlotLabel}
+            </span>
           ) : (
             <AddToPhotosIcon sx={{ fontSize: '2.25rem' }} />
           )}
