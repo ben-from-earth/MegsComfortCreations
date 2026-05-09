@@ -36,6 +36,15 @@ export type PersistExternalImageInput = {
   sortOrder: number;
 };
 
+export type PersistUploadedImageInput = {
+  imageBuffer: Buffer;
+  mediaType: MediaType;
+  mediaId: string;
+  sortOrder: number;
+  mimeType?: string;
+  fileName?: string;
+};
+
 type S3StorageConfig = {
   client: S3Client;
   bucket: string;
@@ -100,6 +109,19 @@ function normalizePathSegment(segment: string | undefined): string {
     return '';
   }
   return segment.trim().replace(/^\/+|\/+$/g, '');
+}
+
+function sanitizeFileNameSegment(fileName: string | undefined): string {
+  if (!fileName) {
+    return 'upload';
+  }
+  const withoutExtension = fileName.replace(/\.[^./\\]+$/, '');
+  const sanitized = withoutExtension
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return sanitized || 'upload';
 }
 
 function getRequiredEnvValue(name: string): string {
@@ -274,6 +296,77 @@ export async function persistExternalImageToS3(
     mimeType,
     sizeBytes: imageBuffer.length,
     sourceUrl,
+  };
+}
+
+export async function persistUploadedImageToS3(
+  input: PersistUploadedImageInput,
+): Promise<PersistedImageFile> {
+  const imageBuffer = input.imageBuffer;
+  if (!imageBuffer || imageBuffer.length === 0) {
+    throw new Error('Uploaded image is empty.');
+  }
+  const maxImageBytes = getMaxImageBytes();
+  if (imageBuffer.length > maxImageBytes) {
+    throw new Error(
+      `Uploaded image exceeded MAX_IMAGE_BYTES (${imageBuffer.length} bytes).`,
+    );
+  }
+
+  const detectedFileType = await detectFileTypeFromBuffer(imageBuffer);
+  const inputMimeType = resolveMimeType(input.mimeType);
+  const mimeType = detectedFileType?.mime ?? inputMimeType ?? null;
+  const allowedMimeTypes = getAllowedMimeTypes();
+  if (!mimeType || !allowedMimeTypes.includes(mimeType)) {
+    throw new Error(
+      `Image MIME type is not allowed for upload. Received "${mimeType ?? 'unknown'}".`,
+    );
+  }
+
+  const extension = detectedFileType?.ext ?? resolveExtension(mimeType);
+  if (!extension) {
+    throw new Error('Unable to resolve file extension for uploaded image.');
+  }
+
+  const now = new Date();
+  const year = String(now.getUTCFullYear());
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const uploadNamespace = getUploadNamespace();
+  const fileHash = createHash('sha256')
+    .update(imageBuffer)
+    .digest('hex')
+    .slice(0, 16);
+  const orderToken = String(input.sortOrder).padStart(2, '0');
+  const fileLabel = sanitizeFileNameSegment(input.fileName);
+  const fileName = `${input.mediaType}-${input.mediaId}-${orderToken}-${fileLabel}-${fileHash}.${extension}`;
+
+  const s3Config = getS3StorageConfig();
+  const objectKey = [
+    s3Config.keyPrefix,
+    uploadNamespace,
+    'covers',
+    year,
+    month,
+    fileName,
+  ]
+    .filter(Boolean)
+    .join('/');
+
+  await s3Config.client.send(
+    new PutObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: objectKey,
+      Body: imageBuffer,
+      ContentType: mimeType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    }),
+  );
+
+  return {
+    publicPath: `${s3Config.publicBaseUrl}/${objectKey}`,
+    mimeType,
+    sizeBytes: imageBuffer.length,
+    sourceUrl: input.fileName?.trim() || 'uploaded-image',
   };
 }
 

@@ -4,8 +4,8 @@ import { MediaType } from 'lib/constants/mediaTypes';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 import { books, otherMedia } from '@/db/schema';
 import {
-  loadBookImageUrlsById,
-  loadOtherMediaImageUrlsById,
+  loadBookImagesById,
+  loadOtherMediaImagesById,
 } from 'lib/media-storage/media-image-records';
 
 export async function searchByTitle(db: Db, type: MediaType, title: string) {
@@ -28,23 +28,23 @@ export async function searchByTitle(db: Db, type: MediaType, title: string) {
   const normalizedResult =
     type === 'book'
       ? await (async () => {
-          const imageUrlsByBookId = await loadBookImageUrlsById(
+          const imagesByBookId = await loadBookImagesById(
             db,
             result.map((row) => row.id),
           );
           return result.map((row) => ({
             ...row,
-            imageUrls: imageUrlsByBookId.get(row.id) ?? [],
+            images: imagesByBookId.get(row.id) ?? [],
           }));
         })()
       : await (async () => {
-          const imageUrlsByOtherMediaId = await loadOtherMediaImageUrlsById(
+          const imagesByOtherMediaId = await loadOtherMediaImagesById(
             db,
             result.map((row) => row.id),
           );
           return result.map((row) => ({
             ...row,
-            imageUrls: imageUrlsByOtherMediaId.get(row.id) ?? [],
+            images: imagesByOtherMediaId.get(row.id) ?? [],
           }));
         })();
   const total = normalizedResult.length;

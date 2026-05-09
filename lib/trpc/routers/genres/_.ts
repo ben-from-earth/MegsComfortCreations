@@ -11,7 +11,7 @@ import { db as defaultDb } from '@/db/client';
 // interfaces and types
 import { books, genres, genresBooks } from '@/db/schema';
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
-import { loadBookImageUrlsById } from 'lib/media-storage/media-image-records';
+import { loadBookImagesById } from 'lib/media-storage/media-image-records';
 
 const validSortKeys = ['title', 'pubYear', 'spineColor'] as const;
 type SortKey = (typeof validSortKeys)[number];
@@ -166,13 +166,13 @@ export const genresRouter = router({
         .innerJoin(genres, eq(genres.id, genresBooks.genreId))
         .where(eq(genres.genre, input.genre));
 
-      const imageUrlsByBookId = await loadBookImageUrlsById(
+      const imagesByBookId = await loadBookImagesById(
         db,
         rows.map((row) => row.book.id),
       );
       const paginatedList = rows.map((row) => ({
         ...row.book,
-        imageUrls: imageUrlsByBookId.get(row.book.id) ?? [],
+        images: imagesByBookId.get(row.book.id) ?? [],
       }));
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
@@ -222,13 +222,13 @@ export const genresRouter = router({
         .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
         .where(isNull(genresBooks.bookId));
 
-      const imageUrlsByBookId = await loadBookImageUrlsById(
+      const imagesByBookId = await loadBookImagesById(
         db,
         rows.map((row) => row.book.id),
       );
       const paginatedList = rows.map((row) => ({
         ...row.book,
-        imageUrls: imageUrlsByBookId.get(row.book.id) ?? [],
+        images: imagesByBookId.get(row.book.id) ?? [],
       }));
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',

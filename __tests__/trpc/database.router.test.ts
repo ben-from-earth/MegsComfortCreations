@@ -1,7 +1,7 @@
 import { databaseRouter } from 'lib/trpc/routers/database/_';
 import { searchByTitle } from 'lib/trpc/routers/database/actions/search-by-title';
 import {
-  loadBookImageUrlsById,
+  loadBookImagesById,
   replaceBookImageRecords,
   replaceOtherMediaImageRecords,
   resolveAndPersistImageList,
@@ -11,6 +11,8 @@ jest.mock('lib/trpc/routers/database/actions/search-by-title', () => ({
   searchByTitle: jest.fn(),
 }));
 jest.mock('lib/media-storage/media-image-records', () => ({
+  loadBookImagesById: jest.fn().mockResolvedValue(new Map()),
+  loadOtherMediaImagesById: jest.fn().mockResolvedValue(new Map()),
   loadBookImageUrlsById: jest.fn().mockResolvedValue(new Map()),
   loadOtherMediaImageUrlsById: jest.fn().mockResolvedValue(new Map()),
   replaceBookImageRecords: jest.fn().mockResolvedValue(undefined),
@@ -30,15 +32,21 @@ describe('database router', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (resolveAndPersistImageList as jest.Mock).mockImplementation(
-      async (_mediaReference: unknown, sourceImageUrls: string[]) => ({
-        images: sourceImageUrls.map((sourceUrl) => ({
-          publicPath: sourceUrl.startsWith('http')
-            ? `/uploads/covers/2026/03/${sourceUrl.split('/').pop()}`
-            : sourceUrl,
-          mimeType: 'image/png',
-          sizeBytes: 1024,
-          sourceUrl,
-        })),
+      async (_mediaReference: unknown, sourceImages: Array<string | { url: string }>) => ({
+        images: sourceImages.map((sourceImage, index) => {
+          const sourceUrl =
+            typeof sourceImage === 'string' ? sourceImage : sourceImage.url;
+          return {
+            publicPath: sourceUrl.startsWith('http')
+              ? `/uploads/covers/2026/03/${sourceUrl.split('/').pop()}`
+              : sourceUrl,
+            mimeType: 'image/png',
+            sizeBytes: 1024,
+            sourceUrl,
+            isDefault: index === 0,
+            spineColor: '#ffffff',
+          };
+        }),
         failures: [],
       }),
     );
@@ -72,7 +80,7 @@ describe('database router', () => {
         pageCount: 412,
         pubYear: 1965,
         spineColor: '#fff',
-        imageUrls: ['https://img'],
+        images: [],
         mediaType: 'book',
       },
     ];
@@ -122,7 +130,7 @@ describe('database router', () => {
       paginatedList: [
         {
           ...rows[0],
-          imageUrls: [],
+          images: [],
         },
       ],
       total: 1,
@@ -210,7 +218,7 @@ describe('database router', () => {
         id: 'missing-id',
         title: 'Nope',
         spineColor: '#000',
-        imageUrls: ['https://img'],
+        images: [{ url: 'https://img', isDefault: true, spineColor: '#000' }],
       },
     });
 
@@ -221,7 +229,7 @@ describe('database router', () => {
         id: 'missing-id',
         title: 'Nope',
         spineColor: '#000',
-        imageUrls: ['https://img'],
+        images: [{ url: 'https://img', isDefault: true, spineColor: '#000' }],
       },
       type: 'movie',
       errors: ['Nope does not exist in the database.'],
@@ -238,7 +246,7 @@ describe('database router', () => {
               mediaType: 'movie',
               title: 'Matrix',
               spineColor: '#ffffff',
-              imageUrls: [],
+              images: [],
             },
           ]),
         })),
@@ -252,7 +260,13 @@ describe('database router', () => {
                 mediaType: 'movie',
                 title: 'Matrix',
                 spineColor: '#ffffff',
-                imageUrls: ['/uploads/covers/2026/03/selected.png'],
+                images: [
+                  {
+                    url: '/uploads/covers/2026/03/selected.png',
+                    isDefault: true,
+                    spineColor: '#ffffff',
+                  },
+                ],
               },
             ]),
           })),
@@ -268,8 +282,18 @@ describe('database router', () => {
         blockID: 'BLK-1',
         isDatabase: false,
         images: [
-          { url: 'https://img/selected.png', selected: true },
-          { url: 'https://img/unselected.png', selected: false },
+          {
+            url: 'https://img/selected.png',
+            selected: true,
+            isDefault: true,
+            spineColor: '#ffffff',
+          },
+          {
+            url: 'https://img/unselected.png',
+            selected: false,
+            isDefault: false,
+            spineColor: '#ffffff',
+          },
         ],
         blockInfo: {
           title: 'Matrix',
@@ -287,7 +311,14 @@ describe('database router', () => {
           mediaType: 'movie',
           title: 'Matrix',
           spineColor: '#ffffff',
-          imageUrls: ['/uploads/covers/2026/03/selected.png'],
+          images: [
+            {
+              url: '/uploads/covers/2026/03/selected.png',
+              isDefault: true,
+              spineColor: '#ffffff',
+              selected: false,
+            },
+          ],
           blockID: 'BLK-1',
         },
         type: 'movie',
@@ -310,7 +341,13 @@ describe('database router', () => {
                 pageCount: 412,
                 pubYear: 1965,
                 spineColor: '#fff',
-                imageUrls: ['/uploads/covers/2026/03/old-cover.png'],
+                images: [
+                  {
+                    url: '/uploads/covers/2026/03/old-cover.png',
+                    isDefault: true,
+                    spineColor: '#fff',
+                  },
+                ],
               },
             ]),
           })),
@@ -328,7 +365,13 @@ describe('database router', () => {
                   pageCount: 412,
                   pubYear: 1965,
                   spineColor: '#fff',
-                  imageUrls: ['/uploads/covers/2026/03/cover.png'],
+                  images: [
+                    {
+                      url: '/uploads/covers/2026/03/cover.png',
+                      isDefault: true,
+                      spineColor: '#fff',
+                    },
+                  ],
                 },
               ]),
             })),
@@ -346,7 +389,13 @@ describe('database router', () => {
         pageCount: 412,
         pubYear: 1965,
         spineColor: '#fff',
-        imageUrls: ['https://images.example.com/cover.png'],
+        images: [
+          {
+            url: 'https://images.example.com/cover.png',
+            isDefault: true,
+            spineColor: '#fff',
+          },
+        ],
       },
     });
 
@@ -355,7 +404,13 @@ describe('database router', () => {
       message: 'Dune successfully edited.',
       actionAttemptItem: {
         id: 'book-1',
-        imageUrls: ['/uploads/covers/2026/03/cover.png'],
+        images: [
+          {
+            url: '/uploads/covers/2026/03/cover.png',
+            isDefault: true,
+            spineColor: '#ffffff',
+          },
+        ],
       },
     });
     expect(resolveAndPersistImageList).toHaveBeenCalled();
@@ -382,7 +437,7 @@ describe('database router', () => {
               mediaType: 'movie',
               title: 'Matrix',
               spineColor: '#ffffff',
-              imageUrls: [],
+              images: [],
             },
           ]),
         })),
@@ -400,7 +455,14 @@ describe('database router', () => {
         type: 'movie',
         blockID: 'BLK-1',
         isDatabase: false,
-        images: [{ url: 'https://img/selected.png', selected: true }],
+        images: [
+          {
+            url: 'https://img/selected.png',
+            selected: true,
+            isDefault: true,
+            spineColor: '#ffffff',
+          },
+        ],
         blockInfo: {
           title: 'Matrix',
           spineColor: '#ffffff',
@@ -446,7 +508,13 @@ describe('database router', () => {
                 pageCount: 412,
                 pubYear: 1965,
                 spineColor: '#fff',
-                imageUrls: ['/uploads/covers/2026/03/old-cover.png'],
+                images: [
+                  {
+                    url: '/uploads/covers/2026/03/old-cover.png',
+                    isDefault: true,
+                    spineColor: '#fff',
+                  },
+                ],
               },
             ]),
           })),
@@ -465,7 +533,13 @@ describe('database router', () => {
         pageCount: 412,
         pubYear: 1965,
         spineColor: '#fff',
-        imageUrls: ['https://images.example.com/cover.png'],
+        images: [
+          {
+            url: 'https://images.example.com/cover.png',
+            isDefault: true,
+            spineColor: '#fff',
+          },
+        ],
       },
     });
 
@@ -482,8 +556,20 @@ describe('database router', () => {
   });
 
   test('getPaginated uses normalized image records when available', async () => {
-    (loadBookImageUrlsById as jest.Mock).mockResolvedValueOnce(
-      new Map([['book-1', ['/uploads/covers/2026/03/book-1.png']]]),
+    (loadBookImagesById as jest.Mock).mockResolvedValueOnce(
+      new Map([
+        [
+          'book-1',
+          [
+            {
+              url: '/uploads/covers/2026/03/book-1.png',
+              isDefault: true,
+              spineColor: '#fff',
+              selected: false,
+            },
+          ],
+        ],
+      ]),
     );
 
     const rows = [
@@ -494,7 +580,7 @@ describe('database router', () => {
         pageCount: 412,
         pubYear: 1965,
         spineColor: '#fff',
-        imageUrls: ['https://legacy-url.example.com/image.png'],
+        images: [],
         mediaType: 'book',
       },
     ];
@@ -542,8 +628,13 @@ describe('database router', () => {
       genre: '',
     });
 
-    expect(response.paginatedList[0]?.imageUrls).toEqual([
-      '/uploads/covers/2026/03/book-1.png',
+    expect(response.paginatedList[0]?.images).toEqual([
+      {
+        url: '/uploads/covers/2026/03/book-1.png',
+        isDefault: true,
+        spineColor: '#fff',
+        selected: false,
+      },
     ]);
   });
 });

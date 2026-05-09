@@ -19,6 +19,13 @@ interface MediaExtras {
   genres?: string[];
 }
 
+export interface MediaImageItem {
+  url: string;
+  selected?: boolean;
+  isDefault: boolean;
+  spineColor: string;
+}
+
 export type BookInsert = Omit<InferInsertModel<typeof books>, 'id'> &
   MediaExtras;
 export type OtherMediaInsert = Omit<InferInsertModel<typeof otherMedia>, 'id'> &
@@ -34,7 +41,7 @@ export interface PostSavedMediaItem {
   id: string;
   title: string;
   spineColor: string;
-  imageUrls: string[];
+  images: MediaImageItem[];
   mediaType?: string;
   author?: string;
   pageCount?: number | null;

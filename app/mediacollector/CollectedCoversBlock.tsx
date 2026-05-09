@@ -1,11 +1,7 @@
 // react
-import { memo, useContext, useState } from 'react';
+import { memo, useContext } from 'react';
 
 //import icons and items from Material UI
-import BookIcon from '@mui/icons-material/BookTwoTone';
-import MovieIcon from '@mui/icons-material/LocalMoviesTwoTone';
-import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
-import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -20,6 +16,7 @@ import {
   CollectedBlockInformation,
   CollectorFormData,
 } from './collector-form/collectorFormSchema';
+import { blockClasses, icons } from 'lib/constants/typeBlockStyles';
 
 export interface CollectedCoversBlockProps {
   index: number;
@@ -39,13 +36,6 @@ declare global {
 }
 
 //styling of the block itself based on type
-export const blockClasses = {
-  book: 'bg-darkpink border-[#805052]',
-  movie: 'bg-[#323b43] border-black text-white',
-  album: 'bg-[#7fa5a3] border-[#354544]',
-  videoGame: 'bg-[#98ab88] border-[#4e8885]',
-  hasError: 'bg-[#E86C54] border-[#EB4423]',
-};
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
   hasError,
@@ -55,13 +45,10 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 }: CollectedCoversBlockProps) {
   const {
     type,
-    blockInfo: { title, spineColor = '#ffffff', genres = [] },
+    blockInfo: { title, genres = [] },
     blockID,
     isDatabase,
   } = info;
-
-  //set local state for spine color
-  const [color, setColor] = useState(spineColor);
 
   //get genres for checkbox population
   const allGenres = useContext(GenreContext);
@@ -76,34 +63,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   //setup connection to redux slice
 
   //establish variables for icons
-  const icons = {
-    book: <BookIcon />,
-    movie: <MovieIcon />,
-    videoGame: <VideoGameIcon />,
-    album: <AlbumIcon />,
-  };
 
   //div to pick a color for the spine.
   //this is used in png creation and is required for each media type in the database
-  const handleColorPick = async (blockID: number) => {
-    if (!window.EyeDropper) {
-      console.log('EyeDropper API not supported in this browser');
-      return;
-    }
-    const eyeDropper = new window.EyeDropper();
-    try {
-      const { sRGBHex } = await eyeDropper.open();
-      const spineColor = sRGBHex;
-      setColor(spineColor);
-      const newBlock = {
-        ...info,
-        blockInfo: { ...info.blockInfo, spineColor },
-      };
-      setValue(`collectedData.${blockID}`, newBlock);
-    } catch (e) {
-      console.log(e);
-    }
-  };
 
   //if genre is clicked we add it to the data associated with the block and remove if unchecked
   const handleGenreClick = (genreText: string, checked: boolean) => {
@@ -120,14 +82,13 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         ...info,
         blockInfo: { ...info.blockInfo, genres: newGenres },
       };
-      console.log('newBlock in genre select', newBlock);
       setValue(`collectedData.${index}`, newBlock);
     }
   };
 
   return (
     <div
-      className={`relative flex h-fit w-lg flex-col items-center gap-2.5 rounded-lg border-2 shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
+      className={`relative flex h-full w-full flex-col items-center gap-1.5 rounded-lg shadow-[5px_5px_30px_rgba(0,0,0,0.3)] ${hasError ? blockClasses.hasError : blockClasses[type]}`}
     >
       {isDatabase && (
         <p className="absolute top-9 left-1 m-0 rounded-sm border-2 border-black bg-gray-700 p-1.25 tracking-wider text-white">
@@ -144,22 +105,14 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           bottom: '4px',
           right: '4px',
           padding: '0',
-          // color: type === 'movie' ? 'white' : '',
+          color: type === 'movie' ? 'white' : '',
         }}
         onClick={() => handleDeleteBlock(blockID)}
       >
         <DeleteIcon />
       </IconButton>
-      <CBBImages blockID={index} />
-      {/* {type !== 'album' ? ( */}
-      <div
-        className="h-5 w-1/2 cursor-pointer"
-        style={{ backgroundColor: color }}
-        onClick={() => handleColorPick(index)}
-      ></div>
-      {/* ) : (
-        <></>
-      )} */}
+
+      <CBBImages blockID={index} spineColor={info.blockInfo.spineColor} />
 
       <MyTextArea
         name="title"

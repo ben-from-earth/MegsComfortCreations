@@ -50,6 +50,13 @@
       "when": 1773576000000,
       "tag": "0006_drop_legacy_image_urls",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773583200000,
+      "tag": "0007_media_image_item_default_spine",
+      "breakpoints": true
     }
   ]
 }

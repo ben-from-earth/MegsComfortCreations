@@ -1,11 +1,13 @@
 // react, redux imports
-import { Dispatch, memo, SetStateAction, useContext, useState } from 'react';
-
-//import icons and items from Material UI
-import BookIcon from '@mui/icons-material/BookTwoTone';
-import MovieIcon from '@mui/icons-material/LocalMoviesTwoTone';
-import VideoGameIcon from '@mui/icons-material/VideogameAssetTwoTone';
-import AlbumIcon from '@mui/icons-material/AlbumTwoTone';
+import {
+  ChangeEvent,
+  Dispatch,
+  memo,
+  SetStateAction,
+  useContext,
+  useRef,
+  useState,
+} from 'react';
 
 // context
 import GenreContext from 'lib/context/GenreContext';
@@ -14,17 +16,18 @@ import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 // components
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import Button from '@/components/ui/Button';
+import MediaImageStrip from '@/shared/MediaImageStrip';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { blockClasses } from '@/mediacollector/CollectedCoversBlock';
 
 // interfaces and types
 import { BlockInfo, PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { MediaType } from 'lib/constants/mediaTypes';
+import { blockClasses, icons } from 'lib/constants/typeBlockStyles';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -37,7 +40,7 @@ export interface MinimalTextAreaProps {
 export interface EditDatabaseBlockProps {
   info: {
     type: MediaType;
-    images: string[];
+    images: PostSavedMediaItem['images'];
     blockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
     id: string;
     setEdit: Dispatch<SetStateAction<boolean>>;
@@ -105,7 +108,17 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     pubYear,
     pageCount,
     spineColor,
-    imageUrls: images,
+    images:
+      images.length > 0
+        ? images
+        : [
+            {
+              url: '/images/placeholder-image.png',
+              isDefault: true,
+              selected: true,
+              spineColor,
+            },
+          ],
   };
 
   const [databaseData, setDatabaseData] =
@@ -113,20 +126,53 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
 
   const [databaseGenres, setDatabaseGenres] = useState([...initialGenres]);
   const [color, setColor] = useState(spineColor);
-
-  //establish variables for icons
-  const icons = {
-    book: <BookIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    movie: <MovieIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-    videoGame: (
-      <VideoGameIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />
-    ),
-    album: <AlbumIcon sx={{ position: 'absolute', top: '4px', left: '4px' }} />,
-  };
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   //get genres for checkbox population
   const genres = useContext(GenreContext);
   const { handleGetMedia } = useDatabasePageContext();
+
+  const defaultImageIndex = Math.max(
+    databaseData.images.findIndex((image) => image.isDefault),
+    0,
+  );
+  const selectedImageIndex = databaseData.images.findIndex((image) => image.selected);
+  const pendingDefaultImageIndex =
+    selectedImageIndex >= 0 && selectedImageIndex !== defaultImageIndex
+      ? selectedImageIndex
+      : null;
+
+  const handleImageSelection = (imageIndex: number) => {
+    const selectedImage = databaseData.images[imageIndex];
+    if (!selectedImage) {
+      return;
+    }
+    setColor(selectedImage.spineColor);
+    setDatabaseData((prev) => ({
+      ...prev,
+      spineColor: selectedImage.spineColor,
+      images: prev.images.map((image, index) => ({
+        ...image,
+        selected: index === imageIndex,
+      })),
+    }));
+  };
+
+  const handleSetAsDefault = () => {
+    if (pendingDefaultImageIndex == null) {
+      return;
+    }
+    setDatabaseData((prev) => ({
+      ...prev,
+      spineColor: prev.images[pendingDefaultImageIndex]?.spineColor ?? prev.spineColor,
+      images: prev.images.map((image, index) => ({
+        ...image,
+        isDefault: index === pendingDefaultImageIndex,
+        selected: index === pendingDefaultImageIndex,
+      })),
+    }));
+  };
 
   //div under the covers to pick a color for the spine.
   //this is used in png creation and is required for the database row
@@ -140,7 +186,19 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       const { sRGBHex } = await eyeDropper.open();
       const spineColor = sRGBHex;
       setColor(spineColor);
-      setDatabaseData((prev) => ({ ...prev, spineColor: spineColor }));
+      setDatabaseData((prev) => {
+        const imageIndexToUpdate =
+          prev.images.findIndex((image) => image.selected) >= 0
+            ? prev.images.findIndex((image) => image.selected)
+            : defaultImageIndex;
+        return {
+          ...prev,
+          spineColor: spineColor,
+          images: prev.images.map((image, index) =>
+            index === imageIndexToUpdate ? { ...image, spineColor } : image,
+          ),
+        };
+      });
     } catch (e) {
       console.log(e);
     }
@@ -156,9 +214,66 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
   };
 
   const { mutateAsync: databaseEdit } = trpc.database.edit.useMutation();
+  const { mutateAsync: uploadCoverImage } =
+    trpc.collect.uploadCoverImage.useMutation();
   const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
   const utils = trpc.useUtils();
+
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+          reject(new Error('Unable to read uploaded file.'));
+          return;
+        }
+        const [, dataBase64 = ''] = result.split(',');
+        resolve(dataBase64);
+      };
+      reader.onerror = () => {
+        reject(new Error('Unable to read uploaded file.'));
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const handleUploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const dataBase64 = await convertFileToBase64(file);
+      const uploadedImage = await uploadCoverImage({
+        blockID: id,
+        sortOrder: databaseData.images.length,
+        fileName: file.name,
+        mimeType: file.type,
+        dataBase64,
+      });
+      setDatabaseData((prev) => ({
+        ...prev,
+        spineColor: color,
+        images: [
+          ...prev.images.map((image) => ({ ...image, selected: false })),
+          {
+            url: uploadedImage.url,
+            selected: true,
+            isDefault: false,
+            spineColor: color,
+          },
+        ],
+      }));
+    } catch (error) {
+      console.error('Failed to upload image for database edit', error);
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
+  };
 
   const handleEditSubmit = async () => {
     const res = await databaseEdit({ type, item: databaseData });
@@ -206,23 +321,31 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       <h1>Editing: {titleRearrange(title)}</h1>
 
       <div
-        className={`relative flex h-fit w-fit flex-col items-center gap-2.5 rounded-lg border-2 text-lg ${blockClasses[type]} mb-1`}
+        className={`relative flex h-fit w-fit min-w-lg flex-col items-center gap-2.5 rounded-lg text-lg ${blockClasses[type]} mb-1`}
       >
-        {icons[type]}
-        <div className="m-2.5 mb-0 flex flex-row items-center gap-7.5">
-          {images.map((src) => (
-            <div className="relative z-10 overflow-hidden rounded-sm" key={src}>
-              <img
-                className={
-                  type === 'album'
-                    ? 'block w-21 cursor-pointer object-cover outline-2'
-                    : 'block h-31 w-21 cursor-pointer'
-                }
-                src={src}
-              ></img>
-            </div>
-          ))}
-        </div>
+        <div className="absolute top-1 left-1">{icons[type]}</div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleUploadImage}
+          aria-label="Upload database image"
+        />
+        <MediaImageStrip
+          mediaType={type}
+          images={databaseData.images}
+          className="m-2.5 mb-0 flex flex-row items-center gap-7.5"
+          albumTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
+          defaultTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
+          showSelectionOverlay
+          onImageClick={handleImageSelection}
+          showUploadButton={type === 'book'}
+          isUploading={isUploading}
+          onUploadButtonClick={() => fileInputRef.current?.click()}
+          uploadButtonLabel="Add uploaded database image"
+          uploadSlotLabel="Uploading..."
+        />
         {type !== 'album' ? (
           <div
             className="h-5 w-1/2 cursor-pointer"
@@ -292,6 +415,15 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
           width={150}
           fontSize={25}
         />
+        {pendingDefaultImageIndex != null ? (
+          <Button
+            variant="primary"
+            label="Set as Default"
+            onClick={handleSetAsDefault}
+            width={165}
+            fontSize={25}
+          />
+        ) : null}
       </div>
     </div>
   );

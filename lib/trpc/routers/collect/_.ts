@@ -1,4 +1,5 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
+import { TRPCError } from '@trpc/server';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
@@ -10,11 +11,47 @@ import { getMediaCovers } from './actions/get-media-covers';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
+import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 export type CollectedBlockInformation = z.infer<
   typeof collectedBlockInformationSchema
 >;
 
 export const collectRouter = router({
+  uploadCoverImage: adminProcedure
+    .input(
+      z.object({
+        blockID: z.string().min(1),
+        sortOrder: z.number().int().nonnegative(),
+        fileName: z.string().min(1),
+        mimeType: z.string().min(1),
+        dataBase64: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const fileBuffer = Buffer.from(input.dataBase64, 'base64');
+      if (!fileBuffer || fileBuffer.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Uploaded file payload is empty or invalid.',
+        });
+      }
+
+      const uploadedImage = await persistUploadedImageToS3({
+        imageBuffer: fileBuffer,
+        mediaType: 'book',
+        mediaId: input.blockID,
+        sortOrder: input.sortOrder,
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+      });
+
+      return {
+        url: uploadedImage.publicPath,
+        isDefault: input.sortOrder === 0,
+        spineColor: '#ffffff',
+        selected: true,
+      };
+    }),
   collectMedia: adminProcedure
     .input(
       z.object({
@@ -72,13 +109,26 @@ export const collectRouter = router({
               }
               const {
                 id,
-                imageUrls,
                 title: foundTitle,
                 author,
                 pageCount,
                 pubYear,
                 spineColor,
               } = foundMedia;
+              const normalizedImages =
+                'images' in foundMedia && Array.isArray(foundMedia.images)
+                  ? foundMedia.images
+                  : ('imageUrls' in foundMedia && Array.isArray(foundMedia.imageUrls)
+                      ? foundMedia.imageUrls.map((url) => ({
+                          url,
+                          isDefault: false,
+                          spineColor,
+                          selected: false,
+                        }))
+                      : []);
+              if (normalizedImages.length > 0 && !normalizedImages.some((image) => image.isDefault)) {
+                normalizedImages[0] = { ...normalizedImages[0], isDefault: true };
+              }
               const rows = await db
                 .select({ genre: genres.genre })
                 .from(genres)
@@ -89,27 +139,55 @@ export const collectRouter = router({
 
               blocks.push({
                 type: 'book',
-                images: imageUrls.map((url) => ({ url, selected: false })),
+                images: normalizedImages.map((image) => ({
+                  ...image,
+                  selected: image.isDefault,
+                  spineColor: image.spineColor,
+                })),
                 blockInfo: {
                   title: foundTitle,
                   author,
                   pubYear,
                   pageCount,
-                  spineColor,
+                  spineColor:
+                    normalizedImages.find((image) => image.isDefault)?.spineColor ??
+                    normalizedImages[0]?.spineColor ??
+                    spineColor,
                   genres: databaseGenres,
                 },
                 blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
                 isDatabase: true,
               });
             } else {
-              const { imageUrls, title: foundTitle, spineColor } = foundMedia;
+              const { title: foundTitle, spineColor } = foundMedia;
+              const normalizedImages =
+                'images' in foundMedia && Array.isArray(foundMedia.images)
+                  ? foundMedia.images
+                  : ('imageUrls' in foundMedia && Array.isArray(foundMedia.imageUrls)
+                      ? foundMedia.imageUrls.map((url) => ({
+                          url,
+                          isDefault: false,
+                          spineColor,
+                          selected: false,
+                        }))
+                      : []);
+              if (normalizedImages.length > 0 && !normalizedImages.some((image) => image.isDefault)) {
+                normalizedImages[0] = { ...normalizedImages[0], isDefault: true };
+              }
 
               blocks.push({
                 type,
-                images: imageUrls.map((url) => ({ url, selected: false })),
+                images: normalizedImages.map((image) => ({
+                  ...image,
+                  selected: image.isDefault,
+                  spineColor: image.spineColor,
+                })),
                 blockInfo: {
                   title: foundTitle,
-                  spineColor,
+                  spineColor:
+                    normalizedImages.find((image) => image.isDefault)?.spineColor ??
+                    normalizedImages[0]?.spineColor ??
+                    spineColor,
                   genres: [],
                 },
                 blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
@@ -125,7 +203,12 @@ export const collectRouter = router({
               const bookInfo = await getOpenLibraryData(title, author);
               blocks.push({
                 type,
-                images: images.map((url) => ({ url, selected: false })),
+                images: images.map((url, index) => ({
+                  url,
+                  selected: index === 0,
+                  isDefault: index === 0,
+                  spineColor: '#ffffff',
+                })),
                 blockInfo: { ...bookInfo, spineColor: '#ffffff', genres: [] },
                 blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
                 isDatabase: false,
@@ -133,7 +216,12 @@ export const collectRouter = router({
             } else {
               blocks.push({
                 type,
-                images: images.map((url) => ({ url, selected: false })),
+                images: images.map((url, index) => ({
+                  url,
+                  selected: index === 0,
+                  isDefault: index === 0,
+                  spineColor: '#ffffff',
+                })),
                 blockInfo: { title, spineColor: '#ffffff', genres: [] },
                 blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
                 isDatabase: false,
