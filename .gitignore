@@ -36,6 +36,9 @@ yarn-error.log*
 .env.development.local
 .env.production.local
 
+# Local DB dumps may contain real data / PII — never commit
+app/db/snapshot.sql
+
 # vercel
 .vercel
 

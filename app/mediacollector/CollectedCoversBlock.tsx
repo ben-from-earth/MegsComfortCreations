@@ -25,16 +25,6 @@ export interface CollectedCoversBlockProps {
   hasError: boolean;
 }
 
-declare global {
-  interface Window {
-    EyeDropper?: {
-      new (): {
-        open: () => Promise<{ sRGBHex: string }>;
-      };
-    };
-  }
-}
-
 //styling of the block itself based on type
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
