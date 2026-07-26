@@ -24,8 +24,9 @@ describe('MediaImageStrip', () => {
       <MediaImageStrip
         mediaType="book"
         images={[
-          { url: 'https://img/1.png', isDefault: true, selected: true, spineColor: '#111111' },
-          { url: 'https://img/2.png', isDefault: false, selected: false, spineColor: '#222222' },
+          // Selected primary is not the default; badge only shows on secondary tiles.
+          { url: 'https://img/1.png', isDefault: false, selected: true, spineColor: '#111111' },
+          { url: 'https://img/2.png', isDefault: true, selected: false, spineColor: '#222222' },
           { url: 'https://img/3.png', isDefault: false, selected: false, spineColor: '#333333' },
           { url: 'https://img/4.png', isDefault: false, selected: false, spineColor: '#444444' },
           { url: 'https://img/5.png', isDefault: false, selected: false, spineColor: '#555555' },

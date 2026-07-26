@@ -38,22 +38,26 @@ function normalizeSourceImage(
   if (typeof rawSourceImage === 'string') {
     return rawSourceImage;
   }
-  if (
-    typeof rawSourceImage === 'object' &&
-    rawSourceImage !== null &&
-    'url' in rawSourceImage &&
-    typeof rawSourceImage.url === 'string'
-  ) {
+  if (typeof rawSourceImage === 'object' && rawSourceImage !== null) {
     const imageRecord = rawSourceImage as {
-      url: string;
+      url?: unknown;
+      src?: unknown;
       isDefault?: boolean;
       spineColor?: string;
     };
-    return {
-      url: imageRecord.url,
-      isDefault: imageRecord.isDefault ?? false,
-      spineColor: imageRecord.spineColor ?? fallbackSpineColor,
-    };
+    const url =
+      typeof imageRecord.url === 'string'
+        ? imageRecord.url
+        : typeof imageRecord.src === 'string'
+          ? imageRecord.src
+          : null;
+    if (url !== null) {
+      return {
+        url,
+        isDefault: imageRecord.isDefault ?? false,
+        spineColor: imageRecord.spineColor ?? fallbackSpineColor,
+      };
+    }
   }
   return null;
 }
@@ -68,9 +72,23 @@ export async function resolveAndPersistImageList(
   const fallbackSpineColor = options?.defaultSpineColor ?? '#ffffff';
   const defaultImageIndex = options?.defaultImageIndex ?? 0;
 
-  const normalizedSourceImages = sourceImages
-    .map((sourceImage) => normalizeSourceImage(sourceImage, fallbackSpineColor))
-    .filter((sourceImage): sourceImage is SourceImageItem => sourceImage !== null);
+  const normalizedSourceImages: SourceImageItem[] = [];
+  for (const sourceImage of sourceImages) {
+    const normalizedSourceImage = normalizeSourceImage(
+      sourceImage,
+      fallbackSpineColor,
+    );
+    if (normalizedSourceImage === null) {
+      if (!(sourceImage == null || sourceImage === '')) {
+        failures.push({
+          sourceUrl: '',
+          message: 'Invalid image payload. Expected an image URL string.',
+        });
+      }
+      continue;
+    }
+    normalizedSourceImages.push(normalizedSourceImage);
+  }
   const explicitDefaultIndex = normalizedSourceImages.findIndex(
     (sourceImage) =>
       typeof sourceImage === 'object' &&
