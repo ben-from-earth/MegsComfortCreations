@@ -145,6 +145,16 @@ Commands:
 - Emergency laptop prod migrate only: `npm run db:migrate:prod-emergency`
 - Full release sequence checklist: `ai-assistance/RELEASE_CHECKLIST.md`
 
+### Resetting Neon Dev
+
+```bash
+npm run db:snapshot:prod   # refresh baseline from prod (explicit; preferred for this project)
+npm run db:restore         # wipe Neon DEV only + load app/db/snapshot.sql
+npm run db:migrate         # catch up migrations after the dump watermark
+```
+
+`app/db/snapshot.sql` is gitignored. Details: `ai-assistance/PLAN_DB_SNAPSHOT_RESTORE.md`
+
 ## Route Documentation
 
 Route documentation can be found by hitting localhost:3000/docs, and the write up is found at /docs

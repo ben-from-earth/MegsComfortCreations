@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "node drizzle-migrate-with-env.mjs .env.development.local",
-    "db:migrate:prod-emergency": "node drizzle-migrate-with-env.mjs .env.production.local"
+    "db:migrate:prod-emergency": "node drizzle-migrate-with-env.mjs .env.production.local",
+    "db:snapshot": "node scripts/db/snapshot.mjs .env.development.local",
+    "db:snapshot:prod": "node scripts/db/snapshot.mjs .env.production.local",
+    "db:restore": "node scripts/db/restore.mjs .env.development.local"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

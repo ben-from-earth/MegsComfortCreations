@@ -8,6 +8,7 @@ Use this checklist for every release so schema changes land on the right Neon br
   - `npm run db:generate`
 - [ ] Apply migration to Neon **dev** only:
   - `npm run db:migrate`
+- [ ] (Optional) Reset Neon **dev** from snapshot before validating: `npm run db:restore` then `npm run db:migrate`
 - [ ] Validate app behavior locally after migration.
 - [ ] Review migration SQL in the PR before merge (especially destructive changes).
 
