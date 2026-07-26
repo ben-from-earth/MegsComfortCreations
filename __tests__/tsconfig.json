@@ -4,6 +4,6 @@
     "types": ["jest", "node"],
     "noEmit": true
   },
-  "include": ["./**/*.ts", "./**/*.tsx"],
+  "include": ["../types/**/*.d.ts", "./**/*.ts", "./**/*.tsx"],
   "exclude": []
 }
