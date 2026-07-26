@@ -133,21 +133,17 @@ Please see .env.example files in both /client and /server for full required file
 
 When using Neon branches, keep DB targets explicit:
 
-1. Local app runtime URL in `.env.local`
+1. Local app runtime URL in `.env.local` (pooled `DATABASE_URL` is fine)
 2. Dev migration URL in `.env.development.local`
-3. Prod migration URL in `.env.production.local`
+3. Prod migration URL in `.env.production.local` (emergency laptop use only)
+
+On merge to `main`, the Vercel **production** build runs pending Drizzle migrations automatically (prefers `DATABASE_URL_UNPOOLED`, falls back to `DATABASE_URL`).
 
 Commands:
 
-- Verify target DB and row counts:
-  - `npm run db:check:local`
-  - `npm run db:check:dev`
-  - `npm run db:check:prod`
-- Apply migrations intentionally:
-  - `npm run db:migrate:dev`
-  - `npm run db:migrate:prod`
-- Full release sequence checklist:
-  - `ai-assistance/RELEASE_CHECKLIST.md`
+- Apply migrations to Neon **dev**: `npm run db:migrate`
+- Emergency laptop prod migrate only: `npm run db:migrate:prod-emergency`
+- Full release sequence checklist: `ai-assistance/RELEASE_CHECKLIST.md`
 
 ## Route Documentation
 

@@ -1,42 +1,38 @@
 # Release Checklist (Local/Dev vs Production DB)
 
-Use this checklist for every release so migrations are applied intentionally and only to the correct target.
+Use this checklist for every release so schema changes land on the right Neon branch.
 
 ## 1) Pre-Release (Feature Branch / Local)
 
-- [ ] Confirm local app runtime target is dev/local branch:
-  - `npm run db:check:local`
-- [ ] Confirm local migration target is dev/local branch:
-  - `npm run db:check:dev`
 - [ ] Generate migration SQL (if schema changed):
   - `npm run db:generate`
-- [ ] Apply migration to dev/local only:
-  - `npm run db:migrate:dev`
+- [ ] Apply migration to Neon **dev** only:
+  - `npm run db:migrate`
 - [ ] Validate app behavior locally after migration.
+- [ ] Review migration SQL in the PR before merge (especially destructive changes).
 
-## 2) Merge and Deploy
+## 2) Merge and Deploy (happy path)
 
 - [ ] Merge branch into `main`.
-- [ ] Wait for Vercel production deployment to complete.
-- [ ] Confirm no production migration has run automatically (manual gate remains in place).
+- [ ] Wait for Vercel **production** deployment to complete.
+- [ ] In the deploy log, confirm Drizzle migrate ran against the expected prod host (hostname only), then `next build`.
+- [ ] Smoke-test key production workflows.
 
-## 3) Production Migration Gate (Manual)
+Production migrations run automatically during the Vercel production build (`drizzle-migrate-ci.mjs`). You should **not** need a laptop prod migrate on a normal release.
 
-- [ ] Verify production DB target before running migration:
-  - `npm run db:check:prod`
-- [ ] Confirm output host/database matches intended production endpoint.
-- [ ] Run production migration intentionally:
-  - `npm run db:migrate:prod`
+## 3) Emergency: Manual Production Migration
 
-## 4) Post-Release Verification
+Use only if auto-migrate failed or you must migrate without a deploy.
 
-- [ ] Smoke test key production workflows.
-- [ ] Re-run production target check:
-  - `npm run db:check:prod`
-- [ ] Confirm migration state and data look correct in Neon production branch.
+```bash
+# Requires .env.production.local with prod DATABASE_URL / DATABASE_URL_UNPOOLED
+npm run db:migrate:prod-emergency
+```
 
-## 5) Safety Rules (Always)
+Then fix the CI migrate path and redeploy.
 
-- [ ] Never run production migration command during regular development.
+## 4) Safety Rules (Always)
+
+- [ ] Never run `db:migrate:prod-emergency` during regular development.
 - [ ] Keep secrets only in env/secret stores (never in committed files).
-- [ ] If uncertain about target, run `db:check:*` command before any migration.
+- [ ] Preview deployments must not use production DB URLs or migrate production.

@@ -1,24 +1,20 @@
-import { config as loadDotenv } from 'dotenv';
 import { spawnSync } from 'node:child_process';
-import { resolveMigrationDatabaseUrl } from './drizzle-migrate-shared.mjs';
+import {
+  resolveMigrationDatabaseUrl,
+  shouldRunMigrateOnBuild,
+} from './drizzle-migrate-shared.mjs';
 
-const envFilePath = process.argv[2];
-
-if (!envFilePath) {
-  console.error('Usage: node drizzle-migrate-with-env.mjs <env-file>');
-  process.exit(1);
-}
-
-const dotenvResult = loadDotenv({ path: envFilePath });
-if (dotenvResult.error) {
-  console.error(`Unable to load env file: ${envFilePath}`);
-  process.exit(1);
+if (!shouldRunMigrateOnBuild(process.env)) {
+  console.log(
+    'Skipping Drizzle migrate (not production build; set MIGRATE_ON_BUILD=true to force)',
+  );
+  process.exit(0);
 }
 
 const resolved = resolveMigrationDatabaseUrl(process.env);
 if (!resolved) {
   console.error(
-    `DATABASE_URL_UNPOOLED or DATABASE_URL is missing in ${envFilePath}`,
+    'Missing database URL for migrate-on-build. Set DATABASE_URL_UNPOOLED (preferred) or DATABASE_URL.',
   );
   process.exit(1);
 }
@@ -29,13 +25,12 @@ let targetHost;
 try {
   targetHost = new URL(resolved.url).hostname;
 } catch {
-  console.error(`Resolved migration database URL in ${envFilePath} is invalid.`);
+  console.error('Resolved migration database URL is invalid.');
   process.exit(1);
 }
 
 console.log(`Using ${resolved.source}`);
 console.log(`Running Drizzle migrate against host: ${targetHost}`);
-console.log(`Source env file: ${envFilePath}`);
 
 const command = process.platform === 'win32' ? 'npx drizzle-kit migrate' : 'npx';
 const commandArgs = process.platform === 'win32' ? [] : ['drizzle-kit', 'migrate'];
