@@ -9,7 +9,8 @@ if (!envFilePath) {
   process.exit(1);
 }
 
-const dotenvResult = loadDotenv({ path: envFilePath });
+// override: true so the chosen env file wins over leftover shell DATABASE_URL* exports
+const dotenvResult = loadDotenv({ path: envFilePath, override: true });
 if (dotenvResult.error) {
   console.error(`Unable to load env file: ${envFilePath}`);
   process.exit(1);

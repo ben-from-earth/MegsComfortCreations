@@ -34,3 +34,17 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Bug fixes and feature updates were not consistently accompanied by tests, allowing regressions to reappear.
 - Correction: Modernized stale tests to align with active tRPC routers and added broad mocked regression coverage for current router behavior.
 - Rule Going Forward: Any bug fix or feature change must include new or updated automated tests in the same task to lock in expected behavior and prevent regression.
+
+### 2026-07-26 - Windows shell must not wrap Neon connection URLs
+
+- Area: Local DB scripts (`pg_dump` / `psql`) on Windows
+- Issue: Spawning Postgres clients with `shell: true` caused cmd.exe to split Neon URLs on `&` in query params (e.g. `channel_binding=require`), breaking snapshot/restore.
+- Correction: Resolve the executable via `where.exe`/`which`, then `spawnSync` with `shell: false` so the full URL stays a single argv entry.
+- Rule Going Forward: Never pass database connection URLs through a Windows shell. Prefer env-var handoff (as migrate scripts do) or argv with `shell: false`.
+
+### 2026-07-26 - Explicit env files must override shell exports
+
+- Area: `db:snapshot*` / `db:migrate*` env loading
+- Issue: `dotenv` defaults to `override: false`, so a leftover `$env:DATABASE_URL` in the shell could make `db:snapshot:prod` dump the wrong Neon branch.
+- Correction: Load script env files with `override: true` so the file passed on the CLI always wins.
+- Rule Going Forward: Any script that takes an explicit env-file path must load it with `override: true` (or clear prior DB URL keys first).

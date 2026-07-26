@@ -7,6 +7,7 @@ import {
   promptForConfirmation,
   resolveDatabaseTarget,
   runCommand,
+  WIPE_TARGET_SCHEMAS_SQL,
 } from './lib.mjs';
 
 const args = process.argv.slice(2);
@@ -55,7 +56,7 @@ try {
     '-v',
     'ON_ERROR_STOP=1',
     '-c',
-    'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+    WIPE_TARGET_SCHEMAS_SQL,
   ]);
   if (wipeStatus !== 0) {
     console.error(`Schema wipe failed with exit code ${wipeStatus}`);
