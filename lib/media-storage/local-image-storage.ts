@@ -56,8 +56,7 @@ let cachedS3Client: S3Client | null = null;
 let cachedS3ClientCacheKey: string | null = null;
 
 function getAllowedMimeTypes(): string[] {
-  const fromEnv = process.env.ALLOWED_IMAGE_MIME_TYPES
-    ?.split(',')
+  const fromEnv = process.env.ALLOWED_IMAGE_MIME_TYPES?.split(',')
     .map((value) => value.trim())
     .filter(Boolean);
   if (!fromEnv || fromEnv.length === 0) {
@@ -127,7 +126,9 @@ function sanitizeFileNameSegment(fileName: string | undefined): string {
 function getRequiredEnvValue(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
-    throw new Error(`Missing required environment variable "${name}" for S3 image storage.`);
+    throw new Error(
+      `Missing required environment variable "${name}" for S3 image storage.`,
+    );
   }
   return value;
 }
@@ -174,7 +175,9 @@ function createS3Client(): S3Client {
 
 function getS3StorageConfig(): S3StorageConfig {
   const bucket = getRequiredEnvValue('S3_BUCKET');
-  const publicBaseUrl = normalizeBaseUrl(getRequiredEnvValue('S3_PUBLIC_BASE_URL'));
+  const publicBaseUrl = normalizeBaseUrl(
+    getRequiredEnvValue('S3_PUBLIC_BASE_URL'),
+  );
   const keyPrefix =
     normalizePathSegment(process.env.S3_KEY_PREFIX) || DEFAULT_S3_KEY_PREFIX;
   return {
@@ -201,14 +204,19 @@ function resolveExtension(mimeType: string | null): string | null {
 
 type FileTypeDetection = { ext: string; mime: string } | null;
 
-async function detectFileTypeFromBuffer(imageBuffer: Buffer): Promise<FileTypeDetection> {
+async function detectFileTypeFromBuffer(
+  imageBuffer: Buffer,
+): Promise<FileTypeDetection> {
   try {
     const { fileTypeFromBuffer } = await import('file-type');
     return (await fileTypeFromBuffer(imageBuffer)) ?? null;
   } catch (error) {
     // Keep router/module loading resilient in test environments where the optional
     // detector package may be unavailable, and fall back to response headers.
-    if (error instanceof Error && error.message.includes("Cannot find module 'file-type'")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Cannot find module 'file-type'")
+    ) {
       return null;
     }
     throw error;
@@ -369,6 +377,3 @@ export async function persistUploadedImageToS3(
     sourceUrl: input.fileName?.trim() || 'uploaded-image',
   };
 }
-
-// Temporary compatibility export to avoid broad call-site churn.
-export const persistExternalImageToLocalDisk = persistExternalImageToS3;

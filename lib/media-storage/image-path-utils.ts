@@ -30,14 +30,6 @@ export function isExternalImageUrl(imageUrl: string): boolean {
   );
 }
 
-export function isLocalImagePath(imageUrl: string): boolean {
-  const normalizedImageUrl = imageUrl.trim();
-  return (
-    normalizedImageUrl.startsWith('/uploads/') ||
-    isManagedImageUrl(normalizedImageUrl)
-  );
-}
-
 export function normalizeImagePath(imageUrl: unknown): string {
   if (typeof imageUrl === 'string') {
     return imageUrl.trim();

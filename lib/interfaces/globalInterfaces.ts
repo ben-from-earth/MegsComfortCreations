@@ -3,8 +3,6 @@ import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { books, otherMedia } from '@/db/schema';
 import type { MediaType, OtherMediaType } from 'lib/constants/mediaTypes';
 
-import { DatabaseSaveEditErrorResponse } from '@/api/api-Errors';
-
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
 // 1. Map Drizzle row types
@@ -77,6 +75,13 @@ export interface SuccessfulGenreLinkUnlinkResponse {
   message: string;
   genre: string;
   bookID: string;
+}
+
+export interface DatabaseSaveEditErrorResponse {
+  error: string;
+  message: string;
+  errors: string[];
+  title: string;
 }
 
 // 6. Make this match your camelCase DB schema (or keep snake_case if your rows do)
