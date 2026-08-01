@@ -14,6 +14,7 @@ These were open in the March review and are now fixed:
 - Stale REST tests migrated to tRPC (`__tests__/medias.test.ts`, `__tests__/genres.test.ts`, `__tests__/trpc/*`)
 - Server-side tRPC mutation authz (`lib/trpc/trpc.ts` `adminProcedure` + `__tests__/trpc/auth-guards.test.ts`)
 - Enum/sort contract drift (`lib/constants/databaseSortOptions.ts`, `videoGame` naming)
+- Internal admin seed endpoint removed (`app/api/internal/seed-admin/route.ts`) — bootstrap no longer needed; admins already exist in all environments
 
 ---
 
@@ -30,17 +31,6 @@ These were open in the March review and are now fixed:
 - **Fix suggestion**
   - Allowlist trusted image hosts (or only fetch backend-stored URLs).
   - Resolve DNS and block private ranges before fetch; revalidate each redirect hop.
-
-### Weak protection on internal admin seed endpoint
-
-- **Path**
-  - `app/api/internal/seed-admin/route.ts`
-- **Issue**
-  - Relies solely on `x-seed-secret === process.env.SEED_SECRET`.
-  - No production disablement, rate limiting, source restriction, or generic error responses.
-- **Fix suggestion**
-  - Disable in production (or gate behind an explicit env flag).
-  - Prefer short-lived signed tokens; return generic errors to clients.
 
 ---
 
@@ -309,7 +299,7 @@ Likely unused (verify ops before delete):
 
 ## Suggested Fix Order
 
-1. Harden PNG fetch against SSRF; gate/disable seed-admin in production.
+1. Harden PNG fetch against SSRF.
 2. Delete confirmed-dead files/exports (`createPasswordHash`, `vanillaClient`, duplicate schemas, unused error types); drop unused deps; fix ESLint override path.
 3. Unify `MediaImage` / `BlockInfo` / `collectionList` schemas as single sources of truth; remove redundant casts.
 4. Deduplicate collect normalization, image persistence helpers, and CBBImages / EditDatabaseBlock image-edit logic.
