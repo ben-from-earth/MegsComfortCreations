@@ -1,42 +1,48 @@
-type MinimalUser = {
+import { appRouter } from 'lib/trpc/routers/_app';
+import type { Context } from 'lib/trpc/context';
+
+type TestUser = {
   id: string;
   role: 'admin' | 'user';
 };
 
-type MinimalContext = {
-  db?: unknown;
-  authSession?: { user: MinimalUser } | null;
-  user?: MinimalUser | null;
+/**
+ * Auth identity + mockable db for router unit tests.
+ * Live Context also carries full Better Auth session / Drizzle client shapes.
+ */
+export type TrpcTestContext = {
+  db: object;
+  authSession: { user: TestUser } | null;
+  user: TestUser | null;
 };
 
-export function createAdminContext(db?: unknown): Required<MinimalContext> {
-  const user: MinimalUser = { id: 'admin-user-id', role: 'admin' };
+export function createAdminContext(db: object = {}): TrpcTestContext {
+  const user: TestUser = { id: 'admin-user-id', role: 'admin' };
   return {
-    db: db ?? {},
+    db,
     authSession: { user },
     user,
   };
 }
 
-export function createUserContext(db?: unknown): Required<MinimalContext> {
-  const user: MinimalUser = { id: 'normal-user-id', role: 'user' };
+export function createUserContext(db: object = {}): TrpcTestContext {
+  const user: TestUser = { id: 'normal-user-id', role: 'user' };
   return {
-    db: db ?? {},
+    db,
     authSession: { user },
     user,
   };
 }
 
-export function createAnonContext(db?: unknown): Required<MinimalContext> {
+export function createAnonContext(db: object = {}): TrpcTestContext {
   return {
-    db: db ?? {},
+    db,
     authSession: null,
     user: null,
   };
 }
 
-export function createTrpcCaller(ctx: MinimalContext) {
-  // Lazy import keeps context helpers usable when appRouter has unrelated missing modules.
-  const { appRouter } = require('lib/trpc/routers/_app') as typeof import('lib/trpc/routers/_app');
-  return appRouter.createCaller(ctx as never);
+export function createTrpcCaller(ctx: TrpcTestContext) {
+  // Test doubles omit live Better Auth / Drizzle runtime fields on purpose.
+  return appRouter.createCaller(ctx as Context);
 }

@@ -1,4 +1,3 @@
-import { databaseRouter } from 'lib/trpc/routers/database/_';
 import { searchByTitle } from 'lib/trpc/routers/database/actions/search-by-title';
 import {
   loadBookImagesById,
@@ -6,7 +5,7 @@ import {
   replaceOtherMediaImageRecords,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
-import { createAdminContext } from '../helpers/trpcTestContext';
+import { createAdminContext, createTrpcCaller } from '../helpers/trpcTestContext';
 import { createMockDb } from '../helpers/mockDrizzle';
 
 jest.mock('lib/trpc/routers/database/actions/search-by-title', () => ({
@@ -59,8 +58,8 @@ const matrixCoverImage = {
   spineColor: '#ffffff',
 } as const;
 
-function createDatabaseCaller(db: unknown = {}) {
-  return databaseRouter.createCaller(createAdminContext(db) as never);
+function createDatabaseCaller(db: object = {}) {
+  return createTrpcCaller(createAdminContext(db)).database;
 }
 
 function getSourceImageUrl(sourceImage: unknown) {
