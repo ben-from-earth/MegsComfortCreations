@@ -7,15 +7,6 @@ export const DATABASE_SORT_OPTIONS = [
 
 export type DatabaseSortOption = (typeof DATABASE_SORT_OPTIONS)[number];
 
-export const BOOK_SORT_OPTIONS: ReadonlyArray<DatabaseSortOption> = [
-  'title',
-  'author',
-  'pageCount',
-  'pubYear',
-];
-
-export const NON_BOOK_SORT_OPTIONS: ReadonlyArray<DatabaseSortOption> = ['title'];
-
 export const BOOK_SORT_SELECT_OPTIONS: ReadonlyArray<{
   label: string;
   value: DatabaseSortOption;

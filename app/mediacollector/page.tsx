@@ -20,12 +20,16 @@ import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
 import TextInput from '@/shared/TextInput';
 
 //interfaces and types
-import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
 import Button from '@/components/ui/Button';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
 import { buildPNGExportImages } from './png-export-images';
+import {
+  buildDatabaseSaveFailureDisplayLines,
+  markSuccessfulBlocksAsInDatabase,
+  type DatabaseSaveFailureDisplayLine,
+} from './database-save-error-display';
 
 const backgroundImage = '/FlowerBackground.png';
 const mediaCollectorTitleImage = '/MegsMediaCollector.png';
@@ -47,8 +51,9 @@ function MediaCollectorContent() {
   const [informationalDialogText, setInformationalDialogText] =
     useState<string>('');
   const [isSavingToDatabase, setIsSavingToDatabase] = useState<boolean>(false);
-  const [databaseSavedData, setDatabaseSavedData] =
-    useState<DatabaseSaveServerResponse>([]);
+  const [databaseSaveFailureLines, setDatabaseSaveFailureLines] = useState<
+    DatabaseSaveFailureDisplayLine[]
+  >([]);
   const [visibleMediaInputs, setVisibleMediaInputs] = useState<MediaVisibilityMap>({
     book: true,
     movie: false,
@@ -125,18 +130,34 @@ function MediaCollectorContent() {
       setInformationalDialogText(`Book Club Repeat Number must be at least 1.`);
       setShowInformationalDialog(true);
       return;
-
-      setLoadingMessage(`Adding items to database`);
-      setIsSavingToDatabase(true);
     }
+
+    setLoadingMessage(`Adding items to database`);
+    setIsSavingToDatabase(true);
 
     const result = await onSubmit(formValues);
 
-    const someHaveDatabaseErrors = result.some((res) => 'error' in res);
+    const someHaveDatabaseErrors = result.some((res) => !res.success);
 
     if (someHaveDatabaseErrors) {
-      setDatabaseSavedData(result);
+      const updatedCollectedData = markSuccessfulBlocksAsInDatabase(
+        formValues.collectedData,
+        result,
+      );
+      setValue('collectedData', updatedCollectedData);
+
+      const failureLines = buildDatabaseSaveFailureDisplayLines(
+        result,
+        updatedCollectedData,
+      );
+      setDatabaseSaveFailureLines(failureLines);
+      setBlockIdsWithErrors(
+        failureLines
+          .map((line) => line.blockID)
+          .filter((blockID) => blockID.length > 0),
+      );
       setDatabaseSaved(true);
+      setIsSavingToDatabase(false);
       return;
     }
 
@@ -256,7 +277,7 @@ function MediaCollectorContent() {
       {databaseSaved && (
         <InformationalDialog
           variant="databaseSave"
-          data={databaseSavedData}
+          failureLines={databaseSaveFailureLines}
           close={() => setDatabaseSaved(false)}
         />
       )}

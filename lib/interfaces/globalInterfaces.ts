@@ -3,8 +3,6 @@ import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { books, otherMedia } from '@/db/schema';
 import type { MediaType, OtherMediaType } from 'lib/constants/mediaTypes';
 
-import { DatabaseSaveEditErrorResponse } from '@/api/api-Errors';
-
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
 // 1. Map Drizzle row types
@@ -79,6 +77,13 @@ export interface SuccessfulGenreLinkUnlinkResponse {
   bookID: string;
 }
 
+export interface DatabaseSaveEditErrorResponse {
+  error: string;
+  message: string;
+  errors: string[];
+  title: string;
+}
+
 // 6. Make this match your camelCase DB schema (or keep snake_case if your rows do)
 export interface BlockInfo {
   title: string;
@@ -90,12 +95,28 @@ export interface BlockInfo {
   databaseGenres?: string[];
 }
 
-// 7. Server response union
-type DatabaseSaveServerResponseItem =
-  | DatabaseSaveEditErrorResponse
-  | SuccessfulMediaSaveEditResponse
-  | (SuccessfulMediaSaveEditResponse & {
-      genreResponses: SuccessfulGenreLinkUnlinkResponse[];
-    });
+// 7. `database.save` per-item results (discriminated on `success`)
+export type DatabaseSaveSuccessResult = {
+  success: true;
+  blockID: string;
+  title: string;
+  message: string;
+  type: MediaType;
+  actionAttemptItem: PostSavedMediaItem & MediaExtras;
+  genreResponses?: SuccessfulGenreLinkUnlinkResponse[];
+};
 
-export type DatabaseSaveServerResponse = DatabaseSaveServerResponseItem[];
+export type DatabaseSaveFailureResult = {
+  success: false;
+  blockID: string;
+  title: string;
+  error: string;
+  message: string;
+  errors: string[];
+};
+
+export type DatabaseSaveResultItem =
+  | DatabaseSaveSuccessResult
+  | DatabaseSaveFailureResult;
+
+export type DatabaseSaveServerResponse = DatabaseSaveResultItem[];

@@ -20,11 +20,7 @@
     ],
     "paths": {
       "@/*": ["./app/*"],
-      "*": ["./*"],
-      "@genreDocs/*": ["./docs/SwaggerDocumentation/genreRoutes/*"],
-      "@databaseDocs/*": ["./docs/SwaggerDocumentation/databaseRoutes/*"],
-      "@pngDocs/*": ["./docs/SwaggerDocumentation/pngRoutes/*"],
-      "@onlineDataDocs/*": ["./docs/SwaggerDocumentation/getOnlineDataRoutes/*"]
+      "*": ["./*"]
     }
   },
   "include": [

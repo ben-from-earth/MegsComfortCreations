@@ -14,7 +14,7 @@ describe('png router', () => {
       buffer: Buffer.from('file-bytes'),
     });
 
-    const caller = createTrpcCaller(createAdminContext({}));
+    const caller = createTrpcCaller(createAdminContext());
     const response = await caller.png.create({
       template: 3,
       repeatCount: 2,
@@ -39,7 +39,7 @@ describe('png router', () => {
   });
 
   test('create validates repeatCount minimum via zod', async () => {
-    const caller = createTrpcCaller(createAdminContext({}));
+    const caller = createTrpcCaller(createAdminContext());
     await expect(
       caller.png.create({
         template: 3,

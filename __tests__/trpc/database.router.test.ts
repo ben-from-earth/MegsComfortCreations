@@ -1,4 +1,3 @@
-import { databaseRouter } from 'lib/trpc/routers/database/_';
 import { searchByTitle } from 'lib/trpc/routers/database/actions/search-by-title';
 import {
   loadBookImagesById,
@@ -6,6 +5,8 @@ import {
   replaceOtherMediaImageRecords,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
+import { createAdminContext, createTrpcCaller } from '../helpers/trpcTestContext';
+import { createMockDb } from '../helpers/mockDrizzle';
 
 jest.mock('lib/trpc/routers/database/actions/search-by-title', () => ({
   searchByTitle: jest.fn(),
@@ -20,23 +21,72 @@ jest.mock('lib/media-storage/media-image-records', () => ({
   resolveAndPersistImageList: jest.fn(),
 }));
 
-function createAdminCaller(db: unknown) {
-  return databaseRouter.createCaller({
-    db,
-    authSession: { user: { id: '1', role: 'admin' } },
-    user: { id: '1', role: 'admin' },
-  } as never);
+const mockedSearchByTitle = jest.mocked(searchByTitle);
+const mockedLoadBookImagesById = jest.mocked(loadBookImagesById);
+const mockedResolveAndPersistImageList = jest.mocked(resolveAndPersistImageList);
+const mockedReplaceBookImageRecords = jest.mocked(replaceBookImageRecords);
+const mockedReplaceOtherMediaImageRecords = jest.mocked(
+  replaceOtherMediaImageRecords,
+);
+
+const duneBook = {
+  id: 'book-1',
+  title: 'Dune',
+  author: 'Frank Herbert',
+  pageCount: 412,
+  pubYear: 1965,
+  spineColor: '#fff',
+} as const;
+
+const matrixMovie = {
+  id: 'movie-1',
+  mediaType: 'movie' as const,
+  title: 'Matrix',
+  spineColor: '#ffffff',
+};
+
+const duneCoverImage = {
+  url: 'https://images.example.com/cover.png',
+  isDefault: true,
+  spineColor: '#fff',
+} as const;
+
+const matrixCoverImage = {
+  url: 'https://img/selected.png',
+  selected: true,
+  isDefault: true,
+  spineColor: '#ffffff',
+} as const;
+
+function createDatabaseCaller(db: object = {}) {
+  return createTrpcCaller(createAdminContext(db)).database;
 }
 
-describe('database router', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (resolveAndPersistImageList as jest.Mock).mockImplementation(
-      async (_mediaReference: unknown, sourceImages: Array<string | { url: string }>) => ({
-        images: sourceImages.map((sourceImage, index) => {
-          const sourceUrl =
-            typeof sourceImage === 'string' ? sourceImage : sourceImage.url;
-          return {
+function getSourceImageUrl(sourceImage: unknown) {
+  if (typeof sourceImage === 'string') {
+    return sourceImage;
+  }
+  if (
+    typeof sourceImage !== 'object' ||
+    sourceImage === null ||
+    !('url' in sourceImage)
+  ) {
+    return null;
+  }
+  const url = sourceImage.url;
+  return typeof url === 'string' ? url : null;
+}
+
+function mockSuccessfulImagePersistence() {
+  mockedResolveAndPersistImageList.mockImplementation(
+    async (_mediaReference, sourceImages) => ({
+      images: sourceImages.flatMap((sourceImage, index) => {
+        const sourceUrl = getSourceImageUrl(sourceImage);
+        if (!sourceUrl) {
+          return [];
+        }
+        return [
+          {
             publicPath: sourceUrl.startsWith('http')
               ? `/uploads/covers/2026/03/${sourceUrl.split('/').pop()}`
               : sourceUrl,
@@ -45,596 +95,410 @@ describe('database router', () => {
             sourceUrl,
             isDefault: index === 0,
             spineColor: '#ffffff',
-          };
-        }),
-        failures: [],
+          },
+        ];
       }),
-    );
+      failures: [],
+    }),
+  );
+}
+
+function mockImagePersistenceFailure(sourceUrl: string) {
+  mockedResolveAndPersistImageList.mockResolvedValueOnce({
+    images: [],
+    failures: [{ sourceUrl, message: 'AccessDenied' }],
+  });
+}
+
+describe('database router', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedLoadBookImagesById.mockResolvedValue(new Map());
+    mockSuccessfulImagePersistence();
   });
 
-  test('searchByTitle delegates to search action', async () => {
-    const mockedSearchByTitle = searchByTitle as jest.Mock;
-    mockedSearchByTitle.mockResolvedValueOnce({
-      message: 'Successfully found 1 book(s) with title Dune',
-      foundMediaList: [{ id: 'book-1', title: 'Dune' }],
-      total: 1,
-    });
+  describe('searchByTitle', () => {
+    test('delegates to the search action', async () => {
+      mockedSearchByTitle.mockResolvedValueOnce({
+        message: 'Successfully found 1 book(s) with title Dune',
+        foundMediaList: [
+          {
+            ...duneBook,
+            images: [],
+          },
+        ],
+        total: 1,
+      });
 
-    const caller = createAdminCaller({});
-    const response = await caller.searchByTitle({ type: 'book', title: 'Dune' });
+      const response = await createDatabaseCaller().searchByTitle({
+        type: 'book',
+        title: duneBook.title,
+      });
 
-    expect(response.total).toBe(1);
-    expect(mockedSearchByTitle).toHaveBeenCalledWith(
-      expect.anything(),
-      'book',
-      'Dune',
-    );
-  });
-
-  test('getPaginated returns paginated book rows', async () => {
-    const rows = [
-      {
-        id: 'book-1',
-        title: 'Dune',
-        author: 'Frank Herbert',
-        pageCount: 412,
-        pubYear: 1965,
-        spineColor: '#fff',
-        images: [],
-        mediaType: 'book',
-      },
-    ];
-
-    const rowsChain = {
-      from: jest.fn(() => ({
-        leftJoin: jest.fn(() => ({
-          leftJoin: jest.fn(() => ({
-            where: jest.fn(() => ({
-              orderBy: jest.fn(() => ({
-                limit: jest.fn(() => ({
-                  offset: jest.fn().mockResolvedValue(rows),
-                })),
-              })),
-            })),
-          })),
-        })),
-      })),
-    };
-
-    const countChain = {
-      from: jest.fn(() => ({
-        leftJoin: jest.fn(() => ({
-          leftJoin: jest.fn(() => ({
-            where: jest.fn().mockResolvedValue([{ count: 1 }]),
-          })),
-        })),
-      })),
-    };
-
-    const mockDb = {
-      select: jest.fn().mockReturnValueOnce(rowsChain).mockReturnValueOnce(countChain),
-    };
-
-    const caller = createAdminCaller(mockDb);
-    const response = await caller.getPaginated({
-      type: 'book',
-      limit: 10,
-      page: 1,
-      sort: 'title',
-      ascDesc: 'asc',
-      genre: '',
-    });
-
-    expect(response).toEqual({
-      message: 'Successful database gather',
-      paginatedList: [
-        {
-          ...rows[0],
-          images: [],
-        },
-      ],
-      total: 1,
+      expect(response.total).toBe(1);
+      expect(mockedSearchByTitle).toHaveBeenCalledWith(
+        expect.anything(),
+        'book',
+        duneBook.title,
+      );
     });
   });
 
-  test('getPaginated rejects genre filter for non-book media', async () => {
-    const caller = createAdminCaller({});
+  describe('getPaginated', () => {
+    test('returns paginated book rows', async () => {
+      const rows = [{ ...duneBook, images: [], mediaType: 'book' as const }];
+      const mockDb = createMockDb({
+        selectResults: [rows, [{ count: 1 }]],
+      });
 
-    await expect(
-      caller.getPaginated({
-        type: 'movie',
+      const response = await createDatabaseCaller(mockDb).getPaginated({
+        type: 'book',
         limit: 10,
         page: 1,
         sort: 'title',
         ascDesc: 'asc',
-        genre: 'Fantasy',
-      }),
-    ).rejects.toMatchObject({
-      code: 'BAD_REQUEST',
-      message: 'Genre filter is only supported for books',
+        genre: '',
+      });
+
+      expect(response).toEqual({
+        message: 'Successful database gather',
+        paginatedList: [{ ...rows[0], images: [] }],
+        total: 1,
+      });
+    });
+
+    test('rejects genre filter for non-book media', async () => {
+      await expect(
+        createDatabaseCaller().getPaginated({
+          type: 'movie',
+          limit: 10,
+          page: 1,
+          sort: 'title',
+          ascDesc: 'asc',
+          genre: 'Fantasy',
+        }),
+      ).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+        message: 'Genre filter is only supported for books',
+      });
+    });
+
+    test('uses normalized image records when available', async () => {
+      const normalizedImages = [
+        {
+          url: '/uploads/covers/2026/03/book-1.png',
+          isDefault: true,
+          spineColor: '#fff',
+          selected: false,
+        },
+      ];
+      mockedLoadBookImagesById.mockResolvedValueOnce(
+        new Map([[duneBook.id, normalizedImages]]),
+      );
+
+      const mockDb = createMockDb({
+        selectResults: [
+          [{ ...duneBook, images: [], mediaType: 'book' as const }],
+          [{ count: 1 }],
+        ],
+      });
+
+      const response = await createDatabaseCaller(mockDb).getPaginated({
+        type: 'book',
+        limit: 10,
+        page: 1,
+        sort: 'title',
+        ascDesc: 'asc',
+        genre: '',
+      });
+
+      expect(response.paginatedList[0]?.images).toEqual(normalizedImages);
     });
   });
 
-  test('delete returns not-found message when id does not exist', async () => {
-    const mockDb = {
-      delete: jest.fn(() => ({
-        where: jest.fn(() => ({
-          returning: jest.fn().mockResolvedValue([]),
-        })),
-      })),
-    };
-    const caller = createAdminCaller(mockDb);
+  describe('delete', () => {
+    test('returns not-found message when id does not exist', async () => {
+      const mockDb = createMockDb({ deleteResult: [] });
 
-    const response = await caller.delete({ type: 'book', id: 'missing-id' });
-    expect(response).toEqual({ message: 'No book item with id: missing-id exists' });
-  });
+      const response = await createDatabaseCaller(mockDb).delete({
+        type: 'book',
+        id: 'missing-id',
+      });
 
-  test('getQueryCount returns 0 for missing date row', async () => {
-    const mockDb = {
-      select: jest.fn(() => ({
-        from: jest.fn(() => ({
-          where: jest.fn(() => ({
-            limit: jest.fn().mockResolvedValue([]),
-          })),
-        })),
-      })),
-    };
-    const caller = createAdminCaller(mockDb);
-
-    const response = await caller.getQueryCount({ date: '2026-03-15' });
-    expect(response).toEqual({ date: '2026-03-15', queryCount: 0 });
-  });
-
-  test('edit returns schema violation payload for invalid book item', async () => {
-    const caller = createAdminCaller({});
-
-    const response = await caller.edit({
-      type: 'book',
-      item: { title: '', spineColor: '' },
-    });
-
-    expect(response).toMatchObject({
-      error: 'Schema Violation',
-      message: 'Schema violation(s) during edit request',
-      type: 'book',
+      expect(response).toEqual({
+        message: 'No book item with id: missing-id exists',
+      });
     });
   });
 
-  test('edit returns media-not-found for missing non-book item', async () => {
-    const mockDb = {
-      select: jest.fn(() => ({
-        from: jest.fn(() => ({
-          where: jest.fn(() => ({
-            limit: jest.fn().mockResolvedValue([]),
-          })),
-        })),
-      })),
-    };
-    const caller = createAdminCaller(mockDb);
+  describe('getQueryCount', () => {
+    test('returns 0 when no usage row exists for the date', async () => {
+      const mockDb = createMockDb({ selectResults: [[]] });
 
-    const response = await caller.edit({
-      type: 'movie',
-      item: {
+      const response = await createDatabaseCaller(mockDb).getQueryCount({
+        date: '2026-03-15',
+      });
+
+      expect(response).toEqual({ date: '2026-03-15', queryCount: 0 });
+    });
+  });
+
+  describe('edit', () => {
+    const duneEditItem = {
+      ...duneBook,
+      images: [duneCoverImage],
+    };
+
+    test('returns schema violation payload for invalid book item', async () => {
+      const response = await createDatabaseCaller().edit({
+        type: 'book',
+        item: { title: '', spineColor: '' },
+      });
+
+      expect(response).toMatchObject({
+        error: 'Schema Violation',
+        message: 'Schema violation(s) during edit request',
+        type: 'book',
+      });
+    });
+
+    test('returns media-not-found when the item is missing on select', async () => {
+      const mockDb = createMockDb({ selectResults: [[]] });
+      const movieEditItem = {
         id: 'missing-id',
         title: 'Nope',
         spineColor: '#000',
         images: [{ url: 'https://img', isDefault: true, spineColor: '#000' }],
-      },
+      };
+
+      const response = await createDatabaseCaller(mockDb).edit({
+        type: 'movie',
+        item: movieEditItem,
+      });
+
+      expect(response).toEqual({
+        error: 'Media Not Found',
+        message: 'Edit requested on an item that does not exist in the database',
+        actionAttemptItem: movieEditItem,
+        type: 'movie',
+        errors: ['Nope does not exist in the database.'],
+      });
     });
 
-    expect(response).toEqual({
-      error: 'Media Not Found',
-      message: 'Edit requested on an item that does not exist in the database',
-      actionAttemptItem: {
-        id: 'missing-id',
-        title: 'Nope',
+    test('returns media-not-found when book disappears before update', async () => {
+      const mockDb = createMockDb({
+        selectResults: [[{ ...duneBook, images: [] }]],
+        updateResult: [],
+      });
+
+      const response = await createDatabaseCaller(mockDb).edit({
+        type: 'book',
+        item: duneEditItem,
+      });
+
+      expect(response).toMatchObject({
+        error: 'Media Not Found',
+        type: 'book',
+        errors: ['Dune does not exist in the database.'],
+      });
+      expect(mockedReplaceBookImageRecords).not.toHaveBeenCalled();
+    });
+
+    test('returns media-not-found when other media disappears before update', async () => {
+      const movieEditItem = {
+        id: matrixMovie.id,
+        title: matrixMovie.title,
         spineColor: '#000',
         images: [{ url: 'https://img', isDefault: true, spineColor: '#000' }],
-      },
-      type: 'movie',
-      errors: ['Nope does not exist in the database.'],
-    });
-  });
+      };
+      const mockDb = createMockDb({
+        selectResults: [[{ ...matrixMovie, spineColor: '#000', images: [] }]],
+        updateResult: [],
+      });
 
-  test('save writes non-database, selected-image other media records', async () => {
-    const mockDb = {
-      insert: jest.fn(() => ({
-        values: jest.fn(() => ({
-          returning: jest.fn().mockResolvedValue([
-            {
-              id: 'movie-1',
-              mediaType: 'movie',
-              title: 'Matrix',
-              spineColor: '#ffffff',
-              images: [],
-            },
-          ]),
-        })),
-      })),
-      update: jest.fn(() => ({
-        set: jest.fn(() => ({
-          where: jest.fn(() => ({
-            returning: jest.fn().mockResolvedValue([
-              {
-                id: 'movie-1',
-                mediaType: 'movie',
-                title: 'Matrix',
-                spineColor: '#ffffff',
-                images: [
-                  {
-                    url: '/uploads/covers/2026/03/selected.png',
-                    isDefault: true,
-                    spineColor: '#ffffff',
-                  },
-                ],
-              },
-            ]),
-          })),
-        })),
-      })),
-      transaction: jest.fn(),
-    };
-
-    const caller = createAdminCaller(mockDb);
-    const response = await caller.save([
-      {
+      const response = await createDatabaseCaller(mockDb).edit({
         type: 'movie',
-        blockID: 'BLK-1',
-        isDatabase: false,
-        images: [
-          {
-            url: 'https://img/selected.png',
-            selected: true,
-            isDefault: true,
-            spineColor: '#ffffff',
-          },
-          {
-            url: 'https://img/unselected.png',
-            selected: false,
-            isDefault: false,
-            spineColor: '#ffffff',
-          },
-        ],
-        blockInfo: {
-          title: 'Matrix',
-          spineColor: '#ffffff',
-          genres: [],
-        },
-      },
-    ]);
+        item: movieEditItem,
+      });
 
-    expect(response).toEqual([
-      {
-        message: 'Matrix successfully added to database.',
-        actionAttemptItem: {
-          id: 'movie-1',
-          mediaType: 'movie',
-          title: 'Matrix',
-          spineColor: '#ffffff',
-          images: [
-            {
-              url: '/uploads/covers/2026/03/selected.png',
-              isDefault: true,
-              spineColor: '#ffffff',
-              selected: false,
-            },
-          ],
-          blockID: 'BLK-1',
-        },
+      expect(response).toMatchObject({
+        error: 'Media Not Found',
         type: 'movie',
-      },
-    ]);
-    expect(resolveAndPersistImageList).toHaveBeenCalled();
-    expect(replaceOtherMediaImageRecords).toHaveBeenCalled();
-  });
-
-  test('edit book resolves image URLs and rewrites image records', async () => {
-    const mockDb = {
-      select: jest.fn(() => ({
-        from: jest.fn(() => ({
-          where: jest.fn(() => ({
-            limit: jest.fn().mockResolvedValue([
-              {
-                id: 'book-1',
-                title: 'Dune',
-                author: 'Frank Herbert',
-                pageCount: 412,
-                pubYear: 1965,
-                spineColor: '#fff',
-                images: [
-                  {
-                    url: '/uploads/covers/2026/03/old-cover.png',
-                    isDefault: true,
-                    spineColor: '#fff',
-                  },
-                ],
-              },
-            ]),
-          })),
-        })),
-      })),
-      update: jest
-        .fn(() => ({
-          set: jest.fn(() => ({
-            where: jest.fn(() => ({
-              returning: jest.fn().mockResolvedValue([
-                {
-                  id: 'book-1',
-                  title: 'Dune',
-                  author: 'Frank Herbert',
-                  pageCount: 412,
-                  pubYear: 1965,
-                  spineColor: '#fff',
-                  images: [
-                    {
-                      url: '/uploads/covers/2026/03/cover.png',
-                      isDefault: true,
-                      spineColor: '#fff',
-                    },
-                  ],
-                },
-              ]),
-            })),
-          })),
-        })),
-    };
-    const caller = createAdminCaller(mockDb);
-
-    const response = await caller.edit({
-      type: 'book',
-      item: {
-        id: 'book-1',
-        title: 'Dune',
-        author: 'Frank Herbert',
-        pageCount: 412,
-        pubYear: 1965,
-        spineColor: '#fff',
-        images: [
-          {
-            url: 'https://images.example.com/cover.png',
-            isDefault: true,
-            spineColor: '#fff',
-          },
-        ],
-      },
+        errors: ['Matrix does not exist in the database.'],
+      });
+      expect(mockedReplaceOtherMediaImageRecords).not.toHaveBeenCalled();
     });
 
-    expect(response).toMatchObject({
-      type: 'book',
-      message: 'Dune successfully edited.',
-      actionAttemptItem: {
-        id: 'book-1',
-        images: [
-          {
-            url: '/uploads/covers/2026/03/cover.png',
-            isDefault: true,
-            spineColor: '#ffffff',
-          },
-        ],
-      },
-    });
-    expect(resolveAndPersistImageList).toHaveBeenCalled();
-    expect(replaceBookImageRecords).toHaveBeenCalled();
-  });
-
-  test('save returns image persistence error when S3 upload fails', async () => {
-    (resolveAndPersistImageList as jest.Mock).mockResolvedValueOnce({
-      images: [],
-      failures: [
-        {
-          sourceUrl: 'https://img/selected.png',
-          message: 'AccessDenied',
-        },
-      ],
-    });
-
-    const mockDb = {
-      insert: jest.fn(() => ({
-        values: jest.fn(() => ({
-          returning: jest.fn().mockResolvedValue([
-            {
-              id: 'movie-1',
-              mediaType: 'movie',
-              title: 'Matrix',
-              spineColor: '#ffffff',
-              images: [],
-            },
-          ]),
-        })),
-      })),
-      delete: jest.fn(() => ({
-        where: jest.fn().mockResolvedValue(undefined),
-      })),
-      update: jest.fn(),
-      transaction: jest.fn(),
-    };
-
-    const caller = createAdminCaller(mockDb);
-    const response = await caller.save([
-      {
-        type: 'movie',
-        blockID: 'BLK-1',
-        isDatabase: false,
-        images: [
-          {
-            url: 'https://img/selected.png',
-            selected: true,
-            isDefault: true,
-            spineColor: '#ffffff',
-          },
-        ],
-        blockInfo: {
-          title: 'Matrix',
-          spineColor: '#ffffff',
-          genres: [],
-        },
-      },
-    ]);
-
-    expect(response).toEqual([
-      {
-        title: 'Matrix',
-        error: 'Image Persistence Error',
-        message: 'Failed to persist one or more selected images to S3.',
-        errors: [
-          'Failed to persist "https://img/selected.png" to S3: AccessDenied',
-        ],
-      },
-    ]);
-    expect(mockDb.delete).toHaveBeenCalledTimes(1);
-    expect(replaceOtherMediaImageRecords).not.toHaveBeenCalled();
-  });
-
-  test('edit returns image persistence error when S3 upload fails', async () => {
-    (resolveAndPersistImageList as jest.Mock).mockResolvedValueOnce({
-      images: [],
-      failures: [
-        {
-          sourceUrl: 'https://images.example.com/cover.png',
-          message: 'AccessDenied',
-        },
-      ],
-    });
-
-    const mockDb = {
-      select: jest.fn(() => ({
-        from: jest.fn(() => ({
-          where: jest.fn(() => ({
-            limit: jest.fn().mockResolvedValue([
-              {
-                id: 'book-1',
-                title: 'Dune',
-                author: 'Frank Herbert',
-                pageCount: 412,
-                pubYear: 1965,
-                spineColor: '#fff',
-                images: [
-                  {
-                    url: '/uploads/covers/2026/03/old-cover.png',
-                    isDefault: true,
-                    spineColor: '#fff',
-                  },
-                ],
-              },
-            ]),
-          })),
-        })),
-      })),
-      update: jest.fn(),
-    };
-    const caller = createAdminCaller(mockDb);
-
-    const response = await caller.edit({
-      type: 'book',
-      item: {
-        id: 'book-1',
-        title: 'Dune',
-        author: 'Frank Herbert',
-        pageCount: 412,
-        pubYear: 1965,
-        spineColor: '#fff',
-        images: [
-          {
-            url: 'https://images.example.com/cover.png',
-            isDefault: true,
-            spineColor: '#fff',
-          },
-        ],
-      },
-    });
-
-    expect(response).toEqual({
-      title: 'Dune',
-      error: 'Image Persistence Error',
-      message: 'Failed to persist one or more selected images to S3.',
-      errors: [
-        'Failed to persist "https://images.example.com/cover.png" to S3: AccessDenied',
-      ],
-    });
-    expect(mockDb.update).not.toHaveBeenCalled();
-    expect(replaceBookImageRecords).not.toHaveBeenCalled();
-  });
-
-  test('getPaginated uses normalized image records when available', async () => {
-    (loadBookImagesById as jest.Mock).mockResolvedValueOnce(
-      new Map([
-        [
-          'book-1',
+    test('resolves image URLs and rewrites image records for books', async () => {
+      const mockDb = createMockDb({
+        selectResults: [
           [
             {
-              url: '/uploads/covers/2026/03/book-1.png',
-              isDefault: true,
-              spineColor: '#fff',
-              selected: false,
+              ...duneBook,
+              images: [
+                {
+                  url: '/uploads/covers/2026/03/old-cover.png',
+                  isDefault: true,
+                  spineColor: '#fff',
+                },
+              ],
             },
           ],
         ],
-      ]),
-    );
+        updateResult: [
+          {
+            ...duneBook,
+            images: [
+              {
+                url: '/uploads/covers/2026/03/cover.png',
+                isDefault: true,
+                spineColor: '#fff',
+              },
+            ],
+          },
+        ],
+      });
 
-    const rows = [
-      {
-        id: 'book-1',
-        title: 'Dune',
-        author: 'Frank Herbert',
-        pageCount: 412,
-        pubYear: 1965,
-        spineColor: '#fff',
-        images: [],
-        mediaType: 'book',
-      },
-    ];
+      const response = await createDatabaseCaller(mockDb).edit({
+        type: 'book',
+        item: duneEditItem,
+      });
 
-    const rowsChain = {
-      from: jest.fn(() => ({
-        leftJoin: jest.fn(() => ({
-          leftJoin: jest.fn(() => ({
-            where: jest.fn(() => ({
-              orderBy: jest.fn(() => ({
-                limit: jest.fn(() => ({
-                  offset: jest.fn().mockResolvedValue(rows),
-                })),
-              })),
-            })),
-          })),
-        })),
-      })),
-    };
-
-    const countChain = {
-      from: jest.fn(() => ({
-        leftJoin: jest.fn(() => ({
-          leftJoin: jest.fn(() => ({
-            where: jest.fn().mockResolvedValue([{ count: 1 }]),
-          })),
-        })),
-      })),
-    };
-
-    const mockDb = {
-      select: jest
-        .fn()
-        .mockReturnValueOnce(rowsChain)
-        .mockReturnValueOnce(countChain),
-    };
-
-    const caller = createAdminCaller(mockDb);
-    const response = await caller.getPaginated({
-      type: 'book',
-      limit: 10,
-      page: 1,
-      sort: 'title',
-      ascDesc: 'asc',
-      genre: '',
+      expect(response).toMatchObject({
+        type: 'book',
+        message: 'Dune successfully edited.',
+        actionAttemptItem: {
+          id: duneBook.id,
+          images: [
+            {
+              url: '/uploads/covers/2026/03/cover.png',
+              isDefault: true,
+              spineColor: '#ffffff',
+            },
+          ],
+        },
+      });
+      expect(mockedResolveAndPersistImageList).toHaveBeenCalled();
+      expect(mockedReplaceBookImageRecords).toHaveBeenCalled();
     });
 
-    expect(response.paginatedList[0]?.images).toEqual([
-      {
-        url: '/uploads/covers/2026/03/book-1.png',
-        isDefault: true,
-        spineColor: '#fff',
-        selected: false,
+    test('returns friendly image persistence error without updating', async () => {
+      mockImagePersistenceFailure(duneCoverImage.url);
+      const mockDb = createMockDb({
+        selectResults: [
+          [
+            {
+              ...duneBook,
+              images: [
+                {
+                  url: '/uploads/covers/2026/03/old-cover.png',
+                  isDefault: true,
+                  spineColor: '#fff',
+                },
+              ],
+            },
+          ],
+        ],
+      });
+
+      const response = await createDatabaseCaller(mockDb).edit({
+        type: 'book',
+        item: duneEditItem,
+      });
+
+      expect(response).toEqual({
+        title: duneBook.title,
+        error: 'Image Persistence Error',
+        message: 'Image failed to save so the edit was not applied.',
+        errors: ['Image failed to save so the edit was not applied.'],
+      });
+      expect(mockDb.update).not.toHaveBeenCalled();
+      expect(mockedReplaceBookImageRecords).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('save', () => {
+    const matrixSaveInput = {
+      type: 'movie' as const,
+      blockID: 'BLK-1',
+      isDatabase: false,
+      images: [
+        matrixCoverImage,
+        {
+          url: 'https://img/unselected.png',
+          selected: false,
+          isDefault: false,
+          spineColor: '#ffffff',
+        },
+      ],
+      blockInfo: {
+        title: matrixMovie.title,
+        spineColor: matrixMovie.spineColor,
+        genres: [] as string[],
       },
-    ]);
+    };
+
+    test('persists selected images for new other-media items', async () => {
+      const mockDb = createMockDb({
+        insertResult: [{ ...matrixMovie, images: [] }],
+      });
+
+      const response = await createDatabaseCaller(mockDb).save([matrixSaveInput]);
+
+      expect(response).toEqual([
+        {
+          success: true,
+          blockID: 'BLK-1',
+          title: matrixMovie.title,
+          message: 'Matrix successfully added to database.',
+          actionAttemptItem: {
+            ...matrixMovie,
+            images: [
+              {
+                url: '/uploads/covers/2026/03/selected.png',
+                isDefault: true,
+                spineColor: '#ffffff',
+                selected: false,
+              },
+            ],
+            blockID: 'BLK-1',
+          },
+          type: 'movie',
+        },
+      ]);
+      expect(mockedResolveAndPersistImageList).toHaveBeenCalled();
+      expect(mockedReplaceOtherMediaImageRecords).toHaveBeenCalled();
+      expect(mockDb.transaction).toHaveBeenCalled();
+    });
+
+    test('rolls back the inserted row and returns a friendly S3 error', async () => {
+      mockImagePersistenceFailure(matrixCoverImage.url);
+      const mockDb = createMockDb({
+        insertResult: [{ ...matrixMovie, images: [] }],
+      });
+
+      const response = await createDatabaseCaller(mockDb).save([
+        {
+          ...matrixSaveInput,
+          images: [matrixCoverImage],
+        },
+      ]);
+
+      expect(response).toEqual([
+        {
+          success: false,
+          blockID: 'BLK-1',
+          title: matrixMovie.title,
+          error: 'Image Persistence Error',
+          message:
+            'Image failed to save so media item creation was rolled back.',
+          errors: [
+            'Image failed to save so media item creation was rolled back.',
+          ],
+        },
+      ]);
+      expect(mockDb.delete).toHaveBeenCalledTimes(1);
+      expect(mockedReplaceOtherMediaImageRecords).not.toHaveBeenCalled();
+    });
   });
 });

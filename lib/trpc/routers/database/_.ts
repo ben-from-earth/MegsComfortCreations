@@ -11,7 +11,11 @@ import {
   otherMedia,
 } from '@/db/schema';
 import type {
+  DatabaseSaveEditErrorResponse,
+  DatabaseSaveFailureResult,
   DatabaseSaveServerResponse,
+  DatabaseSaveSuccessResult,
+  PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
@@ -26,7 +30,7 @@ import {
   replaceOtherMediaImageRecords,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
-import { DatabaseSaveEditErrorResponse } from '@/api/api-Errors';
+import type { MediaType } from 'lib/constants/mediaTypes';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 const sortKey = z.enum(DATABASE_SORT_OPTIONS);
@@ -53,6 +57,10 @@ const otherMediaEditSchema = z.object({
   images: z.array(mediaImageItemSchema).min(1),
 });
 
+type BookEditItem = z.infer<typeof bookEditSchema>;
+type OtherMediaEditItem = z.infer<typeof otherMediaEditSchema>;
+type EditableMediaItem = BookEditItem | OtherMediaEditItem;
+
 function resolveDisplaySpineColor(
   images: Array<{ isDefault: boolean; spineColor: string }>,
   fallbackSpineColor: string,
@@ -61,23 +69,89 @@ function resolveDisplaySpineColor(
   return defaultImage?.spineColor ?? fallbackSpineColor;
 }
 
-function formatImagePersistenceErrors(
-  sourceFailures: Array<{ sourceUrl: string; message: string }>,
-) {
-  return sourceFailures.map(
-    ({ sourceUrl, message }) => `Failed to persist "${sourceUrl}" to S3: ${message}`,
-  );
-}
+const IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR =
+  'Image failed to save so media item creation was rolled back.';
+const IMAGE_SAVE_EDIT_NOT_APPLIED_ERROR =
+  'Image failed to save so the edit was not applied.';
 
 function createImagePersistenceErrorResponse(
   title: string,
-  sourceFailures: Array<{ sourceUrl: string; message: string }>,
+  rolledBackCreation: boolean,
 ): DatabaseSaveEditErrorResponse {
+  const reason = rolledBackCreation
+    ? IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR
+    : IMAGE_SAVE_EDIT_NOT_APPLIED_ERROR;
   return {
     title,
     error: 'Image Persistence Error',
-    message: 'Failed to persist one or more selected images to S3.',
-    errors: formatImagePersistenceErrors(sourceFailures),
+    message: reason,
+    errors: [reason],
+  };
+}
+
+function createSaveFailureResult(params: {
+  blockID: string;
+  title: string;
+  error: string;
+  message: string;
+  errors: string[];
+}): DatabaseSaveFailureResult {
+  return {
+    success: false,
+    blockID: params.blockID,
+    title: params.title,
+    error: params.error,
+    message: params.message,
+    errors: params.errors,
+  };
+}
+
+function createSaveImagePersistenceFailure(
+  title: string,
+  blockID: string,
+): DatabaseSaveFailureResult {
+  return createSaveFailureResult({
+    blockID,
+    title,
+    error: 'Image Persistence Error',
+    message: IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR,
+    errors: [IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR],
+  });
+}
+
+function createSaveSuccessResult(params: {
+  blockID: string;
+  title: string;
+  message: string;
+  type: MediaType;
+  actionAttemptItem: PostSavedMediaItem & {
+    blockID?: string;
+    genres?: string[];
+  };
+}): DatabaseSaveSuccessResult {
+  return {
+    success: true,
+    blockID: params.blockID,
+    title: params.title,
+    message: params.message,
+    type: params.type,
+    actionAttemptItem: {
+      ...params.actionAttemptItem,
+      blockID: params.blockID,
+    },
+  };
+}
+
+function createMediaNotFoundEditResponse(
+  data: EditableMediaItem,
+  type: z.infer<typeof mediaType>,
+) {
+  return {
+    error: 'Media Not Found' as const,
+    message: 'Edit requested on an item that does not exist in the database',
+    actionAttemptItem: data,
+    type,
+    errors: [`${data.title} does not exist in the database.`],
   };
 }
 
@@ -263,12 +337,7 @@ export const databaseRouter = router({
               .returning({ id: books.id })
           : await db
               .delete(otherMedia)
-              .where(
-                and(
-                  eq(otherMedia.mediaType, type),
-                  eq(otherMedia.id, id),
-                ),
-              )
+              .where(and(eq(otherMedia.mediaType, type), eq(otherMedia.id, id)))
               .returning({ id: otherMedia.id });
 
       if (deleted.length === 0) {
@@ -325,12 +394,15 @@ export const databaseRouter = router({
           collectedBlockInformationSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
-          results.push({
-            error: 'Schema Violation',
-            message: 'Schema violation(s) during save request',
-            errors: tree.errors,
-            title: mediaItem.blockInfo.title,
-          });
+          results.push(
+            createSaveFailureResult({
+              blockID: mediaItem.blockID,
+              title: mediaItem.blockInfo.title,
+              error: 'Schema Violation',
+              message: 'Schema violation(s) during save request',
+              errors: tree.errors,
+            }),
+          );
           continue;
         }
 
@@ -338,35 +410,40 @@ export const databaseRouter = router({
         if (data.type === 'book') {
           let createdBookId: string | null = null;
           try {
-            const [book] = await db
-              .insert(books)
-              .values({
-                title: titleRearrange(data.blockInfo.title),
-                author: data.blockInfo.author ?? '',
-                pageCount: data.blockInfo.pageCount ?? null,
-                pubYear: data.blockInfo.pubYear ?? null,
-                spineColor: data.images[0]?.spineColor ?? data.blockInfo.spineColor,
-              })
-              .returning();
+            const book = await db.transaction(async (tx) => {
+              const [insertedBook] = await tx
+                .insert(books)
+                .values({
+                  title: titleRearrange(data.blockInfo.title),
+                  author: data.blockInfo.author ?? '',
+                  pageCount: data.blockInfo.pageCount ?? null,
+                  pubYear: data.blockInfo.pubYear ?? null,
+                  spineColor:
+                    data.images[0]?.spineColor ?? data.blockInfo.spineColor,
+                })
+                .returning();
 
-            if (!book) {
-              throw new Error('Book insertion failed');
-            }
-            createdBookId = book.id;
-
-            for (const genreName of data.blockInfo.genres) {
-              const [genreRow] = await db
-                .select()
-                .from(genres)
-                .where(eq(genres.genre, genreName));
-              if (!genreRow) {
-                throw new Error(`Genre "${genreName}" does not exist`);
+              if (!insertedBook) {
+                throw new Error('Book insertion failed');
               }
-              await db.insert(genresBooks).values({
-                bookId: book.id,
-                genreId: genreRow.id,
-              });
-            }
+
+              for (const genreName of data.blockInfo.genres) {
+                const [genreRow] = await tx
+                  .select()
+                  .from(genres)
+                  .where(eq(genres.genre, genreName));
+                if (!genreRow) {
+                  throw new Error(`Genre "${genreName}" does not exist`);
+                }
+                await tx.insert(genresBooks).values({
+                  bookId: insertedBook.id,
+                  genreId: genreRow.id,
+                });
+              }
+
+              return insertedBook;
+            });
+            createdBookId = book.id;
 
             const resolvedImages = await resolveAndPersistImageList(
               { mediaType: 'book', mediaId: book.id },
@@ -375,14 +452,17 @@ export const databaseRouter = router({
                 isDefault: image.isDefault,
                 spineColor: image.spineColor,
               })),
-              { defaultSpineColor: data.blockInfo.spineColor, defaultImageIndex: 0 },
+              {
+                defaultSpineColor: data.blockInfo.spineColor,
+                defaultImageIndex: 0,
+              },
             );
             if (resolvedImages.failures.length > 0) {
               await db.delete(books).where(eq(books.id, book.id));
               results.push(
-                createImagePersistenceErrorResponse(
+                createSaveImagePersistenceFailure(
                   data.blockInfo.title,
-                  resolvedImages.failures,
+                  data.blockID,
                 ),
               );
               continue;
@@ -399,17 +479,21 @@ export const databaseRouter = router({
               data.blockInfo.spineColor,
             );
 
-            results.push({
-              message: `${titleRearrange(book.title)} successfully added to database.`,
-              actionAttemptItem: {
-                ...book,
-                images,
-                spineColor: persistedSpineColor,
-                genres: data.blockInfo.genres,
+            results.push(
+              createSaveSuccessResult({
                 blockID: data.blockID,
-              },
-              type: data.type,
-            });
+                title: data.blockInfo.title,
+                message: `${titleRearrange(book.title)} successfully added to database.`,
+                type: data.type,
+                actionAttemptItem: {
+                  ...book,
+                  images,
+                  spineColor: persistedSpineColor,
+                  genres: data.blockInfo.genres,
+                  blockID: data.blockID,
+                },
+              }),
+            );
           } catch (error) {
             if (createdBookId) {
               await db.delete(books).where(eq(books.id, createdBookId));
@@ -418,12 +502,16 @@ export const databaseRouter = router({
               error instanceof Error
                 ? error.message
                 : 'An error occurred while trying to save to the database';
-            results.push({
-              title: data.blockInfo.title,
-              error: 'Database Insertion Error',
-              message: 'An error occurred while trying to save to the database',
-              errors: [message],
-            });
+            results.push(
+              createSaveFailureResult({
+                blockID: data.blockID,
+                title: data.blockInfo.title,
+                error: 'Database Insertion Error',
+                message:
+                  'An error occurred while trying to save to the database',
+                errors: [message],
+              }),
+            );
           }
           continue;
         }
@@ -433,21 +521,22 @@ export const databaseRouter = router({
           title: titleRearrange(data.blockInfo.title),
           spineColor: data.images[0]?.spineColor ?? data.blockInfo.spineColor,
         };
-        const [savedOtherMedia] = await db
-          .insert(otherMedia)
-          .values(insertData)
-          .returning();
-
-        if (!savedOtherMedia) {
-          results.push({
-            title: data.blockInfo.title,
-            error: 'Database Insertion Error',
-            message: 'An error occurred while trying to save to the database',
-            errors: [
-              `${titleRearrange(insertData.title)} could not be saved to the database.`,
-            ],
+        let createdOtherMediaId: string | null = null;
+        try {
+          const savedOtherMedia = await db.transaction(async (tx) => {
+            const [insertedOtherMedia] = await tx
+              .insert(otherMedia)
+              .values(insertData)
+              .returning();
+            if (!insertedOtherMedia) {
+              throw new Error(
+                `${titleRearrange(insertData.title)} could not be saved to the database.`,
+              );
+            }
+            return insertedOtherMedia;
           });
-        } else {
+          createdOtherMediaId = savedOtherMedia.id;
+
           const resolvedImages = await resolveAndPersistImageList(
             { mediaType: data.type, mediaId: savedOtherMedia.id },
             data.images.map((image) => ({
@@ -455,14 +544,19 @@ export const databaseRouter = router({
               isDefault: image.isDefault,
               spineColor: image.spineColor,
             })),
-            { defaultSpineColor: data.blockInfo.spineColor, defaultImageIndex: 0 },
+            {
+              defaultSpineColor: data.blockInfo.spineColor,
+              defaultImageIndex: 0,
+            },
           );
           if (resolvedImages.failures.length > 0) {
-            await db.delete(otherMedia).where(eq(otherMedia.id, savedOtherMedia.id));
+            await db
+              .delete(otherMedia)
+              .where(eq(otherMedia.id, savedOtherMedia.id));
             results.push(
-              createImagePersistenceErrorResponse(
+              createSaveImagePersistenceFailure(
                 data.blockInfo.title,
-                resolvedImages.failures,
+                data.blockID,
               ),
             );
             continue;
@@ -483,16 +577,39 @@ export const databaseRouter = router({
             insertData.spineColor,
           );
 
-          results.push({
-            message: `${titleRearrange(insertData.title)} successfully added to database.`,
-            actionAttemptItem: {
-              ...savedOtherMedia,
-              images,
-              spineColor: persistedSpineColor,
+          results.push(
+            createSaveSuccessResult({
               blockID: data.blockID,
-            },
-            type: data.type,
-          });
+              title: data.blockInfo.title,
+              message: `${titleRearrange(insertData.title)} successfully added to database.`,
+              type: data.type,
+              actionAttemptItem: {
+                ...savedOtherMedia,
+                images,
+                spineColor: persistedSpineColor,
+                blockID: data.blockID,
+              },
+            }),
+          );
+        } catch (error) {
+          if (createdOtherMediaId) {
+            await db
+              .delete(otherMedia)
+              .where(eq(otherMedia.id, createdOtherMediaId));
+          }
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'An error occurred while trying to save to the database';
+          results.push(
+            createSaveFailureResult({
+              blockID: data.blockID,
+              title: data.blockInfo.title,
+              error: 'Database Insertion Error',
+              message: 'An error occurred while trying to save to the database',
+              errors: [message],
+            }),
+          );
         }
       }
       return results;
@@ -525,14 +642,7 @@ export const databaseRouter = router({
           .where(whereExpression)
           .limit(1);
         if (!existingBook) {
-          return {
-            error: 'Media Not Found',
-            message:
-              'Edit requested on an item that does not exist in the database',
-            actionAttemptItem: data,
-            type,
-            errors: [`${data.title} does not exist in the database.`],
-          };
+          return createMediaNotFoundEditResponse(data, type);
         }
         const resolvedImages = await resolveAndPersistImageList(
           { mediaType: 'book', mediaId: existingBook.id },
@@ -544,10 +654,7 @@ export const databaseRouter = router({
           { defaultSpineColor: data.spineColor },
         );
         if (resolvedImages.failures.length > 0) {
-          return createImagePersistenceErrorResponse(
-            data.title,
-            resolvedImages.failures,
-          );
+          return createImagePersistenceErrorResponse(data.title, false);
         }
         const images = resolvedImages.images.map((image) => ({
           url: image.publicPath,
@@ -555,7 +662,10 @@ export const databaseRouter = router({
           spineColor: image.spineColor,
           selected: false,
         }));
-        const persistedSpineColor = resolveDisplaySpineColor(images, data.spineColor);
+        const persistedSpineColor = resolveDisplaySpineColor(
+          images,
+          data.spineColor,
+        );
         const [book] = await db
           .update(books)
           .set({
@@ -567,6 +677,9 @@ export const databaseRouter = router({
           })
           .where(whereExpression)
           .returning();
+        if (!book) {
+          return createMediaNotFoundEditResponse(data, type);
+        }
         await replaceBookImageRecords(db, book.id, resolvedImages.images);
 
         return {
@@ -600,14 +713,7 @@ export const databaseRouter = router({
         .where(whereExpression)
         .limit(1);
       if (!existingOtherMedia) {
-        return {
-          error: 'Media Not Found',
-          message:
-            'Edit requested on an item that does not exist in the database',
-          actionAttemptItem: data,
-          type,
-          errors: [`${data.title} does not exist in the database.`],
-        };
+        return createMediaNotFoundEditResponse(data, type);
       }
       const resolvedImages = await resolveAndPersistImageList(
         { mediaType: type, mediaId: existingOtherMedia.id },
@@ -619,7 +725,7 @@ export const databaseRouter = router({
         { defaultSpineColor: data.spineColor },
       );
       if (resolvedImages.failures.length > 0) {
-        return createImagePersistenceErrorResponse(data.title, resolvedImages.failures);
+        return createImagePersistenceErrorResponse(data.title, false);
       }
       const images = resolvedImages.images.map((image) => ({
         url: image.publicPath,
@@ -627,7 +733,10 @@ export const databaseRouter = router({
         spineColor: image.spineColor,
         selected: false,
       }));
-      const persistedSpineColor = resolveDisplaySpineColor(images, data.spineColor);
+      const persistedSpineColor = resolveDisplaySpineColor(
+        images,
+        data.spineColor,
+      );
       const [savedOtherMedia] = await db
         .update(otherMedia)
         .set({
@@ -637,6 +746,9 @@ export const databaseRouter = router({
         })
         .where(whereExpression)
         .returning();
+      if (!savedOtherMedia) {
+        return createMediaNotFoundEditResponse(data, type);
+      }
       await replaceOtherMediaImageRecords(
         db,
         savedOtherMedia.id,
