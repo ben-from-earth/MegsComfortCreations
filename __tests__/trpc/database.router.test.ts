@@ -448,6 +448,9 @@ describe('database router', () => {
 
       expect(response).toEqual([
         {
+          success: true,
+          blockID: 'BLK-1',
+          title: matrixMovie.title,
           message: 'Matrix successfully added to database.',
           actionAttemptItem: {
             ...matrixMovie,
@@ -484,6 +487,8 @@ describe('database router', () => {
 
       expect(response).toEqual([
         {
+          success: false,
+          blockID: 'BLK-1',
           title: matrixMovie.title,
           error: 'Image Persistence Error',
           message:

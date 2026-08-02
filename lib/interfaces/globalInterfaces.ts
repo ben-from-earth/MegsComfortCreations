@@ -95,12 +95,28 @@ export interface BlockInfo {
   databaseGenres?: string[];
 }
 
-// 7. Server response union
-type DatabaseSaveServerResponseItem =
-  | DatabaseSaveEditErrorResponse
-  | SuccessfulMediaSaveEditResponse
-  | (SuccessfulMediaSaveEditResponse & {
-      genreResponses: SuccessfulGenreLinkUnlinkResponse[];
-    });
+// 7. `database.save` per-item results (discriminated on `success`)
+export type DatabaseSaveSuccessResult = {
+  success: true;
+  blockID: string;
+  title: string;
+  message: string;
+  type: MediaType;
+  actionAttemptItem: PostSavedMediaItem & MediaExtras;
+  genreResponses?: SuccessfulGenreLinkUnlinkResponse[];
+};
 
-export type DatabaseSaveServerResponse = DatabaseSaveServerResponseItem[];
+export type DatabaseSaveFailureResult = {
+  success: false;
+  blockID: string;
+  title: string;
+  error: string;
+  message: string;
+  errors: string[];
+};
+
+export type DatabaseSaveResultItem =
+  | DatabaseSaveSuccessResult
+  | DatabaseSaveFailureResult;
+
+export type DatabaseSaveServerResponse = DatabaseSaveResultItem[];

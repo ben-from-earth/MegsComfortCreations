@@ -2,27 +2,28 @@
 import Button from '@/components/ui/Button';
 
 // interfaces and types
-import { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
+import type { DatabaseSaveFailureDisplayLine } from './database-save-error-display';
 
 export interface InformationalDialogProps {
   variant: 'databaseSave' | 'informationalOnly';
-  data?: DatabaseSaveServerResponse;
+  failureLines?: DatabaseSaveFailureDisplayLine[];
   infoText?: string;
   close: () => void;
 }
 
 export default function InformationalDialog({
   variant,
-  data,
+  failureLines,
   infoText,
   close,
 }: InformationalDialogProps) {
   if (variant === 'databaseSave') {
-    const totalCount = data?.length ?? 0;
-    const failedItems = data?.filter((item) => 'error' in item) ?? [];
-    const successCount = totalCount - failedItems.length;
+    const lines = failureLines ?? [];
+    const failedCount = lines.length;
+    const titleWord = failedCount === 1 ? 'title' : 'titles';
+
     return (
-      <div className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex max-h-100 w-fit -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center overflow-y-auto rounded-md border-3 p-2 text-4xl tracking-wider text-black">
+      <div className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex max-h-100 w-fit max-w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center overflow-y-auto rounded-md border-3 p-2 text-4xl tracking-wider text-black">
         <div className="mb-2 flex w-full">
           <Button
             variant="primary"
@@ -35,18 +36,17 @@ export default function InformationalDialog({
         </div>
 
         <div className="px-10">
-          Results of saving to database:
-          <p>Successful saves: {successCount}</p>
-          <p>Failed saves: {failedItems.length}</p>
-          <ol className="list-decimal">
-            {failedItems.map((item, idx) => (
-              <li key={idx} className="mb-2">
-                {`Error saving ${item.title} to database`}
-                <ol type="a" className="pl-7">
-                  {item.errors.map((error, eIdx) => (
-                    <li key={eIdx}>{error}</li>
-                  ))}
-                </ol>
+          <p>
+            {failedCount} {titleWord} experienced errors when attempting to save
+            to the database. All blocks besides the following were successfully
+            saved:
+          </p>
+          <ol className="mt-4 list-decimal pl-10">
+            {lines.map((line) => (
+              <li key={line.blockID || `${line.title}-${line.blockNumber}`} className="mb-2">
+                {line.blockNumber !== null
+                  ? `${line.title} in Block #${line.blockNumber}: ${line.reason}`
+                  : `${line.title}: ${line.reason}`}
               </li>
             ))}
           </ol>
