@@ -95,7 +95,8 @@ export async function resolveAndPersistImageList(
       sourceImage !== null &&
       sourceImage.isDefault === true,
   );
-  const resolvedDefaultIndex = explicitDefaultIndex >= 0 ? explicitDefaultIndex : defaultImageIndex;
+  const resolvedDefaultIndex =
+    explicitDefaultIndex >= 0 ? explicitDefaultIndex : defaultImageIndex;
 
   for (let index = 0; index < normalizedSourceImages.length; index += 1) {
     const rawSourceImage = normalizedSourceImages[index];
@@ -232,7 +233,10 @@ export async function loadBookImagesById(db: Db, bookIds: string[]) {
   return imagesByBookId;
 }
 
-export async function loadOtherMediaImagesById(db: Db, otherMediaIds: string[]) {
+export async function loadOtherMediaImagesById(
+  db: Db,
+  otherMediaIds: string[],
+) {
   if (otherMediaIds.length === 0) {
     return new Map<string, MediaImageItem[]>();
   }
@@ -282,8 +286,14 @@ export async function loadBookImageUrlsById(db: Db, bookIds: string[]) {
   );
 }
 
-export async function loadOtherMediaImageUrlsById(db: Db, otherMediaIds: string[]) {
-  const imagesByOtherMediaId = await loadOtherMediaImagesById(db, otherMediaIds);
+export async function loadOtherMediaImageUrlsById(
+  db: Db,
+  otherMediaIds: string[],
+) {
+  const imagesByOtherMediaId = await loadOtherMediaImagesById(
+    db,
+    otherMediaIds,
+  );
   return new Map(
     [...imagesByOtherMediaId.entries()].map(([otherMediaId, images]) => [
       otherMediaId,

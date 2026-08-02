@@ -1,5 +1,3 @@
-import { appRouter } from 'lib/trpc/routers/_app';
-
 type MinimalUser = {
   id: string;
   role: 'admin' | 'user';
@@ -38,5 +36,7 @@ export function createAnonContext(db?: unknown): Required<MinimalContext> {
 }
 
 export function createTrpcCaller(ctx: MinimalContext) {
+  // Lazy import keeps context helpers usable when appRouter has unrelated missing modules.
+  const { appRouter } = require('lib/trpc/routers/_app') as typeof import('lib/trpc/routers/_app');
   return appRouter.createCaller(ctx as never);
 }
