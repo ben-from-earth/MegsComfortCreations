@@ -155,10 +155,6 @@ npm run db:migrate         # catch up migrations after the dump watermark
 
 `app/db/snapshot.sql` is gitignored. Details: `ai-assistance/PLAN_DB_SNAPSHOT_RESTORE.md`
 
-## Route Documentation
-
-Route documentation can be found by hitting localhost:3000/docs, and the write up is found at /docs
-
 ## Contributing
 
 Questions, ideas, or interested in collaborating? Email me at benknox480@gmail.com.

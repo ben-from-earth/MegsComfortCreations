@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'swagger-ui-react/swagger-ui.css';
 
 @theme {
   --color-lightpink: #f4d8d8;

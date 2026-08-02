@@ -17,6 +17,8 @@ These were open in the March review and are now fixed:
 - Internal admin seed endpoint removed (`app/api/internal/seed-admin/route.ts`) — bootstrap no longer needed; admins already exist in all environments
 - Concurrent-delete edge in `database.edit` — empty update `returning` now yields `Media Not Found` instead of asserting on the row
 - `database.save` DB writes use transactions + compensating parent delete on S3 failure; S3 orphans on rare post-upload DB failure remain accepted (S3 cannot join a Postgres txn). User-facing image failure copy no longer exposes raw S3/URL details.
+- Swagger / OpenAPI stack removed (`/docs`, `swagger-ui-react`, `swagger-jsdoc`, related types, Redux peers kept only for Swagger, stale `tsconfig` doc path aliases, README `/docs` section)
+- Low-value / stale test cleanup: removed duplicate smoke suites and placeholder `profile` / `health` router coverage; `auth-guards` now asserts against a real `adminProcedure` (`genres.getAll`); unused `health` router deleted
 
 ---
 
@@ -173,20 +175,6 @@ These were open in the March review and are now fixed:
 - **Fix suggestion**
     - Add `CLAUDE.md` or drop the reference; rewrite README structure to match the repo.
 
-### Swagger / OpenAPI documents deleted REST API
-
-- **Paths**
-    - `app/api/openapi/route.ts`
-    - `docs/SwaggerDocumentation/**`
-    - `/docs` route (Swagger UI)
-- **Issue**
-    - Describes `/api/database/*`, `/api/genres/*`, `/api/png/create`, etc.; app surface is `/api/trpc`.
-- **Fix suggestion**
-    - Either regenerate docs for tRPC procedures, or remove `/docs`, OpenAPI route, Swagger deps, and path modules together.
-    - If kept as code, move path objects out of `docs/` (e.g. `lib/openapi/`).
-
----
-
 ## Dead Code & Unused Exports
 
 Confirmed unused (no imports / script references found):
@@ -220,13 +208,9 @@ Likely unused (verify ops before delete):
     - `package.json`
 - **Candidates** (no project source imports found)
     - `@neondatabase/serverless`
-    - `@reduxjs/toolkit`
     - `jsonschema`
     - `msw`, `@mswjs/interceptors`
     - `bcrypt`, `@types/bcrypt` (only via dead `createPasswordHash.ts`)
-    - `swagger-jsdoc`, `swagger-ui-react`, related types — if `/docs` is removed
-- **Note**
-    - `react-redux` may be required as a Swagger UI peer; remove only with the Swagger decision.
 
 ### Stale / low-value docs
 
@@ -252,16 +236,6 @@ Likely unused (verify ops before delete):
 
 Need big time test rework
 
-### Duplicate / low-value suites
-
-- **Paths**
-    - `__tests__/genres.test.ts` — duplicates `__tests__/trpc/genres.router.test.ts` (`getAll` / `getForBook`)
-    - `__tests__/medias.test.ts` — duplicates `__tests__/trpc/database.router.test.ts` (`searchByTitle`)
-    - `__tests__/trpc/profile.router.test.ts` + `lib/trpc/routers/profile.ts` — hardcoded placeholder profile
-    - `__tests__/trpc/health.router.test.ts` — fixed string smoke only
-- **Fix suggestion**
-    - Remove duplicate smoke files; keep or replace profile/health once they reflect real behavior.
-
 ### Coverage gaps & CI friction
 
 - **Paths**
@@ -283,5 +257,5 @@ Need big time test rework
 2. Delete confirmed-dead files/exports (`createPasswordHash`, `vanillaClient`, duplicate schemas, unused error types); drop unused deps; fix ESLint override path.
 3. Unify `MediaImage` / `BlockInfo` / `collectionList` schemas as single sources of truth; remove redundant casts.
 4. Deduplicate collect normalization, image persistence helpers, and CBBImages / EditDatabaseBlock image-edit logic.
-5. Decide Swagger fate (regenerate for tRPC or remove stack); refresh README / AGENTS structure docs.
-6. Remove duplicate smoke tests; fix Windows `test:ci`; add test typecheck to CI.
+5. Refresh README / AGENTS structure docs for the current tRPC stack.
+6. Fix Windows `test:ci`; add test typecheck to CI.
