@@ -1,31 +1,12 @@
-// react, redux imports
-import { Dispatch, SetStateAction } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CollectorFormData } from './collector-form/collectorFormSchema';
+import FormMessage from '@/components/ui/FormMessage';
 
-// interfaces and types
-
-interface PNGFormatPickerProps {
-  pngError: boolean;
-  setPNGError: Dispatch<SetStateAction<boolean>>;
-}
-
-export default function PNGFormatPicker({
-  pngError,
-  setPNGError,
-}: PNGFormatPickerProps) {
+export default function PNGFormatPicker() {
   const { watch, setValue } = useFormContext<CollectorFormData>();
+
   return (
     <div className="flex flex-col items-center">
-      <p
-        className='m-0 font-["Just_Another_Hand"] text-2xl tracking-wider'
-        style={{
-          visibility: pngError ? 'visible' : 'hidden',
-          color: 'red',
-        }}
-      >
-        Please select a PNG template option
-      </p>
       <div className="flex gap-2.5">
         <label className='font-["Just_Another_Hand"] text-2xl tracking-wider'>
           <input
@@ -35,10 +16,9 @@ export default function PNGFormatPicker({
             checked={watch('pngFormat') === '3'}
             onChange={(e) => {
               if (e.target.checked === true) {
-                setPNGError(false);
-                setValue('pngFormat', '3');
+                setValue('pngFormat', '3', { shouldValidate: true });
               } else {
-                setValue('pngFormat', undefined);
+                setValue('pngFormat', null, { shouldValidate: true });
               }
             }}
           />
@@ -52,16 +32,16 @@ export default function PNGFormatPicker({
             checked={watch('pngFormat') === '5'}
             onChange={(e) => {
               if (e.target.checked === true) {
-                setValue('pngFormat', '5');
-                setPNGError(false);
+                setValue('pngFormat', '5', { shouldValidate: true });
               } else {
-                setValue('pngFormat', undefined);
+                setValue('pngFormat', null, { shouldValidate: true });
               }
             }}
           />
           5mm PNG Format
         </label>
       </div>
+      <FormMessage<CollectorFormData> name="pngFormat" />
     </div>
   );
 }
