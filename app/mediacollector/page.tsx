@@ -15,12 +15,13 @@ import MediaCheckboxes, {
 import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
-import InformationalDialog from '@/mediacollector/InformationalDialog';
+import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
 import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
 import TextInput from '@/shared/TextInput';
 
 //interfaces and types
 import Button from '@/components/ui/Button';
+import Dialog from '@/components/ui/Dialog';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
@@ -43,6 +44,8 @@ function MediaCollectorContent() {
   const formValues = watch();
 
   const [pngError, setPNGError] = useState<boolean>(false);
+  const [bookClubRepeatError, setBookClubRepeatError] =
+    useState<boolean>(false);
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
@@ -54,12 +57,13 @@ function MediaCollectorContent() {
   const [databaseSaveFailureLines, setDatabaseSaveFailureLines] = useState<
     DatabaseSaveFailureDisplayLine[]
   >([]);
-  const [visibleMediaInputs, setVisibleMediaInputs] = useState<MediaVisibilityMap>({
-    book: true,
-    movie: false,
-    videoGame: false,
-    album: false,
-  });
+  const [visibleMediaInputs, setVisibleMediaInputs] =
+    useState<MediaVisibilityMap>({
+      book: true,
+      movie: false,
+      videoGame: false,
+      album: false,
+    });
 
   //refs for useEffect
   // const mediaTypesRef = useRef(stateData);
@@ -127,8 +131,52 @@ function MediaCollectorContent() {
     }
 
     if (formValues.bookClubRepeat < 1) {
-      setInformationalDialogText(`Book Club Repeat Number must be at least 1.`);
-      setShowInformationalDialog(true);
+      setBookClubRepeatError(true);
+      return;
+    }
+
+    // TEMPORARY: force database-save error dialog on every Create PNG attempt for UI work.
+    // Remove this block when finished.
+    const FORCE_PNG_CREATE_DATABASE_SAVE_ERROR_DIALOG = true;
+    if (FORCE_PNG_CREATE_DATABASE_SAVE_ERROR_DIALOG) {
+      const sampleBlocks = formValues.collectedData.slice(0, 2);
+      const forcedFailureLines: DatabaseSaveFailureDisplayLine[] =
+        sampleBlocks.length > 0
+          ? sampleBlocks.map((block, index) => ({
+              blockID: block.blockID,
+              title: block.blockInfo.title || `Sample Title ${index + 1}`,
+              blockNumber:
+                formValues.collectedData.findIndex(
+                  (collectedBlock) => collectedBlock.blockID === block.blockID,
+                ) + 1,
+              reason:
+                index === 0
+                  ? 'The cover image could not be saved, so this item was not added to the database.'
+                  : 'A selected genre is not available in the database.',
+            }))
+          : [
+              {
+                blockID: 'forced-error-block-1',
+                title: 'Forced Error Title',
+                blockNumber: 1,
+                reason:
+                  'The cover image could not be saved, so this item was not added to the database.',
+              },
+              {
+                blockID: 'forced-error-block-2',
+                title: 'Another Forced Error',
+                blockNumber: 2,
+                reason: 'A selected genre is not available in the database.',
+              },
+            ];
+
+      setDatabaseSaveFailureLines(forcedFailureLines);
+      setBlockIdsWithErrors(
+        forcedFailureLines
+          .map((line) => line.blockID)
+          .filter((blockID) => blockID.length > 0),
+      );
+      setDatabaseSaved(true);
       return;
     }
 
@@ -234,14 +282,29 @@ function MediaCollectorContent() {
             variant="normal"
             value={formValues.orderNumber}
           />
-          <TextInput
-            onChange={(e) => {
-              setValue('bookClubRepeat', Number(e.target.value));
-            }}
-            label={'Book Club Repeat Number'}
-            variant="normal"
-            value={formValues.bookClubRepeat.toString()}
-          />
+          <div className="flex flex-col items-center">
+            <p
+              className='m-0 font-["Just_Another_Hand"] text-2xl tracking-wider'
+              style={{
+                visibility: bookClubRepeatError ? 'visible' : 'hidden',
+                color: 'red',
+              }}
+            >
+              Book Club Repeat Number must be at least 1.
+            </p>
+            <TextInput
+              onChange={(e) => {
+                const nextValue = Number(e.target.value);
+                setValue('bookClubRepeat', nextValue);
+                if (nextValue >= 1) {
+                  setBookClubRepeatError(false);
+                }
+              }}
+              label={'Book Club Repeat Number'}
+              variant="normal"
+              value={formValues.bookClubRepeat.toString()}
+            />
+          </div>
 
           <MediaCheckboxes
             visibility={visibleMediaInputs}
@@ -275,18 +338,18 @@ function MediaCollectorContent() {
         <LoadingWidget message={loadingMessage} />
       )}
       {databaseSaved && (
-        <InformationalDialog
-          variant="databaseSave"
-          failureLines={databaseSaveFailureLines}
-          close={() => setDatabaseSaved(false)}
-        />
+        <Dialog title="Error" onClose={() => setDatabaseSaved(false)}>
+          <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
+        </Dialog>
       )}
       {showInformationalDialog && (
-        <InformationalDialog
-          variant="informationalOnly"
-          infoText={informationalDialogText}
-          close={() => setShowInformationalDialog(false)}
-        />
+        <Dialog
+          title="Error"
+          onClose={() => setShowInformationalDialog(false)}
+          className="w-5/12"
+        >
+          <p>{informationalDialogText}</p>
+        </Dialog>
       )}
       {formValues.collectedData.length > 0 && (
         <TitleBlockContainer
