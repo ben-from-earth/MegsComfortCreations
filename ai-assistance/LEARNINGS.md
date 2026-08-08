@@ -48,3 +48,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: `dotenv` defaults to `override: false`, so a leftover `$env:DATABASE_URL` in the shell could make `db:snapshot:prod` dump the wrong Neon branch.
 - Correction: Load script env files with `override: true` so the file passed on the CLI always wins.
 - Rule Going Forward: Any script that takes an explicit env-file path must load it with `override: true` (or clear prior DB URL keys first).
+
+### 2026-08-08 - Prefer slim business-logic tests
+
+- Area: Testing discipline
+- Issue: The suite accumulated long, mock-heavy UI and router tests that were slow, brittle, and hard to maintain.
+- Correction: Cleared those suites and kept only fast pure-helper / safety-guard / slim auth-guard coverage until a deliberate testing approach is reintroduced.
+- Rule Going Forward: Prefer slim, fast business-logic unit tests. Avoid broad mocked UI/component and heavily mocked router suites unless intentionally designed.

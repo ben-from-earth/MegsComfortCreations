@@ -18,7 +18,7 @@ const defaultValues: CollectorFormData = {
     album: [],
   },
   collectedData: [],
-  pngFormat: undefined,
+  pngFormat: null,
 };
 
 export function useCollectorForm() {

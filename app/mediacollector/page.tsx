@@ -15,12 +15,14 @@ import MediaCheckboxes, {
 import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
 import LoadingWidget from '@/shared/LoadingWidget';
-import InformationalDialog from '@/mediacollector/InformationalDialog';
+import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
 import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
 import TextInput from '@/shared/TextInput';
 
 //interfaces and types
 import Button from '@/components/ui/Button';
+import Dialog from '@/components/ui/Dialog';
+import FormMessage from '@/components/ui/FormMessage';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
 import { FormProvider, useFormContext } from 'react-hook-form';
@@ -38,11 +40,10 @@ function MediaCollectorContent() {
   const { onSubmit } = useCollectorForm();
 
   // setup states used throughout the component
-  const { watch, setValue } = useFormContext<CollectorFormData>();
+  const { watch, setValue, trigger } = useFormContext<CollectorFormData>();
 
   const formValues = watch();
 
-  const [pngError, setPNGError] = useState<boolean>(false);
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
@@ -54,12 +55,13 @@ function MediaCollectorContent() {
   const [databaseSaveFailureLines, setDatabaseSaveFailureLines] = useState<
     DatabaseSaveFailureDisplayLine[]
   >([]);
-  const [visibleMediaInputs, setVisibleMediaInputs] = useState<MediaVisibilityMap>({
-    book: true,
-    movie: false,
-    videoGame: false,
-    album: false,
-  });
+  const [visibleMediaInputs, setVisibleMediaInputs] =
+    useState<MediaVisibilityMap>({
+      book: true,
+      movie: false,
+      videoGame: false,
+      album: false,
+    });
 
   //refs for useEffect
   // const mediaTypesRef = useRef(stateData);
@@ -121,14 +123,8 @@ function MediaCollectorContent() {
       return;
     }
 
-    if (!formValues.pngFormat) {
-      setPNGError(true);
-      return;
-    }
-
-    if (formValues.bookClubRepeat < 1) {
-      setInformationalDialogText(`Book Club Repeat Number must be at least 1.`);
-      setShowInformationalDialog(true);
+    const fieldsAreValid = await trigger(['pngFormat', 'bookClubRepeat']);
+    if (!fieldsAreValid) {
       return;
     }
 
@@ -234,14 +230,19 @@ function MediaCollectorContent() {
             variant="normal"
             value={formValues.orderNumber}
           />
-          <TextInput
-            onChange={(e) => {
-              setValue('bookClubRepeat', Number(e.target.value));
-            }}
-            label={'Book Club Repeat Number'}
-            variant="normal"
-            value={formValues.bookClubRepeat.toString()}
-          />
+          <div className="flex flex-col items-center">
+            <TextInput
+              onChange={(e) => {
+                setValue('bookClubRepeat', Number(e.target.value), {
+                  shouldValidate: true,
+                });
+              }}
+              label={'Book Club Repeat Number'}
+              variant="normal"
+              value={formValues.bookClubRepeat.toString()}
+            />
+            <FormMessage<CollectorFormData> name="bookClubRepeat" />
+          </div>
 
           <MediaCheckboxes
             visibility={visibleMediaInputs}
@@ -269,24 +270,24 @@ function MediaCollectorContent() {
 
           <MediaInputs visibility={visibleMediaInputs} />
         </div>
-        <PNGFormatPicker pngError={pngError} setPNGError={setPNGError} />
+        <PNGFormatPicker />
       </div>
       {(isCollectingMedia || isCreatingPNG || isSavingToDatabase) && (
         <LoadingWidget message={loadingMessage} />
       )}
       {databaseSaved && (
-        <InformationalDialog
-          variant="databaseSave"
-          failureLines={databaseSaveFailureLines}
-          close={() => setDatabaseSaved(false)}
-        />
+        <Dialog title="Error" onClose={() => setDatabaseSaved(false)}>
+          <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
+        </Dialog>
       )}
       {showInformationalDialog && (
-        <InformationalDialog
-          variant="informationalOnly"
-          infoText={informationalDialogText}
-          close={() => setShowInformationalDialog(false)}
-        />
+        <Dialog
+          title="Error"
+          onClose={() => setShowInformationalDialog(false)}
+          className="w-5/12"
+        >
+          <p>{informationalDialogText}</p>
+        </Dialog>
       )}
       {formValues.collectedData.length > 0 && (
         <TitleBlockContainer

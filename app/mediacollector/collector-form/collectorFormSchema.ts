@@ -45,7 +45,9 @@ export const collectedBlockInformationSchema = z.object({
 export const collectorFormSchema = z.object({
   orderNumber: z.string(),
   customerName: z.string(),
-  bookClubRepeat: z.number(),
+  bookClubRepeat: z
+    .number()
+    .min(1, 'Book Club Repeat Number must be at least 1.'),
   collectionList: z.object({
     book: z.array(
       z.object({ title: z.string(), author: z.string().optional() }),
@@ -61,7 +63,14 @@ export const collectorFormSchema = z.object({
     ),
   }),
   collectedData: z.array(collectedBlockInformationSchema),
-  pngFormat: z.enum(['3', '5']).optional(),
+  pngFormat: z
+    .enum(['3', '5'], {
+      error: 'Please select a PNG template option',
+    })
+    .nullable()
+    .refine((value) => value !== null, {
+      message: 'Please select a PNG template option',
+    }),
 });
 
 export type CollectorFormData = z.infer<typeof collectorFormSchema>;
