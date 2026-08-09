@@ -19,7 +19,6 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { searchByTitle } from './actions/search-by-title';
 import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
@@ -156,20 +155,6 @@ function createMediaNotFoundEditResponse(
 }
 
 export const databaseRouter = router({
-  searchByTitle: adminProcedure
-    .input(
-      z.object({
-        type: mediaType,
-        title: z.string().min(1),
-        author: z.string().optional(),
-      }),
-    )
-    .query(async ({ input, ctx }) => {
-      const db = ctx.db ?? defaultDb;
-      const { type, title, author } = input;
-
-      return await searchByTitle(db, type, title, author);
-    }),
   getPaginated: adminProcedure
     .input(
       z.object({

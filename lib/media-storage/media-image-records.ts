@@ -275,29 +275,3 @@ export async function loadOtherMediaImagesById(
   }
   return imagesByOtherMediaId;
 }
-
-export async function loadBookImageUrlsById(db: Db, bookIds: string[]) {
-  const imagesByBookId = await loadBookImagesById(db, bookIds);
-  return new Map(
-    [...imagesByBookId.entries()].map(([bookId, images]) => [
-      bookId,
-      images.map((image) => image.url),
-    ]),
-  );
-}
-
-export async function loadOtherMediaImageUrlsById(
-  db: Db,
-  otherMediaIds: string[],
-) {
-  const imagesByOtherMediaId = await loadOtherMediaImagesById(
-    db,
-    otherMediaIds,
-  );
-  return new Map(
-    [...imagesByOtherMediaId.entries()].map(([otherMediaId, images]) => [
-      otherMediaId,
-      images.map((image) => image.url),
-    ]),
-  );
-}

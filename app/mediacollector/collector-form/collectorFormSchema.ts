@@ -6,14 +6,6 @@ export const baseBlockInfoSchema = z.object({
   genres: z.array(z.string()),
 });
 
-export const bookBlockInfoSchema = baseBlockInfoSchema.extend({
-  author: z.string().nullable(),
-  pubYear: z.number().nullable(),
-  pageCount: z.number().nullable(),
-});
-
-export const otherMediaBlockInfoSchema = baseBlockInfoSchema;
-
 const imageSelectionSchema = z.object({
   url: z.string(),
   selected: z.boolean(),

@@ -10,11 +10,8 @@ import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
-import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
+import type { CollectedBlockInformation } from '@/mediacollector/collector-form/collectorFormSchema';
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
-export type CollectedBlockInformation = z.infer<
-  typeof collectedBlockInformationSchema
->;
 
 export const collectRouter = router({
   uploadCoverImage: adminProcedure
