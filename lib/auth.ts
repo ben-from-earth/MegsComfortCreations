@@ -17,5 +17,9 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  session: {
+    expiresIn: 60 * 60 * 24,
+    updateAge: 60 * 60,
+  },
   plugins: [admin()],
 });
