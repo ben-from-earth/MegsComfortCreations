@@ -157,12 +157,18 @@ function createMediaNotFoundEditResponse(
 
 export const databaseRouter = router({
   searchByTitle: adminProcedure
-    .input(z.object({ type: mediaType, title: z.string().min(1) }))
+    .input(
+      z.object({
+        type: mediaType,
+        title: z.string().min(1),
+        author: z.string().optional(),
+      }),
+    )
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const { type, title } = input;
+      const { type, title, author } = input;
 
-      return await searchByTitle(db, type, title);
+      return await searchByTitle(db, type, title, author);
     }),
   getPaginated: adminProcedure
     .input(

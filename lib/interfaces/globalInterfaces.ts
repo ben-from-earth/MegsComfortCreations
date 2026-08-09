@@ -1,17 +1,14 @@
-// drizzle types
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { books, otherMedia } from '@/db/schema';
 import type { MediaType, OtherMediaType } from 'lib/constants/mediaTypes';
 
 export type MediaLabel = 'Book' | 'Movie' | 'Video Game' | 'Album';
 
-// 1. Map Drizzle row types
 export type BookRow = InferSelectModel<typeof books>;
 export type OtherMediaRow = InferSelectModel<typeof otherMedia> & {
   mediaType: OtherMediaType;
 };
 
-// 2. Extras that don’t live in the DB but you still want on responses
 interface MediaExtras {
   blockID?: string;
   genres?: string[];
@@ -29,12 +26,8 @@ export type BookInsert = Omit<InferInsertModel<typeof books>, 'id'> &
 export type OtherMediaInsert = Omit<InferInsertModel<typeof otherMedia>, 'id'> &
   MediaExtras;
 
-// 3. “Pre-saved” (create/edit body) – based on INSERT types, no id
-//    You *can* keep title/spineColor etc. here if your JSON schema
-//    is slightly different from the DB, but this keeps you close to Drizzle.
 export type PreSavedMediaItem = BookInsert | OtherMediaInsert;
 
-// 4. “Post-saved” (what comes back from DB)
 export interface PostSavedMediaItem {
   id: string;
   title: string;
@@ -44,14 +37,6 @@ export interface PostSavedMediaItem {
   author?: string;
   pageCount?: number | null;
   pubYear?: number | null;
-}
-
-// 5. Response shapes now use these types
-
-export interface SuccessfulMediaSearchResponse {
-  message: string;
-  foundMediaList: PostSavedMediaItem[];
-  total: number;
 }
 
 export interface SuccessfulMediaSaveEditResponse {
@@ -67,7 +52,7 @@ export interface SuccessfulPaginationResponse {
 }
 
 export interface GenreLinkUnlinkRequest {
-  bookID: string; // uuid (string in TS) from BookRow['id']
+  bookID: string;
   genres: string[];
 }
 
@@ -84,7 +69,6 @@ export interface DatabaseSaveEditErrorResponse {
   title: string;
 }
 
-// 6. Make this match your camelCase DB schema (or keep snake_case if your rows do)
 export interface BlockInfo {
   title: string;
   author?: string | null;
@@ -95,7 +79,6 @@ export interface BlockInfo {
   databaseGenres?: string[];
 }
 
-// 7. `database.save` per-item results (discriminated on `success`)
 export type DatabaseSaveSuccessResult = {
   success: true;
   blockID: string;
