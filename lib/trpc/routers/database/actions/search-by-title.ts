@@ -8,11 +8,41 @@ import {
   loadOtherMediaImagesById,
 } from 'lib/media-storage/media-image-records';
 
-export async function searchByTitle(db: Db, type: MediaType, title: string) {
+export function resolveBookSearchFilters(title: string, author?: string) {
   const rearrangedTitle = titleRearrange(title);
+  const normalizedAuthor = author?.trim() || undefined;
+  return {
+    rearrangedTitle,
+    author: normalizedAuthor,
+  };
+}
+
+export async function searchByTitle(
+  db: Db,
+  type: MediaType,
+  title: string,
+  author?: string,
+) {
+  const { rearrangedTitle, author: normalizedAuthor } = resolveBookSearchFilters(
+    title,
+    author,
+  );
   const result =
     type === 'book'
-      ? await db.select().from(books).where(ilike(books.title, rearrangedTitle))
+      ? await (normalizedAuthor
+          ? db
+              .select()
+              .from(books)
+              .where(
+                and(
+                  ilike(books.title, rearrangedTitle),
+                  ilike(books.author, normalizedAuthor),
+                ),
+              )
+          : db
+              .select()
+              .from(books)
+              .where(ilike(books.title, rearrangedTitle)))
       : await (() => {
           const otherType = type;
           return db
@@ -47,16 +77,8 @@ export async function searchByTitle(db: Db, type: MediaType, title: string) {
             images: imagesByOtherMediaId.get(row.id) ?? [],
           }));
         })();
-  const total = normalizedResult.length;
-
-  const message =
-    total === 0
-      ? `No ${type} in database with title ${rearrangedTitle}`
-      : `Successfully found ${total} ${type}(s) with title ${titleRearrange(normalizedResult[0].title)}`;
-
   return {
-    message,
     foundMediaList: normalizedResult,
-    total,
+    total: normalizedResult.length,
   };
 }

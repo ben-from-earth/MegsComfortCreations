@@ -41,7 +41,7 @@ export interface EditDatabaseBlockProps {
   info: {
     type: MediaType;
     images: PostSavedMediaItem['images'];
-    blockInfo: Omit<BlockInfo, 'databaseGenres'> & { initialGenres: string[] };
+    blockInfo: BlockInfo & { initialGenres: string[] };
     id: string;
     setEdit: Dispatch<SetStateAction<boolean>>;
   };
