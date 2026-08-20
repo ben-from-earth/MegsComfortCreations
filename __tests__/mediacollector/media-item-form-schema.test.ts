@@ -4,6 +4,7 @@ import {
   convertMediaItemToForm,
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
+  toFormImages,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/mediaItemFormSchema';
 import type { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
@@ -40,6 +41,32 @@ describe('mediaItemFormSchema', () => {
     const item = createMediaItemForm();
 
     expect(mediaItemFormSchema.parse(item)).toEqual(item);
+  });
+
+  test('rejects string pubYear', () => {
+    const result = mediaItemFormSchema.safeParse({
+      type: 'book',
+      images: [
+        {
+          url: 'https://img/default.png',
+          selected: true,
+          isDefault: true,
+          spineColor: '#111111',
+        },
+      ],
+      blockInfo: {
+        title: 'Dune',
+        author: 'Frank Herbert',
+        pubYear: '1965',
+        pageCount: 412,
+        spineColor: '#111111',
+        genres: ['Science Fiction'],
+      },
+      blockID: 'BLK-1',
+      isDatabase: false,
+    });
+
+    expect(result.success).toBe(false);
   });
 
   test('collector collectedData is an array of MediaItemForm', () => {
@@ -130,6 +157,38 @@ describe('convertMediaItemToForm', () => {
       },
     ]);
     expect(mediaItemFormSchema.parse(form)).toEqual(form);
+  });
+});
+
+describe('toFormImages', () => {
+  test('rejects a database-hit block with empty images at export validation', () => {
+    const databaseHit = createMediaItemForm({
+      isDatabase: true,
+      images: [],
+    });
+
+    expect(mediaItemFormSchema.safeParse(databaseHit).success).toBe(false);
+  });
+
+  test('makes an empty-image collected block valid before form replace', () => {
+    const databaseHit = createMediaItemForm({
+      isDatabase: true,
+      images: [],
+    });
+
+    const normalized = {
+      ...databaseHit,
+      images: toFormImages(databaseHit.images, databaseHit.blockInfo.spineColor),
+    };
+
+    expect(mediaItemFormSchema.parse(normalized).images).toEqual([
+      {
+        url: PLACEHOLDER_MEDIA_IMAGE_URL,
+        selected: true,
+        isDefault: true,
+        spineColor: '#111111',
+      },
+    ]);
   });
 });
 

@@ -75,6 +75,15 @@ function FormItem({
   );
 }
 
+function FormLabel({
+  className,
+  ...props
+}: ComponentProps<'label'>) {
+  const { formItemId } = useFormField();
+
+  return <label className={className} htmlFor={formItemId} {...props} />;
+}
+
 function FormControl({
   children,
 }: {
@@ -110,4 +119,12 @@ function FormMessage({ className }: { className?: string }) {
   );
 }
 
-export { Form, FormControl, FormField, FormItem, FormMessage, useFormField };
+export {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  useFormField,
+};

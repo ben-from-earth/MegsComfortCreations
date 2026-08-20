@@ -9,6 +9,8 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { trpc } from 'lib/trpc/client';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
@@ -41,19 +43,21 @@ function MediaItemTextField({
   label: string;
   type: MediaType;
 }) {
+  const { control } = useFormContext<MediaItemForm>();
   const labelClass =
     type === 'book'
       ? 'w-25 content-center text-right text-2xl'
       : 'w-15 content-center text-right text-2xl';
 
   return (
-    <FormField<MediaItemForm, `blockInfo.${MediaItemTextFieldName}`>
+    <FormField
+      control={control}
       name={`blockInfo.${name}`}
       render={({ field }) => (
         <FormItem className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 p-2">
-          <label className={labelClass} htmlFor={field.name}>
+          <FormLabel className={labelClass}>
             {label}:
-          </label>
+          </FormLabel>
           <FormControl>
             <textarea
               className="w-2xs content-center rounded-sm bg-white pl-2 text-black"
@@ -74,6 +78,9 @@ function MediaItemTextField({
               }}
             />
           </FormControl>
+          <div className="col-start-2">
+            <FormMessage />
+          </div>
         </FormItem>
       )}
     />
@@ -84,10 +91,12 @@ function MediaItemAddEditFields({
   type,
   blockID,
   onClose,
+  submitError,
 }: {
   type: MediaType;
   blockID: string;
   onClose: () => void;
+  submitError: string | null;
 }) {
   const allGenres = useContext(GenreContext);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -287,6 +296,11 @@ function MediaItemAddEditFields({
           </>
         ) : null}
       </div>
+      {submitError ? (
+        <p className="m-0 max-w-lg text-center font-['Just_Another_Hand'] text-2xl tracking-wider text-red-600">
+          {submitError}
+        </p>
+      ) : null}
       <div className="flex gap-2">
         <Button
           variant="primary"
@@ -320,7 +334,7 @@ export default function MediaItemAddEdit({
   item,
   onClose,
 }: MediaItemAddEditProps) {
-  const { form, formId, onSubmit, onError } = useMediaItemForm({
+  const { form, formId, onSubmit, submitError } = useMediaItemForm({
     item,
     onClose,
   });
@@ -329,7 +343,7 @@ export default function MediaItemAddEdit({
     <Form {...form}>
       <form
         id={formId}
-        onSubmit={form.handleSubmit(onSubmit, onError)}
+        onSubmit={form.handleSubmit(onSubmit)}
         className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center justify-center gap-1 rounded-md border-3 p-2 text-2xl tracking-wider text-black"
       >
         <h1>Editing: {titleRearrange(item.blockInfo.title)}</h1>
@@ -337,6 +351,7 @@ export default function MediaItemAddEdit({
           type={item.type}
           blockID={item.blockID}
           onClose={onClose}
+          submitError={submitError}
         />
       </form>
     </Form>

@@ -1,6 +1,6 @@
 'use client';
 // react, redux imports
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
@@ -43,17 +43,14 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   //set up local state
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
-  const [genres, setGenres] = useState<string[]>([]);
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
-  //on mount, get the genres related to the displayed book and make sure to update if the item is edited
   const genresQuery = trpc.genres.getForBook.useQuery(
     { bookID: id },
     { enabled: itemType === 'book' },
   );
-  useEffect(() => {
-    if (genresQuery.data?.genres) setGenres(genresQuery.data.genres);
-  }, [genresQuery.data]);
+  const genres = genresQuery.data?.genres ?? [];
+  const canOpenEdit = itemType !== 'book' || !genresQuery.isPending;
 
   //handle deletion of the media from the database
   const { mutateAsync: databaseDelete } = trpc.database.delete.useMutation();
@@ -129,6 +126,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           label={'Edit'}
           width={75}
           fontSize={24}
+          disabled={!canOpenEdit}
           onClick={() => setEdit(true)}
         />
         <Button

@@ -8,10 +8,14 @@ import {
   PNG_FORMAT_OPTIONS,
   type CollectorFormData,
 } from './collector-form/collectorFormSchema';
+import { useFormContext } from 'react-hook-form';
 
 export default function PNGFormatPicker() {
+  const { control } = useFormContext<CollectorFormData>();
+
   return (
-    <FormField<CollectorFormData, 'pngFormat'>
+    <FormField
+      control={control}
       name="pngFormat"
       render={({ field }) => (
         <FormItem className="flex flex-col items-center">

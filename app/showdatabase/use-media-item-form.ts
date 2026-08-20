@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef } from 'react';
-import { type FieldErrors, useForm } from 'react-hook-form';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { trpc } from 'lib/trpc/client';
 import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
@@ -8,6 +8,11 @@ import {
   mediaItemFormSchema,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/mediaItemFormSchema';
+import {
+  DATABASE_EDIT_FAILED_MESSAGE,
+  GENRE_UPDATE_FAILED_MESSAGE,
+  toUserFriendlyDatabaseEditReason,
+} from './database-edit-error-display';
 
 export function useMediaItemForm({
   item,
@@ -17,6 +22,7 @@ export function useMediaItemForm({
   onClose: () => void;
 }) {
   const formId = useId();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<MediaItemForm>({
     resolver: standardSchemaResolver(mediaItemFormSchema),
     defaultValues: item,
@@ -26,9 +32,12 @@ export function useMediaItemForm({
 
   const itemRef = useRef(item);
   itemRef.current = item;
+  const initialGenresRef = useRef([...item.blockInfo.genres]);
 
   useEffect(() => {
-    form.reset(itemRef.current);
+    const nextItem = itemRef.current;
+    form.reset(nextItem);
+    initialGenresRef.current = [...nextItem.blockInfo.genres];
   }, [form, item.blockID]);
 
   const { handleGetMedia } = useDatabasePageContext();
@@ -36,19 +45,28 @@ export function useMediaItemForm({
   const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
   const utils = trpc.useUtils();
-  const initialGenres = item.blockInfo.genres;
 
   const onSubmit = async (data: MediaItemForm) => {
-    const result = await databaseEdit({
-      type: data.type,
-      item: convertMediaItemFormToDatabaseItem(data),
-    });
-    if ('error' in result) {
-      onClose();
+    setSubmitError(null);
+
+    let result;
+    try {
+      result = await databaseEdit({
+        type: data.type,
+        item: convertMediaItemFormToDatabaseItem(data),
+      });
+    } catch {
+      setSubmitError(DATABASE_EDIT_FAILED_MESSAGE);
+      return;
+    }
+
+    if (result.error != null) {
+      setSubmitError(toUserFriendlyDatabaseEditReason({ error: result.error }));
       return;
     }
 
     if (data.type === 'book') {
+      const initialGenres = initialGenresRef.current;
       const nextGenres = data.blockInfo.genres;
       const genresToLink = nextGenres.filter(
         (genre) => !initialGenres.includes(genre),
@@ -57,19 +75,17 @@ export function useMediaItemForm({
         (genre) => !nextGenres.includes(genre),
       );
 
-      if (genresToLink.length > 0) {
-        try {
+      try {
+        if (genresToLink.length > 0) {
           await linkGenres({ bookID: data.blockID, genres: genresToLink });
-        } catch {
-          console.log('Genre link error');
         }
-      }
-      if (genresToUnlink.length > 0) {
-        try {
+        if (genresToUnlink.length > 0) {
           await unlinkGenres({ bookID: data.blockID, genres: genresToUnlink });
-        } catch {
-          console.log('Genre unlink error');
         }
+      } catch {
+        setSubmitError(GENRE_UPDATE_FAILED_MESSAGE);
+        await handleGetMedia();
+        return;
       }
 
       await utils.genres.getForBook.invalidate({ bookID: data.blockID });
@@ -79,14 +95,10 @@ export function useMediaItemForm({
     onClose();
   };
 
-  const onError = (errors: FieldErrors<MediaItemForm>) => {
-    console.error(errors);
-  };
-
   return {
     form,
     formId,
     onSubmit,
-    onError,
+    submitError,
   };
 }

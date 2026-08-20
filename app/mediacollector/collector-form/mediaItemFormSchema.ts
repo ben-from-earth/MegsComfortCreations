@@ -33,7 +33,7 @@ export const mediaItemFormSchema = z.object({
 
 export type MediaItemForm = z.infer<typeof mediaItemFormSchema>;
 
-function toFormImages(
+export function toFormImages(
   images: MediaImageItem[] | undefined,
   fallbackSpineColor: string,
 ): MediaItemForm['images'] {

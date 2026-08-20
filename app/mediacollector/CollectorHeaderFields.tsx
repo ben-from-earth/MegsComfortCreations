@@ -6,11 +6,15 @@ import {
 } from '@/components/ui/form';
 import TextInput from '@/components/shared/TextInput';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
+import { useFormContext } from 'react-hook-form';
 
 export default function CollectorHeaderFields() {
+  const { control } = useFormContext<CollectorFormData>();
+
   return (
     <>
-      <FormField<CollectorFormData, 'customerName'>
+      <FormField
+        control={control}
         name="customerName"
         render={({ field }) => (
           <FormItem>
@@ -27,7 +31,8 @@ export default function CollectorHeaderFields() {
           </FormItem>
         )}
       />
-      <FormField<CollectorFormData, 'orderNumber'>
+      <FormField
+        control={control}
         name="orderNumber"
         render={({ field }) => (
           <FormItem>
@@ -44,7 +49,8 @@ export default function CollectorHeaderFields() {
           </FormItem>
         )}
       />
-      <FormField<CollectorFormData, 'bookClubRepeat'>
+      <FormField
+        control={control}
         name="bookClubRepeat"
         render={({ field }) => (
           <FormItem className="flex flex-col items-center">

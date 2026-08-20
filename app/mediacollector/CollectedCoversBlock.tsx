@@ -2,7 +2,7 @@ import { memo, useContext } from 'react';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CBBImages from '@/mediacollector/CBBImages';
-import MyTextArea from '@/components/shared/MyTextArea';
+import CollectedItemTextField from '@/mediacollector/CollectedItemTextField';
 import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import { useFormContext } from 'react-hook-form';
@@ -78,17 +78,27 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         spineColor={spineColor}
       />
 
-      <MyTextArea name="title" label="Title" type={type} index={index} />
+      <CollectedItemTextField
+        name="title"
+        label="Title"
+        type={type}
+        index={index}
+      />
       {type === 'book' ? (
         <>
-          <MyTextArea name="author" label="Author" type={type} index={index} />
-          <MyTextArea
+          <CollectedItemTextField
+            name="author"
+            label="Author"
+            type={type}
+            index={index}
+          />
+          <CollectedItemTextField
             name="pubYear"
             label="Pub Year"
             type={type}
             index={index}
           />
-          <MyTextArea
+          <CollectedItemTextField
             name="pageCount"
             label="Page Count"
             type={type}

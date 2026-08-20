@@ -25,8 +25,10 @@ import Dialog from '@/components/ui/Dialog';
 import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFieldArray, useFormContext, useFormState } from 'react-hook-form';
+import { toFormImages } from './collector-form/mediaItemFormSchema';
 import { buildPNGExportImages } from './png-export-images';
+import { toCollectorSubmitErrorMessage } from './collector-submit-error-display';
 import {
   buildDatabaseSaveFailureDisplayLines,
   markSuccessfulBlocksAsInDatabase,
@@ -39,19 +41,26 @@ const mediaCollectorTitleImage = '/MegsMediaCollector.png';
 function MediaCollectorContent({
   formId,
   onSubmit,
-  onError,
 }: {
   formId: string;
   onSubmit: ReturnType<typeof useCollectorForm>['onSubmit'];
-  onError: ReturnType<typeof useCollectorForm>['onError'];
 }) {
   const { control, getValues, handleSubmit, setValue } =
     useFormContext<CollectorFormData>();
+  const { errors, isSubmitted } = useFormState({ control });
   const { fields, remove, replace } = useFieldArray({
     control,
     name: 'collectedData',
     keyName: 'fieldId',
   });
+  const collectorSubmitErrorMessage = isSubmitted
+    ? toCollectorSubmitErrorMessage(errors)
+    : null;
+  const schemaErrorBlockIds = isSubmitted
+    ? fields
+        .filter((_, index) => errors.collectedData?.[index] != null)
+        .map((field) => field.blockID)
+    : [];
 
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
@@ -110,7 +119,12 @@ function MediaCollectorContent({
     if (!blocks) {
       return;
     }
-    replace(blocks);
+    replace(
+      blocks.map((block) => ({
+        ...block,
+        images: toFormImages(block.images, block.blockInfo.spineColor),
+      })),
+    );
   };
 
   const handleCreatePngClick = (
@@ -135,7 +149,7 @@ function MediaCollectorContent({
       return;
     }
 
-    void handleSubmit(handleExportSubmit, onError)();
+    void handleSubmit(handleExportSubmit)();
   };
 
   const handleExportSubmit = async (
@@ -144,55 +158,59 @@ function MediaCollectorContent({
     setLoadingMessage(`Adding items to database`);
     setIsSavingToDatabase(true);
 
-    const result = await onSubmit(formValues);
+    try {
+      const result = await onSubmit(formValues);
 
-    const someHaveDatabaseErrors = result.some((res) => !res.success);
+      const someHaveDatabaseErrors = result.some((res) => !res.success);
 
-    if (someHaveDatabaseErrors) {
-      const updatedCollectedData = markSuccessfulBlocksAsInDatabase(
-        formValues.collectedData,
-        result,
-      );
-      replace(updatedCollectedData);
+      if (someHaveDatabaseErrors) {
+        const updatedCollectedData = markSuccessfulBlocksAsInDatabase(
+          formValues.collectedData,
+          result,
+        );
+        replace(updatedCollectedData);
 
-      const failureLines = buildDatabaseSaveFailureDisplayLines(
-        result,
-        updatedCollectedData,
+        const failureLines = buildDatabaseSaveFailureDisplayLines(
+          result,
+          updatedCollectedData,
+        );
+        setDatabaseSaveFailureLines(failureLines);
+        setBlockIdsWithErrors(
+          failureLines
+            .map((line) => line.blockID)
+            .filter((blockID) => blockID.length > 0),
+        );
+        setDatabaseSaved(true);
+        return;
+      }
+
+      setLoadingMessage(`Putting together PNG export`);
+      const images = buildPNGExportImages(formValues.collectedData);
+      const template = formValues.pngFormat === '5' ? 5 : 3;
+
+      const { mime, filename, dataBase64 } = await createPNG({
+        template,
+        images,
+        customerName: formValues.customerName,
+        orderNumber: formValues.orderNumber,
+        repeatCount: formValues.bookClubRepeat,
+      });
+
+      const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
+        c.charCodeAt(0),
       );
-      setDatabaseSaveFailureLines(failureLines);
-      setBlockIdsWithErrors(
-        failureLines
-          .map((line) => line.blockID)
-          .filter((blockID) => blockID.length > 0),
-      );
-      setDatabaseSaved(true);
+      const blob = new Blob([byteArray], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
       setIsSavingToDatabase(false);
-      return;
     }
-
-    setLoadingMessage(`Putting together PNG export`);
-    const images = buildPNGExportImages(formValues.collectedData);
-    const template = formValues.pngFormat === '5' ? 5 : 3;
-
-    const { mime, filename, dataBase64 } = await createPNG({
-      template,
-      images,
-      customerName: formValues.customerName,
-      orderNumber: formValues.orderNumber,
-      repeatCount: formValues.bookClubRepeat,
-    });
-    setIsSavingToDatabase(false);
-
-    const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
-    const blob = new Blob([byteArray], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   };
 
   const handleToggleMediaInput = (mediaType: keyof MediaVisibilityMap) => {
@@ -232,24 +250,31 @@ function MediaCollectorContent({
               onToggle={handleToggleMediaInput}
             />
 
-            <div className="flex flex-row items-center gap-4">
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => {
-                  handleCollectClick();
-                }}
-                label='Collect Media Covers'
-                width={175}
-                fontSize={25}
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                label='Create PNG Export'
-                width={175}
-                fontSize={25}
-              />
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-row items-center gap-4">
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => {
+                    handleCollectClick();
+                  }}
+                  label="Collect Media Covers"
+                  width={175}
+                  fontSize={25}
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  label="Create PNG Export"
+                  width={175}
+                  fontSize={25}
+                />
+              </div>
+              {collectorSubmitErrorMessage ? (
+                <p className="m-0 font-['Just_Another_Hand'] text-2xl tracking-wider text-red-600">
+                  {collectorSubmitErrorMessage}
+                </p>
+              ) : null}
             </div>
 
             <MediaInputs visibility={visibleMediaInputs} />
@@ -278,7 +303,9 @@ function MediaCollectorContent({
         <TitleBlockContainer
           fields={fields}
           onDelete={remove}
-          blockIdsWithErrors={blockIdsWithErrors}
+          blockIdsWithErrors={[
+            ...new Set([...blockIdsWithErrors, ...schemaErrorBlockIds]),
+          ]}
         />
       )}
     </>
@@ -286,14 +313,10 @@ function MediaCollectorContent({
 }
 
 export default function MediaCollector() {
-  const { form, formId, onSubmit, onError } = useCollectorForm();
+  const { form, formId, onSubmit } = useCollectorForm();
   return (
     <Form {...form}>
-      <MediaCollectorContent
-        formId={formId}
-        onSubmit={onSubmit}
-        onError={onError}
-      />
+      <MediaCollectorContent formId={formId} onSubmit={onSubmit} />
     </Form>
   );
 }
