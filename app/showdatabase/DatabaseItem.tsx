@@ -6,10 +6,10 @@ import { memo, useEffect, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 
 // components
-import AreYouSure from '@/shared/AreYouSure';
+import AreYouSure from '@/components/shared/AreYouSure';
 import Button from '@/components/ui/Button';
 import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
-import MediaImageStrip from '@/shared/MediaImageStrip';
+import MediaImageStrip from '@/components/shared/MediaImageStrip';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';

@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 // components
 import CBBImages from '@/mediacollector/CBBImages';
-import MyTextArea from '@/shared/MyTextArea';
+import MyTextArea from '@/components/shared/MyTextArea';
 import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import { useFormContext } from 'react-hook-form';

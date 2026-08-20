@@ -1,5 +1,5 @@
 // react imports
-import { Combobox } from '@/shared/combobox';
+import { Combobox } from '@/components/shared/combobox';
 import Button from '@/components/ui/Button';
 
 // interfaces and types

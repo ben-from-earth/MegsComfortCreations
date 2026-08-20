@@ -4,7 +4,7 @@ import { ChangeEvent, useRef, useState } from 'react';
 
 import { useFormContext } from 'react-hook-form';
 import { trpc } from 'lib/trpc/client';
-import MediaImageStrip from '@/shared/MediaImageStrip';
+import MediaImageStrip from '@/components/shared/MediaImageStrip';
 
 export interface CBBImageProps {
   blockID: number;
@@ -59,8 +59,11 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
       const { sRGBHex } = await eyeDropper.open();
       const spineColor = sRGBHex;
       setColor(spineColor);
-      const selectedImageIndex = block.images.findIndex((image) => image.selected);
-      const imageIndexToUpdate = selectedImageIndex >= 0 ? selectedImageIndex : 0;
+      const selectedImageIndex = block.images.findIndex(
+        (image) => image.selected,
+      );
+      const imageIndexToUpdate =
+        selectedImageIndex >= 0 ? selectedImageIndex : 0;
       const nextImages = block.images.map((image, index) =>
         index === imageIndexToUpdate ? { ...image, spineColor } : image,
       );
@@ -137,7 +140,8 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
     }
   };
 
-  const showUploadSlot = type === 'book' && !isDatabase && !hasUploadedCustomImage;
+  const showUploadSlot =
+    type === 'book' && !isDatabase && !hasUploadedCustomImage;
 
   return (
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-3">

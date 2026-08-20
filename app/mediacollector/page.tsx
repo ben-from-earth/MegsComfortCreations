@@ -8,24 +8,24 @@ import { trpc } from 'lib/trpc/client';
 
 // components
 import Image from 'next/image';
-import QueryCounter from '@/shared/QueryCounter';
+import QueryCounter from '@/components/shared/QueryCounter';
 import MediaCheckboxes, {
   MediaVisibilityMap,
 } from '@/mediacollector/MediaCheckboxes';
 import MediaInputs from '@/mediacollector/MediaInputs';
 import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
-import LoadingWidget from '@/shared/LoadingWidget';
+import LoadingWidget from '@/components/shared/LoadingWidget';
 import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
 import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
-import TextInput from '@/shared/TextInput';
+import CollectorHeaderFields from '@/mediacollector/CollectorHeaderFields';
 
 //interfaces and types
 import Button from '@/components/ui/Button';
 import Dialog from '@/components/ui/Dialog';
-import FormMessage from '@/components/ui/FormMessage';
+import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
-import { FormProvider, useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { buildPNGExportImages } from './png-export-images';
 import {
   buildDatabaseSaveFailureDisplayLines,
@@ -41,9 +41,10 @@ function MediaCollectorContent({
 }: {
   onSubmit: ReturnType<typeof useCollectorForm>['onSubmit'];
 }) {
-  const { watch, setValue, trigger } = useFormContext<CollectorFormData>();
-
-  const formValues = watch();
+  const { getValues, setValue, trigger } = useFormContext<CollectorFormData>();
+  const collectedData = useWatch<CollectorFormData, 'collectedData'>({
+    name: 'collectedData',
+  });
 
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
@@ -85,8 +86,9 @@ function MediaCollectorContent({
   //Set of actions that set of Media Cover Collection
   const handleCollectClick = async (): Promise<void> => {
     setValue('collectedData', []);
+    const collectionList = getValues('collectionList');
     let count = 0;
-    for (const searchList of Object.values(formValues.collectionList)) {
+    for (const searchList of Object.values(collectionList)) {
       count += searchList.length;
     }
 
@@ -97,7 +99,7 @@ function MediaCollectorContent({
 
     setLoadingMessage(`Gathering ${count} media covers`);
 
-    const blocks = await collectMedia(formValues.collectionList);
+    const blocks = await collectMedia(collectionList);
     if (!blocks) {
       return;
     } else {
@@ -107,6 +109,7 @@ function MediaCollectorContent({
 
   const handlePNGClick = async (): Promise<void> => {
     setBlockIdsWithErrors([]);
+    const formValues = getValues();
     const itemsWithoutImages = formValues.collectedData.filter((block) => {
       const selectedImages = block.images.filter((img) => img.selected);
       if (block.isDatabase) {
@@ -160,9 +163,10 @@ function MediaCollectorContent({
 
     setLoadingMessage(`Putting together PNG export`);
     const images = buildPNGExportImages(formValues.collectedData);
+    const template = formValues.pngFormat === '5' ? 5 : 3;
 
     const { mime, filename, dataBase64 } = await createPNG({
-      template: Number(formValues.pngFormat) as 3 | 5,
+      template,
       images,
       customerName: formValues.customerName,
       orderNumber: formValues.orderNumber,
@@ -185,7 +189,7 @@ function MediaCollectorContent({
   const handleDeleteBlock = (blockID: string) => {
     setValue(
       'collectedData',
-      formValues.collectedData.filter((block) => block.blockID !== blockID),
+      getValues('collectedData').filter((block) => block.blockID !== blockID),
     );
   };
 
@@ -215,35 +219,7 @@ function MediaCollectorContent({
           height={128}
         />
         <div className="mt-2 flex flex-col items-center gap-4">
-          <TextInput
-            onChange={(e) => {
-              setValue('customerName', e.target.value);
-            }}
-            label={'Customer Full Name'}
-            variant="normal"
-            value={formValues.customerName}
-          />
-          <TextInput
-            onChange={(e) => {
-              setValue('orderNumber', e.target.value);
-            }}
-            label={'Order Number'}
-            variant="normal"
-            value={formValues.orderNumber}
-          />
-          <div className="flex flex-col items-center">
-            <TextInput
-              onChange={(e) => {
-                setValue('bookClubRepeat', Number(e.target.value), {
-                  shouldValidate: true,
-                });
-              }}
-              label={'Book Club Repeat Number'}
-              variant="normal"
-              value={formValues.bookClubRepeat.toString()}
-            />
-            <FormMessage<CollectorFormData> name="bookClubRepeat" />
-          </div>
+          <CollectorHeaderFields />
 
           <MediaCheckboxes
             visibility={visibleMediaInputs}
@@ -290,7 +266,7 @@ function MediaCollectorContent({
           <p>{informationalDialogText}</p>
         </Dialog>
       )}
-      {formValues.collectedData.length > 0 && (
+      {(collectedData?.length ?? 0) > 0 && (
         <TitleBlockContainer
           handleDeleteBlock={handleDeleteBlock}
           blockIdsWithErrors={blockIdsWithErrors}
@@ -303,8 +279,8 @@ function MediaCollectorContent({
 export default function MediaCollector() {
   const { form, onSubmit } = useCollectorForm();
   return (
-    <FormProvider {...form}>
+    <Form {...form}>
       <MediaCollectorContent onSubmit={onSubmit} />
-    </FormProvider>
+    </Form>
   );
 }

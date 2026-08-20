@@ -16,7 +16,7 @@ import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 // components
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import Button from '@/components/ui/Button';
-import MediaImageStrip from '@/shared/MediaImageStrip';
+import MediaImageStrip from '@/components/shared/MediaImageStrip';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
@@ -133,7 +133,9 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     databaseData.images.findIndex((image) => image.isDefault),
     0,
   );
-  const selectedImageIndex = databaseData.images.findIndex((image) => image.selected);
+  const selectedImageIndex = databaseData.images.findIndex(
+    (image) => image.selected,
+  );
   const pendingDefaultImageIndex =
     selectedImageIndex >= 0 && selectedImageIndex !== defaultImageIndex
       ? selectedImageIndex
@@ -161,7 +163,8 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
     }
     setDatabaseData((prev) => ({
       ...prev,
-      spineColor: prev.images[pendingDefaultImageIndex]?.spineColor ?? prev.spineColor,
+      spineColor:
+        prev.images[pendingDefaultImageIndex]?.spineColor ?? prev.spineColor,
       images: prev.images.map((image, index) => ({
         ...image,
         isDefault: index === pendingDefaultImageIndex,
