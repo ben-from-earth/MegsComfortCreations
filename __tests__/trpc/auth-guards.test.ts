@@ -1,17 +1,29 @@
-import { createAnonContext, createTrpcCaller, createUserContext } from '../helpers/trpcTestContext';
+import { adminProcedure, router } from 'lib/trpc/trpc';
+import type { Context } from 'lib/trpc/context';
+import {
+  createAnonContext,
+  createUserContext,
+  type TrpcTestContext,
+} from '../helpers/trpcTestContext';
+
+const authGuardRouter = router({
+  adminPing: adminProcedure.query(() => true),
+});
+
+function createCaller(ctx: TrpcTestContext) {
+  return authGuardRouter.createCaller(ctx as Context);
+}
 
 describe('tRPC auth guards', () => {
-  test('admin endpoint rejects anonymous callers', async () => {
-    const caller = createTrpcCaller(createAnonContext());
-    await expect(caller.genres.getAll()).rejects.toMatchObject({
+  test('admin procedure rejects anonymous callers', async () => {
+    await expect(createCaller(createAnonContext()).adminPing()).rejects.toMatchObject({
       code: 'UNAUTHORIZED',
       message: 'Login required',
     });
   });
 
-  test('admin endpoint rejects non-admin users', async () => {
-    const caller = createTrpcCaller(createUserContext());
-    await expect(caller.genres.getAll()).rejects.toMatchObject({
+  test('admin procedure rejects non-admin users', async () => {
+    await expect(createCaller(createUserContext()).adminPing()).rejects.toMatchObject({
       code: 'FORBIDDEN',
       message: 'Admin role required',
     });

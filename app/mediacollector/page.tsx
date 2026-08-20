@@ -25,10 +25,14 @@ import Dialog from '@/components/ui/Dialog';
 import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
-import { useFieldArray, useFormContext, useFormState } from 'react-hook-form';
+import {
+  useFieldArray,
+  useFormContext,
+  useFormState,
+  type FieldErrors,
+} from 'react-hook-form';
 import { toFormImages } from './collector-form/mediaItemFormSchema';
 import { buildPNGExportImages } from './png-export-images';
-import { toCollectorSubmitErrorMessage } from './collector-submit-error-display';
 import {
   buildDatabaseSaveFailureDisplayLines,
   markSuccessfulBlocksAsInDatabase,
@@ -37,6 +41,23 @@ import {
 
 const backgroundImage = '/FlowerBackground.png';
 const mediaCollectorTitleImage = '/MegsMediaCollector.png';
+
+function collectorSubmitErrorMessage(
+  errors: FieldErrors<CollectorFormData>,
+): string | null {
+  if (typeof errors.pngFormat?.message === 'string') {
+    return errors.pngFormat.message;
+  }
+  if (typeof errors.bookClubRepeat?.message === 'string') {
+    return errors.bookClubRepeat.message;
+  }
+  if (errors.collectedData) {
+    return 'Some collected items have invalid details. Check the highlighted blocks.';
+  }
+  return Object.keys(errors).length > 0
+    ? 'Please fix the highlighted fields and try again.'
+    : null;
+}
 
 function MediaCollectorContent({
   formId,
@@ -53,8 +74,8 @@ function MediaCollectorContent({
     name: 'collectedData',
     keyName: 'fieldId',
   });
-  const collectorSubmitErrorMessage = isSubmitted
-    ? toCollectorSubmitErrorMessage(errors)
+  const submitErrorMessage = isSubmitted
+    ? collectorSubmitErrorMessage(errors)
     : null;
   const schemaErrorBlockIds = isSubmitted
     ? fields
@@ -270,9 +291,9 @@ function MediaCollectorContent({
                   fontSize={25}
                 />
               </div>
-              {collectorSubmitErrorMessage ? (
+              {submitErrorMessage ? (
                 <p className="m-0 font-['Just_Another_Hand'] text-2xl tracking-wider text-red-600">
-                  {collectorSubmitErrorMessage}
+                  {submitErrorMessage}
                 </p>
               ) : null}
             </div>

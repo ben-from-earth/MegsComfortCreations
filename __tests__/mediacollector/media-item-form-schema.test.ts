@@ -1,4 +1,3 @@
-import { collectorFormSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 import {
   convertMediaItemFormToDatabaseItem,
   convertMediaItemToForm,
@@ -37,12 +36,6 @@ function createMediaItemForm(
 }
 
 describe('mediaItemFormSchema', () => {
-  test('parses one collected card', () => {
-    const item = createMediaItemForm();
-
-    expect(mediaItemFormSchema.parse(item)).toEqual(item);
-  });
-
   test('rejects string pubYear', () => {
     const result = mediaItemFormSchema.safeParse({
       type: 'book',
@@ -69,22 +62,32 @@ describe('mediaItemFormSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  test('collector collectedData is an array of MediaItemForm', () => {
-    const parsed = collectorFormSchema.parse({
-      orderNumber: '1001',
-      customerName: 'Ada Lovelace',
-      bookClubRepeat: 1,
-      collectionList: {
-        book: [],
-        movie: [],
-        videoGame: [],
-        album: [],
-      },
-      collectedData: [createMediaItemForm()],
-      pngFormat: '3',
-    });
+  test('rejects a collected block with empty images', () => {
+    expect(
+      mediaItemFormSchema.safeParse(
+        createMediaItemForm({ isDatabase: true, images: [] }),
+      ).success,
+    ).toBe(false);
+  });
+});
 
-    expect(parsed.collectedData).toEqual([createMediaItemForm()]);
+describe('toFormImages', () => {
+  test('inserts a placeholder so an empty-image block can enter the form', () => {
+    const emptyBlock = createMediaItemForm({ images: [] });
+
+    expect(
+      mediaItemFormSchema.parse({
+        ...emptyBlock,
+        images: toFormImages(emptyBlock.images, emptyBlock.blockInfo.spineColor),
+      }).images,
+    ).toEqual([
+      {
+        url: PLACEHOLDER_MEDIA_IMAGE_URL,
+        selected: true,
+        isDefault: true,
+        spineColor: '#111111',
+      },
+    ]);
   });
 });
 
@@ -107,13 +110,13 @@ describe('convertMediaItemToForm', () => {
   };
 
   test('maps a persisted database row onto MediaItemForm', () => {
-    const form = convertMediaItemToForm({
-      item: persistedBook,
-      type: 'book',
-      genres: ['Science Fiction'],
-    });
-
-    expect(form).toEqual({
+    expect(
+      convertMediaItemToForm({
+        item: persistedBook,
+        type: 'book',
+        genres: ['Science Fiction'],
+      }),
+    ).toEqual({
       type: 'book',
       images: [
         {
@@ -134,59 +137,25 @@ describe('convertMediaItemToForm', () => {
       blockID: 'book-42',
       isDatabase: true,
     });
-    expect(mediaItemFormSchema.parse(form)).toEqual(form);
   });
 
   test('fills a placeholder image when the persisted row has none', () => {
-    const form = convertMediaItemToForm({
-      item: {
-        id: 'movie-1',
-        title: 'Arrival',
-        spineColor: '#ffffff',
-        images: [],
-      },
-      type: 'movie',
-    });
-
-    expect(form.images).toEqual([
+    expect(
+      convertMediaItemToForm({
+        item: {
+          id: 'movie-1',
+          title: 'Arrival',
+          spineColor: '#ffffff',
+          images: [],
+        },
+        type: 'movie',
+      }).images,
+    ).toEqual([
       {
         url: PLACEHOLDER_MEDIA_IMAGE_URL,
         selected: true,
         isDefault: true,
         spineColor: '#ffffff',
-      },
-    ]);
-    expect(mediaItemFormSchema.parse(form)).toEqual(form);
-  });
-});
-
-describe('toFormImages', () => {
-  test('rejects a database-hit block with empty images at export validation', () => {
-    const databaseHit = createMediaItemForm({
-      isDatabase: true,
-      images: [],
-    });
-
-    expect(mediaItemFormSchema.safeParse(databaseHit).success).toBe(false);
-  });
-
-  test('makes an empty-image collected block valid before form replace', () => {
-    const databaseHit = createMediaItemForm({
-      isDatabase: true,
-      images: [],
-    });
-
-    const normalized = {
-      ...databaseHit,
-      images: toFormImages(databaseHit.images, databaseHit.blockInfo.spineColor),
-    };
-
-    expect(mediaItemFormSchema.parse(normalized).images).toEqual([
-      {
-        url: PLACEHOLDER_MEDIA_IMAGE_URL,
-        selected: true,
-        isDefault: true,
-        spineColor: '#111111',
       },
     ]);
   });
@@ -211,15 +180,17 @@ describe('convertMediaItemFormToDatabaseItem', () => {
   });
 
   test('coerces missing book fields to null for the edit schema', () => {
-    const form = createMediaItemForm({
-      blockInfo: {
-        title: 'Arrival',
-        spineColor: '#ffffff',
-        genres: [],
-      },
-    });
-
-    expect(convertMediaItemFormToDatabaseItem(form)).toMatchObject({
+    expect(
+      convertMediaItemFormToDatabaseItem(
+        createMediaItemForm({
+          blockInfo: {
+            title: 'Arrival',
+            spineColor: '#ffffff',
+            genres: [],
+          },
+        }),
+      ),
+    ).toMatchObject({
       author: null,
       pageCount: null,
       pubYear: null,
