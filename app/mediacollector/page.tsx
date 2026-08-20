@@ -37,11 +37,15 @@ const backgroundImage = '/FlowerBackground.png';
 const mediaCollectorTitleImage = '/MegsMediaCollector.png';
 
 function MediaCollectorContent({
+  formId,
   onSubmit,
+  onError,
 }: {
+  formId: string;
   onSubmit: ReturnType<typeof useCollectorForm>['onSubmit'];
+  onError: ReturnType<typeof useCollectorForm>['onError'];
 }) {
-  const { control, getValues, setValue, trigger } =
+  const { control, getValues, handleSubmit, setValue } =
     useFormContext<CollectorFormData>();
   const { fields, remove, replace } = useFieldArray({
     control,
@@ -109,10 +113,12 @@ function MediaCollectorContent({
     replace(blocks);
   };
 
-  const handlePNGClick = async (): Promise<void> => {
+  const handleCreatePngClick = (
+    event: React.FormEvent<HTMLFormElement>,
+  ): void => {
+    event.preventDefault();
     setBlockIdsWithErrors([]);
-    const formValues = getValues();
-    const itemsWithoutImages = formValues.collectedData.filter((block) => {
+    const itemsWithoutImages = getValues('collectedData').filter((block) => {
       const selectedImages = block.images.filter((img) => img.selected);
       if (block.isDatabase) {
         return false;
@@ -129,11 +135,12 @@ function MediaCollectorContent({
       return;
     }
 
-    const fieldsAreValid = await trigger(['pngFormat', 'bookClubRepeat']);
-    if (!fieldsAreValid) {
-      return;
-    }
+    void handleSubmit(handleExportSubmit, onError)();
+  };
 
+  const handleExportSubmit = async (
+    formValues: CollectorFormData,
+  ): Promise<void> => {
     setLoadingMessage(`Adding items to database`);
     setIsSavingToDatabase(true);
 
@@ -200,50 +207,56 @@ function MediaCollectorContent({
 
   return (
     <>
-      <div
-        className="border-b-darkpink relative box-border flex h-fit w-full flex-col items-center border-b-5 bg-cover pt-1 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-        }}
+      <form
+        id={formId}
+        onSubmit={handleCreatePngClick}
       >
-        <QueryCounter />
-        <Image
-          alt="Megs Media Collector Title"
-          src={mediaCollectorTitleImage}
-          width={576}
-          height={128}
-        />
-        <div className="mt-2 flex flex-col items-center gap-4">
-          <CollectorHeaderFields />
-
-          <MediaCheckboxes
-            visibility={visibleMediaInputs}
-            onToggle={handleToggleMediaInput}
+        <div
+          className="border-b-darkpink relative box-border flex h-fit w-full flex-col items-center border-b-5 bg-cover pt-1 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+          }}
+        >
+          <QueryCounter />
+          <Image
+            alt="Megs Media Collector Title"
+            src={mediaCollectorTitleImage}
+            width={576}
+            height={128}
           />
+          <div className="mt-2 flex flex-col items-center gap-4">
+            <CollectorHeaderFields />
 
-          <div className="flex flex-row items-center gap-4">
-            <Button
-              variant="primary"
-              onClick={() => {
-                handleCollectClick();
-              }}
-              label={'Collect Media Covers'}
-              width={175}
-              fontSize={25}
+            <MediaCheckboxes
+              visibility={visibleMediaInputs}
+              onToggle={handleToggleMediaInput}
             />
-            <Button
-              variant="primary"
-              onClick={() => handlePNGClick()}
-              label={'Create PNG Export'}
-              width={175}
-              fontSize={25}
-            />
+
+            <div className="flex flex-row items-center gap-4">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  handleCollectClick();
+                }}
+                label='Collect Media Covers'
+                width={175}
+                fontSize={25}
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                label='Create PNG Export'
+                width={175}
+                fontSize={25}
+              />
+            </div>
+
+            <MediaInputs visibility={visibleMediaInputs} />
           </div>
-
-          <MediaInputs visibility={visibleMediaInputs} />
+          <PNGFormatPicker />
         </div>
-        <PNGFormatPicker />
-      </div>
+      </form>
       {(isCollectingMedia || isCreatingPNG || isSavingToDatabase) && (
         <LoadingWidget message={loadingMessage} />
       )}
@@ -273,10 +286,14 @@ function MediaCollectorContent({
 }
 
 export default function MediaCollector() {
-  const { form, onSubmit } = useCollectorForm();
+  const { form, formId, onSubmit, onError } = useCollectorForm();
   return (
     <Form {...form}>
-      <MediaCollectorContent onSubmit={onSubmit} />
+      <MediaCollectorContent
+        formId={formId}
+        onSubmit={onSubmit}
+        onError={onError}
+      />
     </Form>
   );
 }

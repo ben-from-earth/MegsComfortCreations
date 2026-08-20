@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { FieldErrors, useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { collectorFormSchema } from './collectorFormSchema';
@@ -22,6 +23,7 @@ const defaultValues: CollectorFormData = {
 };
 
 export function useCollectorForm() {
+  const formId = useId();
   const form = useForm<CollectorFormData>({
     resolver: standardSchemaResolver(collectorFormSchema),
     defaultValues,
@@ -41,6 +43,7 @@ export function useCollectorForm() {
   };
   return {
     form,
+    formId,
     onSubmit,
     onError,
   };
