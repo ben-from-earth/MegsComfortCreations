@@ -1,34 +1,32 @@
-// react, redux imports
 import { memo } from 'react';
-
-// components
+import type { FieldArrayWithId } from 'react-hook-form';
 import CollectedCoversBlock from '@/mediacollector/CollectedCoversBlock';
-
-import { useFormContext } from 'react-hook-form';
 import { CollectorFormData } from './collector-form/collectorFormSchema';
 
 const TitleBlockContainer = memo(function TitleBlockContainer({
-  handleDeleteBlock,
+  fields,
+  onDelete,
   blockIdsWithErrors,
 }: {
-  handleDeleteBlock: (blockID: string) => void;
+  fields: FieldArrayWithId<CollectorFormData, 'collectedData', 'fieldId'>[];
+  onDelete: (index: number) => void;
   blockIdsWithErrors: string[];
 }) {
-  const { watch } = useFormContext<CollectorFormData>();
-  const blocks = watch('collectedData') ?? [];
-
   return (
     <div className="grid w-full grid-cols-1 gap-3 p-2 sm:grid-flow-dense sm:grid-cols-[repeat(auto-fill,minmax(30rem,1fr))] sm:auto-rows-[15rem]">
-      {blocks.map((block, idx) => (
+      {fields.map((field, index) => (
         <div
-          key={block.blockID}
-          className={block.type === 'book' ? 'sm:row-span-2' : 'sm:row-span-1'}
+          key={field.fieldId}
+          className={field.type === 'book' ? 'sm:row-span-2' : 'sm:row-span-1'}
         >
           <CollectedCoversBlock
-            index={idx}
-            info={block}
-            handleDeleteBlock={handleDeleteBlock}
-            hasError={blockIdsWithErrors.includes(block.blockID)}
+            index={index}
+            type={field.type}
+            isDatabase={field.isDatabase}
+            blockID={field.blockID}
+            spineColor={field.blockInfo.spineColor}
+            onDelete={onDelete}
+            hasError={blockIdsWithErrors.includes(field.blockID)}
           />
         </div>
       ))}

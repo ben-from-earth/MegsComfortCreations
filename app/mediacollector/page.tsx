@@ -25,7 +25,7 @@ import Dialog from '@/components/ui/Dialog';
 import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { buildPNGExportImages } from './png-export-images';
 import {
   buildDatabaseSaveFailureDisplayLines,
@@ -41,9 +41,12 @@ function MediaCollectorContent({
 }: {
   onSubmit: ReturnType<typeof useCollectorForm>['onSubmit'];
 }) {
-  const { getValues, setValue, trigger } = useFormContext<CollectorFormData>();
-  const collectedData = useWatch<CollectorFormData, 'collectedData'>({
+  const { control, getValues, setValue, trigger } =
+    useFormContext<CollectorFormData>();
+  const { fields, remove, replace } = useFieldArray({
+    control,
     name: 'collectedData',
+    keyName: 'fieldId',
   });
 
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
@@ -85,7 +88,7 @@ function MediaCollectorContent({
 
   //Set of actions that set of Media Cover Collection
   const handleCollectClick = async (): Promise<void> => {
-    setValue('collectedData', []);
+    replace([]);
     const collectionList = getValues('collectionList');
     let count = 0;
     for (const searchList of Object.values(collectionList)) {
@@ -102,9 +105,8 @@ function MediaCollectorContent({
     const blocks = await collectMedia(collectionList);
     if (!blocks) {
       return;
-    } else {
-      setValue('collectedData', blocks);
     }
+    replace(blocks);
   };
 
   const handlePNGClick = async (): Promise<void> => {
@@ -144,7 +146,7 @@ function MediaCollectorContent({
         formValues.collectedData,
         result,
       );
-      setValue('collectedData', updatedCollectedData);
+      replace(updatedCollectedData);
 
       const failureLines = buildDatabaseSaveFailureDisplayLines(
         result,
@@ -184,13 +186,6 @@ function MediaCollectorContent({
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  };
-
-  const handleDeleteBlock = (blockID: string) => {
-    setValue(
-      'collectedData',
-      getValues('collectedData').filter((block) => block.blockID !== blockID),
-    );
   };
 
   const handleToggleMediaInput = (mediaType: keyof MediaVisibilityMap) => {
@@ -266,9 +261,10 @@ function MediaCollectorContent({
           <p>{informationalDialogText}</p>
         </Dialog>
       )}
-      {(collectedData?.length ?? 0) > 0 && (
+      {fields.length > 0 && (
         <TitleBlockContainer
-          handleDeleteBlock={handleDeleteBlock}
+          fields={fields}
+          onDelete={remove}
           blockIdsWithErrors={blockIdsWithErrors}
         />
       )}

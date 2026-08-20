@@ -1,77 +1,47 @@
-// react
 import { memo, useContext } from 'react';
-
-//import icons and items from Material UI
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
-
-// components
 import CBBImages from '@/mediacollector/CBBImages';
 import MyTextArea from '@/components/shared/MyTextArea';
 import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import { useFormContext } from 'react-hook-form';
-
 import { CollectorFormData } from './collector-form/collectorFormSchema';
-import type { MediaItemForm } from './collector-form/mediaItemFormSchema';
 import { blockClasses, icons } from 'lib/constants/typeBlockStyles';
+import { MediaType } from 'lib/constants/mediaTypes';
 
 export interface CollectedCoversBlockProps {
   index: number;
-  info: MediaItemForm;
-  handleDeleteBlock: (blockID: string) => void;
+  type: MediaType;
+  isDatabase: boolean;
+  blockID: string;
+  spineColor: string;
+  onDelete: (index: number) => void;
   hasError: boolean;
 }
-
-//styling of the block itself based on type
 
 const CollectedCoversBlock = memo(function CollectedCoversBlock({
   hasError,
   index,
-  info,
-  handleDeleteBlock,
+  type,
+  isDatabase,
+  blockID,
+  spineColor,
+  onDelete,
 }: CollectedCoversBlockProps) {
-  const {
-    type,
-    blockInfo: { title, genres = [] },
-    blockID,
-    isDatabase,
-  } = info;
-
-  //get genres for checkbox population
   const allGenres = useContext(GenreContext);
+  const { getValues, setValue, watch } = useFormContext<CollectorFormData>();
+  const genres = watch(`collectedData.${index}.blockInfo.genres`) ?? [];
 
-  const { watch, setValue } = useFormContext<CollectorFormData>();
-  const collectedData = watch('collectedData');
-  const block = collectedData.find((block) => block.blockID === blockID);
-  if (!block) {
-    return null;
-  }
-
-  //setup connection to redux slice
-
-  //establish variables for icons
-
-  //div to pick a color for the spine.
-  //this is used in png creation and is required for each media type in the database
-
-  //if genre is clicked we add it to the data associated with the block and remove if unchecked
   const handleGenreClick = (genreText: string, checked: boolean) => {
-    if (checked) {
-      const newGenres = [...genres, genreText];
-      const newBlock = {
-        ...info,
-        blockInfo: { ...info.blockInfo, genres: newGenres },
-      };
-      setValue(`collectedData.${index}`, newBlock);
-    } else {
-      const newGenres = genres.filter((genre) => genre !== genreText);
-      const newBlock = {
-        ...info,
-        blockInfo: { ...info.blockInfo, genres: newGenres },
-      };
-      setValue(`collectedData.${index}`, newBlock);
-    }
+    const currentGenres =
+      getValues(`collectedData.${index}.blockInfo.genres`) ?? [];
+    setValue(
+      `collectedData.${index}.blockInfo.genres`,
+      checked
+        ? [...currentGenres, genreText]
+        : currentGenres.filter((genre) => genre !== genreText),
+    );
   };
 
   return (
@@ -95,56 +65,44 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           padding: '0',
           color: type === 'movie' ? 'white' : '',
         }}
-        onClick={() => handleDeleteBlock(blockID)}
+        onClick={() => onDelete(index)}
       >
         <DeleteIcon />
       </IconButton>
 
-      <CBBImages blockID={index} spineColor={info.blockInfo.spineColor} />
-
-      <MyTextArea
-        name="title"
-        label="Title"
-        type={type}
+      <CBBImages
+        index={index}
         blockID={blockID}
-        value={title || ''}
+        type={type}
+        isDatabase={isDatabase}
+        spineColor={spineColor}
       />
+
+      <MyTextArea name="title" label="Title" type={type} index={index} />
       {type === 'book' ? (
         <>
-          <MyTextArea
-            name="author"
-            label="Author"
-            type={type}
-            blockID={blockID}
-            value={info.blockInfo.author || ''}
-          />
+          <MyTextArea name="author" label="Author" type={type} index={index} />
           <MyTextArea
             name="pubYear"
             label="Pub Year"
             type={type}
-            blockID={blockID}
-            value={info.blockInfo.pubYear || ''}
+            index={index}
           />
           <MyTextArea
             name="pageCount"
             label="Page Count"
             type={type}
-            blockID={blockID}
-            value={info.blockInfo.pageCount || ''}
+            index={index}
           />
         </>
-      ) : (
-        <></>
-      )}
+      ) : null}
       {type === 'book' ? (
         <GenreCheckboxes
           allGenres={allGenres}
           handleGenreClick={handleGenreClick}
           blockGenres={genres}
         />
-      ) : (
-        <></>
-      )}
+      ) : null}
     </div>
   );
 });
