@@ -19,7 +19,7 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
+import { mediaItemFormSchema } from '@/mediacollector/collector-form/mediaItemFormSchema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
 import {
@@ -358,7 +358,7 @@ export const databaseRouter = router({
     }),
 
   save: adminProcedure
-    .input(z.array(collectedBlockInformationSchema))
+    .input(z.array(mediaItemFormSchema))
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
 
@@ -382,7 +382,7 @@ export const databaseRouter = router({
           selected: index === 0,
         }));
         const validatedData =
-          collectedBlockInformationSchema.safeParse(payload);
+          mediaItemFormSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
           results.push(

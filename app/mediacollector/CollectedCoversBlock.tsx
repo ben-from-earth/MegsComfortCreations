@@ -12,15 +12,13 @@ import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import { useFormContext } from 'react-hook-form';
 
-import {
-  CollectedBlockInformation,
-  CollectorFormData,
-} from './collector-form/collectorFormSchema';
+import { CollectorFormData } from './collector-form/collectorFormSchema';
+import type { MediaItemForm } from './collector-form/mediaItemFormSchema';
 import { blockClasses, icons } from 'lib/constants/typeBlockStyles';
 
 export interface CollectedCoversBlockProps {
   index: number;
-  info: CollectedBlockInformation;
+  info: MediaItemForm;
   handleDeleteBlock: (blockID: string) => void;
   hasError: boolean;
 }

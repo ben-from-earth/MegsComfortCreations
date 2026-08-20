@@ -1,38 +1,7 @@
 import z from 'zod';
-
-export const baseBlockInfoSchema = z.object({
-  title: z.string(),
-  spineColor: z.string(),
-  genres: z.array(z.string()),
-});
-
-const imageSelectionSchema = z.object({
-  url: z.string(),
-  selected: z.boolean(),
-  isDefault: z.boolean(),
-  spineColor: z.string(),
-});
-
-export const collectedBlockInformationSchema = z.object({
-  type: z.enum(['book', 'movie', 'videoGame', 'album']),
-  images: z.array(imageSelectionSchema).min(1),
-  blockInfo: baseBlockInfoSchema.extend({
-    author: z.string().nullable().optional(),
-    pubYear: z.number().nullable().optional(),
-    pageCount: z.number().nullable().optional(),
-  }),
-  blockID: z.string(),
-  isDatabase: z.boolean(),
-}).superRefine((value, ctx) => {
-  const selectedCount = value.images.filter((image) => image.selected).length;
-  if (selectedCount > 1) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Only one image can be selected at a time.',
-      path: ['images'],
-    });
-  }
-});
+import { mediaItemFormSchema } from './mediaItemFormSchema';
+export { mediaItemFormSchema } from './mediaItemFormSchema';
+export type { MediaItemForm } from './mediaItemFormSchema';
 
 export const collectorFormSchema = z.object({
   orderNumber: z.string(),
@@ -54,7 +23,7 @@ export const collectorFormSchema = z.object({
       z.object({ title: z.string(), author: z.string().optional() }),
     ),
   }),
-  collectedData: z.array(collectedBlockInformationSchema),
+  collectedData: z.array(mediaItemFormSchema),
   pngFormat: z
     .enum(['3', '5'], {
       error: 'Please select a PNG template option',
@@ -66,6 +35,3 @@ export const collectorFormSchema = z.object({
 });
 
 export type CollectorFormData = z.infer<typeof collectorFormSchema>;
-export type CollectedBlockInformation = z.infer<
-  typeof collectorFormSchema
->['collectedData'][number];

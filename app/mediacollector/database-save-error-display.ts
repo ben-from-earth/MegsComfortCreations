@@ -2,9 +2,7 @@ import type {
   DatabaseSaveFailureResult,
   DatabaseSaveServerResponse,
 } from 'lib/interfaces/globalInterfaces';
-import type { CollectorFormData } from './collector-form/collectorFormSchema';
-
-type CollectedBlock = CollectorFormData['collectedData'][number];
+import type { MediaItemForm } from './collector-form/mediaItemFormSchema';
 
 export type DatabaseSaveFailureDisplayLine = {
   blockID: string;
@@ -39,7 +37,7 @@ export function toUserFriendlyDatabaseSaveReason(
 
 export function buildDatabaseSaveFailureDisplayLines(
   saveResults: DatabaseSaveServerResponse,
-  collectedData: CollectedBlock[],
+  collectedData: MediaItemForm[],
 ): DatabaseSaveFailureDisplayLine[] {
   return saveResults
     .filter((item): item is DatabaseSaveFailureResult => !item.success)
@@ -58,9 +56,9 @@ export function buildDatabaseSaveFailureDisplayLines(
 }
 
 export function markSuccessfulBlocksAsInDatabase(
-  collectedData: CollectedBlock[],
+  collectedData: MediaItemForm[],
   saveResults: DatabaseSaveServerResponse,
-): CollectedBlock[] {
+): MediaItemForm[] {
   const successfulBlockIds = new Set(
     saveResults.filter((item) => item.success).map((item) => item.blockID),
   );

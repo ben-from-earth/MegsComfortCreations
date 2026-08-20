@@ -10,7 +10,7 @@ import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
-import type { CollectedBlockInformation } from '@/mediacollector/collector-form/collectorFormSchema';
+import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 
 export const collectRouter = router({
@@ -80,7 +80,7 @@ export const collectRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const blocks: CollectedBlockInformation[] = [];
+      const blocks: MediaItemForm[] = [];
 
       const todayStr = new Date().toLocaleDateString('en-CA', {
         timeZone: 'America/New_York',

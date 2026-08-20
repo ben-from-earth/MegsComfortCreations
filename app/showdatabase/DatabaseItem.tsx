@@ -22,6 +22,7 @@ import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { isBookRow } from 'lib/helpers/handleMediaTyping';
 import { MEDIA_TYPES } from 'lib/constants/mediaTypes';
 import { blockClasses } from 'lib/constants/typeBlockStyles';
+import { convertMediaItemToForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
 
 export interface DatabaseItemProps {
   info: PostSavedMediaItem;
@@ -73,6 +74,12 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   });
   const bookDetails = isBookRow(info) ? info : null;
 
+  const mediaItem = convertMediaItemToForm({
+    item: info,
+    type: itemType,
+    genres,
+  });
+
   return (
     <div
       className={`mr-auto box-border flex w-full items-center justify-start rounded-sm p-2 ${blockClasses[itemType]}`}
@@ -82,41 +89,9 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           setAreYouSure={setAreYouSure}
           onDelete={onDelete}
           title={title}
-          //   deleteError={deleteError}
         />
       )}
-      {edit && (
-        <EditDatabaseBlock
-          info={
-            // isBookRow(type, info)
-            {
-              type: itemType,
-              images: images ?? [],
-              blockInfo: {
-                title,
-                author: bookDetails?.author,
-                pubYear: bookDetails?.pubYear,
-                pageCount: bookDetails?.pageCount,
-                spineColor,
-                initialGenres: [...genres],
-              },
-              id,
-              setEdit,
-            }
-            // : {
-            //     type,
-            //     images: imageUrls ?? [],
-            //     blockInfo: {
-            //       title,
-            //       spineColor,
-            //       initialGenres: [...genres],
-            //     },
-            //     id,
-            //     setEdit,
-            //   }
-          }
-        />
-      )}
+      {edit && <EditDatabaseBlock item={mediaItem} setEdit={setEdit} />}
       {itemType !== 'album' ? (
         <div
           className={`h-36 w-6 rounded-sm`}

@@ -3,12 +3,10 @@ import {
   markSuccessfulBlocksAsInDatabase,
   toUserFriendlyDatabaseSaveReason,
 } from '@/mediacollector/database-save-error-display';
-import type { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
+import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
 import type { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
 
-type CollectedBlock = CollectorFormData['collectedData'][number];
-
-function createBlock(overrides: Partial<CollectedBlock> = {}): CollectedBlock {
+function createBlock(overrides: Partial<MediaItemForm> = {}): MediaItemForm {
   return {
     type: 'book',
     images: [

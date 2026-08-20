@@ -25,9 +25,10 @@ import { trpc } from 'lib/trpc/client';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
 
 // interfaces and types
-import { BlockInfo, PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
+import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { MediaType } from 'lib/constants/mediaTypes';
 import { blockClasses, icons } from 'lib/constants/typeBlockStyles';
+import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
 
 export interface MinimalTextAreaProps {
   name: 'title' | 'author' | 'pubYear' | 'pageCount';
@@ -38,13 +39,8 @@ export interface MinimalTextAreaProps {
 }
 
 export interface EditDatabaseBlockProps {
-  info: {
-    type: MediaType;
-    images: PostSavedMediaItem['images'];
-    blockInfo: BlockInfo & { initialGenres: string[] };
-    id: string;
-    setEdit: Dispatch<SetStateAction<boolean>>;
-  };
+  item: MediaItemForm;
+  setEdit: Dispatch<SetStateAction<boolean>>;
 }
 
 // setup component text area for each data field in the block. Minimal implementation of MyTextArea used in Collected Covers Block
@@ -86,7 +82,7 @@ const MyTextArea = ({
 
 //setup memo so block doesnt rerender during other actions
 const EditDatabaseBlock = memo(function EditDatabaseBlock({
-  info: {
+  item: {
     type,
     images,
     blockInfo: {
@@ -95,11 +91,11 @@ const EditDatabaseBlock = memo(function EditDatabaseBlock({
       pubYear,
       pageCount,
       spineColor = '#ffffff',
-      initialGenres = [],
+      genres: initialGenres = [],
     },
-    id,
-    setEdit,
+    blockID: id,
   },
+  setEdit,
 }: EditDatabaseBlockProps) {
   const initialValues = {
     id,
