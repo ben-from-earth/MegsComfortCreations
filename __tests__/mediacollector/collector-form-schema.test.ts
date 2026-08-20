@@ -1,4 +1,5 @@
 import {
+  BOOK_CLUB_REPEAT_MAX,
   collectorFormSchema,
   PNG_FORMAT_OPTIONS,
   PNG_FORMAT_VALUES,
@@ -46,5 +47,14 @@ describe('collectorFormSchema header and PNG fields', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  test('rejects book club repeat above 25', () => {
+    expect(
+      collectorFormSchema.safeParse({
+        ...validCollectorForm,
+        bookClubRepeat: BOOK_CLUB_REPEAT_MAX + 1,
+      }).success,
+    ).toBe(false);
   });
 });

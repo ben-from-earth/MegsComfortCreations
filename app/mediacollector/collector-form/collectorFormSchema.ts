@@ -3,6 +3,9 @@ import { mediaItemFormSchema } from './mediaItemFormSchema';
 export { mediaItemFormSchema } from './mediaItemFormSchema';
 export type { MediaItemForm } from './mediaItemFormSchema';
 
+export const BOOK_CLUB_REPEAT_MIN = 1;
+export const BOOK_CLUB_REPEAT_MAX = 25;
+
 export const PNG_FORMAT_VALUES = ['3', '5'] as const;
 export type PngFormat = (typeof PNG_FORMAT_VALUES)[number];
 
@@ -16,7 +19,9 @@ export const collectorFormSchema = z.object({
   customerName: z.string(),
   bookClubRepeat: z
     .number()
-    .min(1, 'Book Club Repeat Number must be at least 1.'),
+    .int()
+    .min(BOOK_CLUB_REPEAT_MIN, 'Book Club Repeat Number must be at least 1.')
+    .max(BOOK_CLUB_REPEAT_MAX),
   collectionList: z.object({
     book: z.array(
       z.object({ title: z.string(), author: z.string().optional() }),

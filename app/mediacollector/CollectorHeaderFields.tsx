@@ -5,7 +5,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import TextInput from '@/components/shared/TextInput';
-import type { CollectorFormData } from './collector-form/collectorFormSchema';
+import {
+  BOOK_CLUB_REPEAT_MAX,
+  type CollectorFormData,
+} from './collector-form/collectorFormSchema';
 import { useFormContext } from 'react-hook-form';
 
 export default function CollectorHeaderFields() {
@@ -61,7 +64,12 @@ export default function CollectorHeaderFields() {
                 name={field.name}
                 value={String(field.value)}
                 onChange={(event) => {
-                  field.onChange(Number(event.target.value));
+                  const parsed = Number(event.target.value);
+                  if (!Number.isFinite(parsed)) {
+                    field.onChange(0);
+                    return;
+                  }
+                  field.onChange(Math.min(parsed, BOOK_CLUB_REPEAT_MAX));
                 }}
                 onBlur={field.onBlur}
               />

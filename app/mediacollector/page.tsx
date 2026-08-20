@@ -25,12 +25,7 @@ import Dialog from '@/components/ui/Dialog';
 import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collectorFormSchema';
-import {
-  useFieldArray,
-  useFormContext,
-  useFormState,
-  type FieldErrors,
-} from 'react-hook-form';
+import { useFieldArray, useFormContext, useFormState } from 'react-hook-form';
 import { toFormImages } from './collector-form/mediaItemFormSchema';
 import { buildPNGExportImages } from './png-export-images';
 import {
@@ -41,23 +36,6 @@ import {
 
 const backgroundImage = '/FlowerBackground.png';
 const mediaCollectorTitleImage = '/MegsMediaCollector.png';
-
-function collectorSubmitErrorMessage(
-  errors: FieldErrors<CollectorFormData>,
-): string | null {
-  if (typeof errors.pngFormat?.message === 'string') {
-    return errors.pngFormat.message;
-  }
-  if (typeof errors.bookClubRepeat?.message === 'string') {
-    return errors.bookClubRepeat.message;
-  }
-  if (errors.collectedData) {
-    return 'Some collected items have invalid details. Check the highlighted blocks.';
-  }
-  return Object.keys(errors).length > 0
-    ? 'Please fix the highlighted fields and try again.'
-    : null;
-}
 
 function MediaCollectorContent({
   formId,
@@ -74,9 +52,10 @@ function MediaCollectorContent({
     name: 'collectedData',
     keyName: 'fieldId',
   });
-  const submitErrorMessage = isSubmitted
-    ? collectorSubmitErrorMessage(errors)
-    : null;
+  const submitErrorMessage =
+    isSubmitted && errors.collectedData
+      ? 'Some collected items have invalid details. Check the highlighted blocks.'
+      : null;
   const schemaErrorBlockIds = isSubmitted
     ? fields
         .filter((_, index) => errors.collectedData?.[index] != null)
@@ -101,9 +80,6 @@ function MediaCollectorContent({
       videoGame: false,
       album: false,
     });
-
-  //refs for useEffect
-  // const mediaTypesRef = useRef(stateData);
 
   // trpc functions
   const { mutateAsync: createPNG, isPending: isCreatingPNG } =
@@ -246,10 +222,7 @@ function MediaCollectorContent({
 
   return (
     <>
-      <form
-        id={formId}
-        onSubmit={handleCreatePngClick}
-      >
+      <form id={formId} onSubmit={handleCreatePngClick}>
         <div
           className="border-b-darkpink relative box-border flex h-fit w-full flex-col items-center border-b-5 bg-cover pt-1 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]"
           style={{

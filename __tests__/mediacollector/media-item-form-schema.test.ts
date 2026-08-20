@@ -36,6 +36,29 @@ function createMediaItemForm(
 }
 
 describe('mediaItemFormSchema', () => {
+  test('rejects an empty title', () => {
+    const result = mediaItemFormSchema.safeParse(
+      createMediaItemForm({
+        blockInfo: {
+          title: '   ',
+          spineColor: '#111111',
+          genres: ['Science Fiction'],
+        },
+      }),
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.path.join('.') === 'blockInfo.title' &&
+            issue.message === 'Title is Required',
+        ),
+      ).toBe(true);
+    }
+  });
+
   test('rejects string pubYear', () => {
     const result = mediaItemFormSchema.safeParse({
       type: 'book',
@@ -63,11 +86,20 @@ describe('mediaItemFormSchema', () => {
   });
 
   test('rejects a collected block with empty images', () => {
-    expect(
-      mediaItemFormSchema.safeParse(
-        createMediaItemForm({ isDatabase: true, images: [] }),
-      ).success,
-    ).toBe(false);
+    const result = mediaItemFormSchema.safeParse(
+      createMediaItemForm({ isDatabase: true, images: [] }),
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.path.join('.') === 'images' &&
+            issue.message === 'Cover image is Required',
+        ),
+      ).toBe(true);
+    }
   });
 });
 

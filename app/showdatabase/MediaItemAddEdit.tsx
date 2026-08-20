@@ -101,7 +101,8 @@ function MediaItemAddEditFields({
   const allGenres = useContext(GenreContext);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { getValues, setValue, watch } = useFormContext<MediaItemForm>();
+  const { control, getValues, setValue, watch } =
+    useFormContext<MediaItemForm>();
   const { mutateAsync: uploadCoverImage } =
     trpc.collect.uploadCoverImage.useMutation();
 
@@ -256,19 +257,28 @@ function MediaItemAddEditFields({
           onChange={handleUploadImage}
           aria-label="Upload database image"
         />
-        <MediaImageStrip
-          mediaType={type}
-          images={images}
-          className="m-2.5 mb-0 flex flex-row items-center gap-7.5"
-          albumTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
-          defaultTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
-          showSelectionOverlay
-          onImageClick={handleImageSelection}
-          showUploadButton={type === 'book'}
-          isUploading={isUploading}
-          onUploadButtonClick={() => fileInputRef.current?.click()}
-          uploadButtonLabel="Add uploaded database image"
-          uploadSlotLabel="Uploading..."
+        <FormField
+          control={control}
+          name="images"
+          render={() => (
+            <FormItem className="flex flex-col items-center">
+              <MediaImageStrip
+                mediaType={type}
+                images={images}
+                className="m-2.5 mb-0 flex flex-row items-center gap-7.5"
+                albumTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
+                defaultTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
+                showSelectionOverlay
+                onImageClick={handleImageSelection}
+                showUploadButton={type === 'book'}
+                isUploading={isUploading}
+                onUploadButtonClick={() => fileInputRef.current?.click()}
+                uploadButtonLabel="Add uploaded database image"
+                uploadSlotLabel="Uploading..."
+              />
+              <FormMessage />
+            </FormItem>
+          )}
         />
         {type !== 'album' ? (
           <div

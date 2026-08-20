@@ -11,7 +11,7 @@ import {
 import {
   DATABASE_EDIT_FAILED_MESSAGE,
   GENRE_UPDATE_FAILED_MESSAGE,
-  toUserFriendlyDatabaseEditReason,
+  toDatabaseEditDisplayError,
 } from './database-edit-error-display';
 
 export function useMediaItemForm({
@@ -48,6 +48,7 @@ export function useMediaItemForm({
 
   const onSubmit = async (data: MediaItemForm) => {
     setSubmitError(null);
+    form.clearErrors();
 
     let result;
     try {
@@ -61,7 +62,15 @@ export function useMediaItemForm({
     }
 
     if (result.error != null) {
-      setSubmitError(toUserFriendlyDatabaseEditReason({ error: result.error }));
+      const displayError = toDatabaseEditDisplayError(result.error);
+      if (displayError.placement === 'field') {
+        form.setError(displayError.field, {
+          type: 'server',
+          message: displayError.message,
+        });
+        return;
+      }
+      setSubmitError(displayError.message);
       return;
     }
 

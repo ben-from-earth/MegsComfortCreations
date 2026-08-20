@@ -15,7 +15,7 @@ export const mediaImageSelectionSchema = z.object({
 });
 
 export const mediaItemBlockInfoSchema = z.object({
-  title: z.string(),
+  title: z.string().trim().min(1, 'Title is Required'),
   spineColor: z.string(),
   genres: z.array(z.string()),
   author: z.string().nullable().optional(),
@@ -25,7 +25,9 @@ export const mediaItemBlockInfoSchema = z.object({
 
 export const mediaItemFormSchema = z.object({
   type: z.enum(MEDIA_TYPES),
-  images: z.array(mediaImageSelectionSchema).min(1),
+  images: z
+    .array(mediaImageSelectionSchema)
+    .min(1, 'Cover image is Required'),
   blockInfo: mediaItemBlockInfoSchema,
   blockID: z.string(),
   isDatabase: z.boolean(),
