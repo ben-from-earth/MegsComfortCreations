@@ -36,10 +36,11 @@ import {
 const backgroundImage = '/FlowerBackground.png';
 const mediaCollectorTitleImage = '/MegsMediaCollector.png';
 
-function MediaCollectorContent() {
-  const { onSubmit } = useCollectorForm();
-
-  // setup states used throughout the component
+function MediaCollectorContent({
+  onSubmit,
+}: {
+  onSubmit: ReturnType<typeof useCollectorForm>['onSubmit'];
+}) {
   const { watch, setValue, trigger } = useFormContext<CollectorFormData>();
 
   const formValues = watch();
@@ -300,10 +301,10 @@ function MediaCollectorContent() {
 }
 
 export default function MediaCollector() {
-  const { form } = useCollectorForm();
+  const { form, onSubmit } = useCollectorForm();
   return (
     <FormProvider {...form}>
-      <MediaCollectorContent />
+      <MediaCollectorContent onSubmit={onSubmit} />
     </FormProvider>
   );
 }
