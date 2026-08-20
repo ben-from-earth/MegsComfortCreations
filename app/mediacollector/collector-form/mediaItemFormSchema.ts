@@ -96,3 +96,15 @@ export function convertMediaItemToForm({
     isDatabase: true,
   };
 }
+
+export function convertMediaItemFormToDatabaseItem(form: MediaItemForm) {
+  return {
+    id: form.blockID,
+    title: form.blockInfo.title,
+    spineColor: form.blockInfo.spineColor,
+    images: form.images,
+    author: form.blockInfo.author ?? null,
+    pageCount: form.blockInfo.pageCount ?? null,
+    pubYear: form.blockInfo.pubYear ?? null,
+  };
+}

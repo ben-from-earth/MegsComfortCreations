@@ -30,10 +30,12 @@ const Button = ({
   disabled,
   variant,
   className,
+  type = 'button',
   ...rest
 }: BtnProps) => {
   return (
     <button
+      type={type}
       disabled={disabled || false}
       style={{ width: `${width}px`, fontSize: `${fontSize}px` }}
       className={twMerge(buttonBaseClasses[variant], className)}

@@ -8,7 +8,7 @@ import { trpc } from 'lib/trpc/client';
 // components
 import AreYouSure from '@/components/shared/AreYouSure';
 import Button from '@/components/ui/Button';
-import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
+import MediaItemAddEdit from '@/showdatabase/MediaItemAddEdit';
 import MediaImageStrip from '@/components/shared/MediaImageStrip';
 
 // helpers
@@ -91,7 +91,9 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           title={title}
         />
       )}
-      {edit && <EditDatabaseBlock item={mediaItem} setEdit={setEdit} />}
+      {edit && (
+        <MediaItemAddEdit item={mediaItem} onClose={() => setEdit(false)} />
+      )}
       {itemType !== 'album' ? (
         <div
           className={`h-36 w-6 rounded-sm`}

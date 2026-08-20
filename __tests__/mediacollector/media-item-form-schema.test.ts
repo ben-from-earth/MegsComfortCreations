@@ -1,5 +1,6 @@
 import { collectorFormSchema } from '@/mediacollector/collector-form/collectorFormSchema';
 import {
+  convertMediaItemFormToDatabaseItem,
   convertMediaItemToForm,
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
@@ -129,5 +130,40 @@ describe('convertMediaItemToForm', () => {
       },
     ]);
     expect(mediaItemFormSchema.parse(form)).toEqual(form);
+  });
+});
+
+describe('convertMediaItemFormToDatabaseItem', () => {
+  test('maps MediaItemForm onto the database.edit item payload', () => {
+    const form = createMediaItemForm({
+      blockID: 'book-42',
+      isDatabase: true,
+    });
+
+    expect(convertMediaItemFormToDatabaseItem(form)).toEqual({
+      id: 'book-42',
+      title: 'Dune',
+      spineColor: '#111111',
+      images: form.images,
+      author: 'Frank Herbert',
+      pageCount: 412,
+      pubYear: 1965,
+    });
+  });
+
+  test('coerces missing book fields to null for the edit schema', () => {
+    const form = createMediaItemForm({
+      blockInfo: {
+        title: 'Arrival',
+        spineColor: '#ffffff',
+        genres: [],
+      },
+    });
+
+    expect(convertMediaItemFormToDatabaseItem(form)).toMatchObject({
+      author: null,
+      pageCount: null,
+      pubYear: null,
+    });
   });
 });
