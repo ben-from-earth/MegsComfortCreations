@@ -71,6 +71,28 @@ export function toFormImages(
   }));
 }
 
+export function getMediaItemFormDefaultValues(
+  item?: MediaItemForm,
+): MediaItemForm {
+  if (item) {
+    return item;
+  }
+  return {
+    type: 'book',
+    blockID: crypto.randomUUID(),
+    isDatabase: false,
+    blockInfo: {
+      title: '',
+      author: null,
+      pubYear: null,
+      pageCount: null,
+      genres: [],
+      spineColor: '#ffffff',
+    },
+    images: toFormImages(undefined, '#ffffff'),
+  };
+}
+
 export function convertMediaItemToForm({
   item,
   type,

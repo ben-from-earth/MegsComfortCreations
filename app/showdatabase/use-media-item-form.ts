@@ -5,6 +5,7 @@ import { trpc } from 'lib/trpc/client';
 import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
 import {
   convertMediaItemFormToDatabaseItem,
+  getMediaItemFormDefaultValues,
   mediaItemFormSchema,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/mediaItemFormSchema';
@@ -25,7 +26,7 @@ export function useMediaItemForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<MediaItemForm>({
     resolver: standardSchemaResolver(mediaItemFormSchema),
-    defaultValues: item,
+    defaultValues: getMediaItemFormDefaultValues(item),
     mode: 'onSubmit',
     reValidateMode: 'onChange',
   });

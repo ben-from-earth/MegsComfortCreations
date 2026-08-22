@@ -1,6 +1,7 @@
 import {
   convertMediaItemFormToDatabaseItem,
   convertMediaItemToForm,
+  getMediaItemFormDefaultValues,
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
   toFormImages,
@@ -190,6 +191,53 @@ describe('convertMediaItemToForm', () => {
         spineColor: '#ffffff',
       },
     ]);
+  });
+});
+
+describe('getMediaItemFormDefaultValues', () => {
+  test('returns a blank book that fails parse on empty title and has a placeholder cover', () => {
+    const defaults = getMediaItemFormDefaultValues();
+
+    expect(defaults).toMatchObject({
+      type: 'book',
+      isDatabase: false,
+      blockInfo: {
+        title: '',
+        author: null,
+        pubYear: null,
+        pageCount: null,
+        genres: [],
+        spineColor: '#ffffff',
+      },
+      images: [
+        {
+          url: PLACEHOLDER_MEDIA_IMAGE_URL,
+          selected: true,
+          isDefault: true,
+          spineColor: '#ffffff',
+        },
+      ],
+    });
+    expect(defaults.blockID).toEqual(expect.any(String));
+    expect(defaults.blockID.length).toBeGreaterThan(0);
+
+    const result = mediaItemFormSchema.safeParse(defaults);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.path.join('.') === 'blockInfo.title' &&
+            issue.message === 'Title is Required',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  test('preserves fields when an item is passed', () => {
+    const item = createMediaItemForm();
+
+    expect(getMediaItemFormDefaultValues(item)).toEqual(item);
   });
 });
 
