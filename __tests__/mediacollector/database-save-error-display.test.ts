@@ -3,12 +3,10 @@ import {
   markSuccessfulBlocksAsInDatabase,
   toUserFriendlyDatabaseSaveReason,
 } from '@/mediacollector/database-save-error-display';
-import type { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
-import type { DatabaseSaveServerResponse } from 'lib/interfaces/globalInterfaces';
+import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
+import type { DatabaseSaveFailureResult } from 'lib/interfaces/globalInterfaces';
 
-type CollectedBlock = CollectorFormData['collectedData'][number];
-
-function createBlock(overrides: Partial<CollectedBlock> = {}): CollectedBlock {
+function createBlock(overrides: Partial<MediaItemForm> = {}): MediaItemForm {
   return {
     type: 'book',
     images: [
@@ -21,9 +19,6 @@ function createBlock(overrides: Partial<CollectedBlock> = {}): CollectedBlock {
     ],
     blockInfo: {
       title: 'Dune',
-      author: 'Frank Herbert',
-      pubYear: 1965,
-      pageCount: 412,
       spineColor: '#111111',
       genres: [],
     },
@@ -33,90 +28,82 @@ function createBlock(overrides: Partial<CollectedBlock> = {}): CollectedBlock {
   };
 }
 
+function saveFailure(
+  overrides: Partial<DatabaseSaveFailureResult> = {},
+): DatabaseSaveFailureResult {
+  return {
+    success: false,
+    title: 'Dune',
+    error: 'Schema Violation',
+    message: 'Schema violation(s) during save request',
+    errors: ['Required'],
+    blockID: 'BLK-1',
+    ...overrides,
+  };
+}
+
 describe('toUserFriendlyDatabaseSaveReason', () => {
-  test('maps image persistence errors', () => {
-    expect(
-      toUserFriendlyDatabaseSaveReason({
-        success: false,
-        title: 'Dune',
+  test.each([
+    [
+      saveFailure({
         error: 'Image Persistence Error',
         message: 'Image failed to save so media item creation was rolled back.',
-        errors: ['Image failed to save so media item creation was rolled back.'],
-        blockID: 'BLK-1',
+        errors: [
+          'Image failed to save so media item creation was rolled back.',
+        ],
       }),
-    ).toBe(
       'The cover image could not be saved, so this item was not added to the database.',
-    );
-  });
-
-  test('maps schema violations', () => {
-    expect(
-      toUserFriendlyDatabaseSaveReason({
-        success: false,
-        title: 'Dune',
-        error: 'Schema Violation',
-        message: 'Schema violation(s) during save request',
-        errors: ['Required'],
-        blockID: 'BLK-1',
-      }),
-    ).toBe('Some required details for this item were missing or invalid.');
-  });
-
-  test('maps missing genre insertion errors', () => {
-    expect(
-      toUserFriendlyDatabaseSaveReason({
-        success: false,
-        title: 'Dune',
+    ],
+    [
+      saveFailure(),
+      'Some required details for this item were missing or invalid.',
+    ],
+    [
+      saveFailure({
         error: 'Database Insertion Error',
         message: 'An error occurred while trying to save to the database',
         errors: ['Genre "Sci-Fi" does not exist'],
-        blockID: 'BLK-1',
       }),
-    ).toBe('A selected genre is not available in the database.');
-  });
-
-  test('maps other insertion errors', () => {
-    expect(
-      toUserFriendlyDatabaseSaveReason({
-        success: false,
-        title: 'Dune',
+      'A selected genre is not available in the database.',
+    ],
+    [
+      saveFailure({
         error: 'Database Insertion Error',
         message: 'An error occurred while trying to save to the database',
         errors: ['Book insertion failed'],
-        blockID: 'BLK-1',
       }),
-    ).toBe(
       'This item could not be saved to the database. Try again, or remove the block and re-collect it.',
-    );
+    ],
+  ] as const)('maps $error', (failure, message) => {
+    expect(toUserFriendlyDatabaseSaveReason(failure)).toBe(message);
   });
 });
 
 describe('buildDatabaseSaveFailureDisplayLines', () => {
   test('includes 1-based block numbers matching collector card order', () => {
-    const collectedData = [
-      createBlock({
-        blockID: 'BLK-1',
-        blockInfo: { title: 'Dune', spineColor: '#111', genres: [] },
-      }),
-      createBlock({
-        blockID: 'BLK-2',
-        type: 'movie',
-        blockInfo: { title: 'Matrix', spineColor: '#222', genres: [] },
-      }),
-    ];
-    const saveResults: DatabaseSaveServerResponse = [
-      {
-        success: false,
-        title: 'Matrix',
-        error: 'Image Persistence Error',
-        message: 'Image failed to save so media item creation was rolled back.',
-        errors: ['Image failed to save so media item creation was rolled back.'],
-        blockID: 'BLK-2',
-      },
-    ];
-
     expect(
-      buildDatabaseSaveFailureDisplayLines(saveResults, collectedData),
+      buildDatabaseSaveFailureDisplayLines(
+        [
+          saveFailure({
+            blockID: 'BLK-2',
+            title: 'Matrix',
+            error: 'Image Persistence Error',
+            message:
+              'Image failed to save so media item creation was rolled back.',
+            errors: [
+              'Image failed to save so media item creation was rolled back.',
+            ],
+          }),
+        ],
+        [
+          createBlock(),
+          createBlock({
+            blockID: 'BLK-2',
+            type: 'movie',
+            blockInfo: { title: 'Matrix', spineColor: '#222', genres: [] },
+          }),
+        ],
+      ),
     ).toEqual([
       {
         blockID: 'BLK-2',
@@ -131,50 +118,47 @@ describe('buildDatabaseSaveFailureDisplayLines', () => {
 
 describe('markSuccessfulBlocksAsInDatabase', () => {
   test('marks only successful save blockIDs as isDatabase', () => {
-    const collectedData = [
-      createBlock({ blockID: 'BLK-1', isDatabase: false }),
-      createBlock({
-        blockID: 'BLK-2',
-        isDatabase: false,
-        type: 'movie',
-        blockInfo: { title: 'Matrix', spineColor: '#222', genres: [] },
-      }),
-      createBlock({
-        blockID: 'BLK-3',
-        isDatabase: true,
-        type: 'album',
-        blockInfo: { title: 'Already Saved', spineColor: '#333', genres: [] },
-      }),
-    ];
-    const saveResults: DatabaseSaveServerResponse = [
-      {
-        success: true,
-        blockID: 'BLK-1',
-        title: 'Dune',
-        message: 'Dune successfully added to database.',
-        actionAttemptItem: {
-          id: 'book-1',
-          title: 'Dune',
-          spineColor: '#111111',
-          images: [],
+    const updated = markSuccessfulBlocksAsInDatabase(
+      [
+        createBlock({ blockID: 'BLK-1' }),
+        createBlock({
+          blockID: 'BLK-2',
+          type: 'movie',
+          blockInfo: { title: 'Matrix', spineColor: '#222', genres: [] },
+        }),
+        createBlock({
+          blockID: 'BLK-3',
+          isDatabase: true,
+          type: 'album',
+          blockInfo: { title: 'Already Saved', spineColor: '#333', genres: [] },
+        }),
+      ],
+      [
+        {
+          success: true,
           blockID: 'BLK-1',
+          title: 'Dune',
+          message: 'Dune successfully added to database.',
+          type: 'book',
+          actionAttemptItem: {
+            id: 'book-1',
+            title: 'Dune',
+            spineColor: '#111111',
+            images: [],
+          },
         },
-        type: 'book',
-      },
-      {
-        success: false,
-        title: 'Matrix',
-        error: 'Image Persistence Error',
-        message: 'Image failed to save so media item creation was rolled back.',
-        errors: ['Image failed to save so media item creation was rolled back.'],
-        blockID: 'BLK-2',
-      },
-    ];
+        saveFailure({
+          blockID: 'BLK-2',
+          title: 'Matrix',
+          error: 'Image Persistence Error',
+        }),
+      ],
+    );
 
-    const updated = markSuccessfulBlocksAsInDatabase(collectedData, saveResults);
-
-    expect(updated[0]?.isDatabase).toBe(true);
-    expect(updated[1]?.isDatabase).toBe(false);
-    expect(updated[2]?.isDatabase).toBe(true);
+    expect(updated.map((block) => block.isDatabase)).toEqual([
+      true,
+      false,
+      true,
+    ]);
   });
 });

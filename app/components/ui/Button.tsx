@@ -12,14 +12,14 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   width?: number;
   fontSize?: number;
   className?: string;
-  variant: 'primary' | 'popover' | 'close';
+  variant: 'primary' | 'popover' | 'remove';
   disabled?: boolean;
 }
 
 const buttonBaseClasses = {
   primary: `border-3 cursor-pointer rounded-lg border-darkpink bg-lightpink px-2 tracking-wider text-black hover:bg-darkpink shadow-[0px_2px_6px_rgba(0,0,0,0.3)]`,
   popover: `border-3 cursor-pointer rounded-lg border-darkpink bg-lightpink px-2 tracking-wider text-black hover:bg-darkpink shadow-[0px_2px_6px_rgba(0,0,0,0.3)] flex items-center justify-between`,
-  close: `cursor-pointer hover:bg-darkpink flex items-center justify-center`,
+  remove: `cursor-pointer hover:bg-darkpink flex items-center justify-center`,
 };
 
 const Button = ({
@@ -30,19 +30,23 @@ const Button = ({
   disabled,
   variant,
   className,
+  type = 'button',
+  children,
   ...rest
 }: BtnProps) => {
   return (
     <button
+      type={type}
       disabled={disabled || false}
       style={{ width: `${width}px`, fontSize: `${fontSize}px` }}
       className={twMerge(buttonBaseClasses[variant], className)}
       onClick={onClick}
       {...rest}
     >
-      {label && <span>{label}</span>}{' '}
+      {label ? <span>{label}</span> : null}
+      {children}
       {variant === 'popover' && <UnfoldMoreIcon className="opacity-50" />}
-      {variant === 'close' && <CloseIcon fontSize="small" />}
+      {variant === 'remove' && <CloseIcon fontSize="small" />}
     </button>
   );
 };

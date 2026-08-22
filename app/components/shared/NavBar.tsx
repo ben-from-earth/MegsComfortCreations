@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
-import ProfileButton from '@/shared/ProfileButton';
+import ProfileButton from '@/components/shared/ProfileButton';
 
 // auth
 import { auth } from 'lib/auth';

@@ -19,7 +19,7 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/globalInterfaces';
 import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { collectedBlockInformationSchema } from '@/mediacollector/collector-form/collectorFormSchema';
+import { mediaItemFormSchema } from '@/mediacollector/collector-form/mediaItemFormSchema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
 import {
@@ -358,7 +358,7 @@ export const databaseRouter = router({
     }),
 
   save: adminProcedure
-    .input(z.array(collectedBlockInformationSchema))
+    .input(z.array(mediaItemFormSchema))
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
 
@@ -381,8 +381,7 @@ export const databaseRouter = router({
           isDefault: index === 0,
           selected: index === 0,
         }));
-        const validatedData =
-          collectedBlockInformationSchema.safeParse(payload);
+        const validatedData = mediaItemFormSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
           results.push(
@@ -488,6 +487,23 @@ export const databaseRouter = router({
           } catch (error) {
             if (createdBookId) {
               await db.delete(books).where(eq(books.id, createdBookId));
+            }
+            const duplicateHint = `${error instanceof Error ? error.message : ''} ${
+              error instanceof Error && error.cause instanceof Error
+                ? error.cause.message
+                : ''
+            }`;
+            if (duplicateHint.includes('books_title_author_unique')) {
+              results.push(
+                createSaveFailureResult({
+                  blockID: data.blockID,
+                  title: data.blockInfo.title,
+                  error: 'Duplicate Book',
+                  message: 'A book with this title and author already exists.',
+                  errors: ['Duplicate Book'],
+                }),
+              );
+              continue;
             }
             const message =
               error instanceof Error

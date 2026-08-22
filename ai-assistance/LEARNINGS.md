@@ -55,3 +55,17 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: The suite accumulated long, mock-heavy UI and router tests that were slow, brittle, and hard to maintain.
 - Correction: Cleared those suites and kept only fast pure-helper / safety-guard / slim auth-guard coverage until a deliberate testing approach is reintroduced.
 - Rule Going Forward: Prefer slim, fast business-logic unit tests. Avoid broad mocked UI/component and heavily mocked router suites unless intentionally designed.
+
+### 2026-08-20 - Do not extract helpers just to test them
+
+- Area: Extraction / testing
+- Issue: Tiny one-off field updates (exclusive image select, genre toggle, number coerce) were pulled into `collected-item-field-updates.ts` so they could have unit tests.
+- Correction: Inline those operations at the call sites and delete the helper module and its tests.
+- Rule Going Forward: Do not extract a helper solely to make it testable. Leave simple UI/form wiring inline. Extract only when the same logic is reused or the name itself is the abstraction.
+
+### 2026-08-22 - No test-only helpers; skip unsolicited aria-labels
+
+- Area: Extraction / testing / a11y
+- Issue: Duplicate-book detection was pulled into `is-duplicate-book-error.ts` so it could have a unit test, and pager buttons were given aria-labels that were not requested.
+- Correction: Inline the unique-constraint check in the `database.save` catch, delete the helper and its test, and drop the extra aria-labels.
+- Rule Going Forward: Do not extract a helper just to test it. Tests stay slim and cover real business logic only — skip tests that exist only because something was extracted. Do not add aria-labels unless the user asks for them.

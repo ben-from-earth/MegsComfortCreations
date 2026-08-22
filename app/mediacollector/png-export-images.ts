@@ -1,14 +1,12 @@
-import type { CollectorFormData } from './collector-form/collectorFormSchema';
-
-type CollectedBlock = CollectorFormData['collectedData'][number];
+import type { MediaItemForm } from './collector-form/mediaItemFormSchema';
 
 export type PNGExportImage = {
   url: string;
-  type: CollectedBlock['type'];
+  type: MediaItemForm['type'];
   spineColor: string;
 };
 
-function getImageForPNG(block: CollectedBlock) {
+function getImageForPNG(block: MediaItemForm) {
   const selectedImage = block.images.find((image) => image.selected);
   if (selectedImage) {
     return selectedImage;
@@ -19,7 +17,7 @@ function getImageForPNG(block: CollectedBlock) {
 }
 
 export function buildPNGExportImages(
-  collectedData: CollectorFormData['collectedData'],
+  collectedData: MediaItemForm[],
 ): PNGExportImage[] {
   return collectedData.flatMap((block) => {
     const image = getImageForPNG(block);

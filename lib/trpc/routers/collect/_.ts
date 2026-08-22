@@ -10,7 +10,10 @@ import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
-import type { CollectedBlockInformation } from '@/mediacollector/collector-form/collectorFormSchema';
+import {
+  convertMediaItemToForm,
+  type MediaItemForm,
+} from '@/mediacollector/collector-form/mediaItemFormSchema';
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 
 export const collectRouter = router({
@@ -80,7 +83,7 @@ export const collectRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const blocks: CollectedBlockInformation[] = [];
+      const blocks: MediaItemForm[] = [];
 
       const todayStr = new Date().toLocaleDateString('en-CA', {
         timeZone: 'America/New_York',
@@ -97,97 +100,43 @@ export const collectRouter = router({
 
           if (mediaSearchData.total > 0) {
             for (const foundMedia of mediaSearchData.foundMediaList) {
-              if (type === 'book') {
-                if (!('author' in foundMedia)) {
-                  continue;
-                }
-                const {
-                  id,
-                  title: foundTitle,
-                  author: foundAuthor,
-                  pageCount,
-                  pubYear,
-                  spineColor,
-                } = foundMedia;
-                const normalizedImages =
-                  'images' in foundMedia && Array.isArray(foundMedia.images)
-                    ? foundMedia.images
-                    : ('imageUrls' in foundMedia && Array.isArray(foundMedia.imageUrls)
-                        ? foundMedia.imageUrls.map((url) => ({
-                            url,
-                            isDefault: false,
-                            spineColor,
-                            selected: false,
-                          }))
-                        : []);
-                if (normalizedImages.length > 0 && !normalizedImages.some((image) => image.isDefault)) {
-                  normalizedImages[0] = { ...normalizedImages[0], isDefault: true };
-                }
-                const rows = await db
-                  .select({ genre: genres.genre })
-                  .from(genres)
-                  .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
-                  .where(eq(genresBooks.bookId, id));
-
-                const databaseGenres = rows.map((row) => row.genre);
-
-                blocks.push({
-                  type: 'book',
-                  images: normalizedImages.map((image) => ({
-                    ...image,
-                    selected: image.isDefault,
-                    spineColor: image.spineColor,
-                  })),
-                  blockInfo: {
-                    title: foundTitle,
-                    author: foundAuthor,
-                    pubYear,
-                    pageCount,
-                    spineColor:
-                      normalizedImages.find((image) => image.isDefault)?.spineColor ??
-                      normalizedImages[0]?.spineColor ??
-                      spineColor,
-                    genres: databaseGenres,
-                  },
-                  blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-                  isDatabase: true,
-                });
-              } else {
-                const { title: foundTitle, spineColor } = foundMedia;
-                const normalizedImages =
-                  'images' in foundMedia && Array.isArray(foundMedia.images)
-                    ? foundMedia.images
-                    : ('imageUrls' in foundMedia && Array.isArray(foundMedia.imageUrls)
-                        ? foundMedia.imageUrls.map((url) => ({
-                            url,
-                            isDefault: false,
-                            spineColor,
-                            selected: false,
-                          }))
-                        : []);
-                if (normalizedImages.length > 0 && !normalizedImages.some((image) => image.isDefault)) {
-                  normalizedImages[0] = { ...normalizedImages[0], isDefault: true };
-                }
-
-                blocks.push({
-                  type,
-                  images: normalizedImages.map((image) => ({
-                    ...image,
-                    selected: image.isDefault,
-                    spineColor: image.spineColor,
-                  })),
-                  blockInfo: {
-                    title: foundTitle,
-                    spineColor:
-                      normalizedImages.find((image) => image.isDefault)?.spineColor ??
-                      normalizedImages[0]?.spineColor ??
-                      spineColor,
-                    genres: [],
-                  },
-                  blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-                  isDatabase: true,
-                });
+              if (type === 'book' && !('author' in foundMedia)) {
+                continue;
               }
+
+              const databaseGenres =
+                type === 'book'
+                  ? (
+                      await db
+                        .select({ genre: genres.genre })
+                        .from(genres)
+                        .innerJoin(
+                          genresBooks,
+                          eq(genresBooks.genreId, genres.id),
+                        )
+                        .where(eq(genresBooks.bookId, foundMedia.id))
+                    ).map((row) => row.genre)
+                  : [];
+
+              blocks.push(
+                convertMediaItemToForm({
+                  item: {
+                    id: foundMedia.id,
+                    title: foundMedia.title,
+                    spineColor: foundMedia.spineColor,
+                    images: foundMedia.images,
+                    ...('author' in foundMedia
+                      ? {
+                          author: foundMedia.author,
+                          pageCount: foundMedia.pageCount,
+                          pubYear: foundMedia.pubYear,
+                        }
+                      : {}),
+                  },
+                  type,
+                  genres: databaseGenres,
+                }),
+              );
             }
           } else {
             //if the media wasnt in the database, collect cover images
@@ -205,7 +154,7 @@ export const collectRouter = router({
                   spineColor: '#ffffff',
                 })),
                 blockInfo: { ...bookInfo, spineColor: '#ffffff', genres: [] },
-                blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+                blockID: crypto.randomUUID(),
                 isDatabase: false,
               });
             } else {
@@ -218,7 +167,7 @@ export const collectRouter = router({
                   spineColor: '#ffffff',
                 })),
                 blockInfo: { title, spineColor: '#ffffff', genres: [] },
-                blockID: `BLK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+                blockID: crypto.randomUUID(),
                 isDatabase: false,
               });
             }

@@ -1,45 +1,27 @@
 import z from 'zod';
+import { mediaItemFormSchema } from './mediaItemFormSchema';
+export { mediaItemFormSchema } from './mediaItemFormSchema';
+export type { MediaItemForm } from './mediaItemFormSchema';
 
-export const baseBlockInfoSchema = z.object({
-  title: z.string(),
-  spineColor: z.string(),
-  genres: z.array(z.string()),
-});
+export const BOOK_CLUB_REPEAT_MIN = 1;
+export const BOOK_CLUB_REPEAT_MAX = 25;
 
-const imageSelectionSchema = z.object({
-  url: z.string(),
-  selected: z.boolean(),
-  isDefault: z.boolean(),
-  spineColor: z.string(),
-});
+export const PNG_FORMAT_VALUES = ['3', '5'] as const;
+export type PngFormat = (typeof PNG_FORMAT_VALUES)[number];
 
-export const collectedBlockInformationSchema = z.object({
-  type: z.enum(['book', 'movie', 'videoGame', 'album']),
-  images: z.array(imageSelectionSchema).min(1),
-  blockInfo: baseBlockInfoSchema.extend({
-    author: z.string().nullable().optional(),
-    pubYear: z.number().nullable().optional(),
-    pageCount: z.number().nullable().optional(),
-  }),
-  blockID: z.string(),
-  isDatabase: z.boolean(),
-}).superRefine((value, ctx) => {
-  const selectedCount = value.images.filter((image) => image.selected).length;
-  if (selectedCount > 1) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Only one image can be selected at a time.',
-      path: ['images'],
-    });
-  }
-});
+export const PNG_FORMAT_OPTIONS = [
+  { value: '3', label: '3mm PNG Format' },
+  { value: '5', label: '5mm PNG Format' },
+] satisfies ReadonlyArray<{ value: PngFormat; label: string }>;
 
 export const collectorFormSchema = z.object({
   orderNumber: z.string(),
   customerName: z.string(),
   bookClubRepeat: z
     .number()
-    .min(1, 'Book Club Repeat Number must be at least 1.'),
+    .int()
+    .min(BOOK_CLUB_REPEAT_MIN, 'Book Club Repeat Number must be at least 1.')
+    .max(BOOK_CLUB_REPEAT_MAX),
   collectionList: z.object({
     book: z.array(
       z.object({ title: z.string(), author: z.string().optional() }),
@@ -54,9 +36,9 @@ export const collectorFormSchema = z.object({
       z.object({ title: z.string(), author: z.string().optional() }),
     ),
   }),
-  collectedData: z.array(collectedBlockInformationSchema),
+  collectedData: z.array(mediaItemFormSchema),
   pngFormat: z
-    .enum(['3', '5'], {
+    .enum(PNG_FORMAT_VALUES, {
       error: 'Please select a PNG template option',
     })
     .nullable()
@@ -66,6 +48,3 @@ export const collectorFormSchema = z.object({
 });
 
 export type CollectorFormData = z.infer<typeof collectorFormSchema>;
-export type CollectedBlockInformation = z.infer<
-  typeof collectorFormSchema
->['collectedData'][number];

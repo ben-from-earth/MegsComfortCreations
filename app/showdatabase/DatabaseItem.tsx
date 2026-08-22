@@ -1,15 +1,15 @@
 'use client';
 // react, redux imports
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 
 // library imports
 import { trpc } from 'lib/trpc/client';
 
 // components
-import AreYouSure from '@/shared/AreYouSure';
+import AreYouSure from '@/components/shared/AreYouSure';
 import Button from '@/components/ui/Button';
-import EditDatabaseBlock from '@/showdatabase/EditDatabaseBlock';
-import MediaImageStrip from '@/shared/MediaImageStrip';
+import MediaItemAddEdit from '@/showdatabase/MediaItemAddEdit';
+import MediaImageStrip from '@/components/shared/MediaImageStrip';
 
 // helpers
 import { titleRearrange } from 'lib/helpers/titleRearrange';
@@ -22,6 +22,7 @@ import { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
 import { isBookRow } from 'lib/helpers/handleMediaTyping';
 import { MEDIA_TYPES } from 'lib/constants/mediaTypes';
 import { blockClasses } from 'lib/constants/typeBlockStyles';
+import { convertMediaItemToForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
 
 export interface DatabaseItemProps {
   info: PostSavedMediaItem;
@@ -42,17 +43,14 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   //set up local state
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
-  const [genres, setGenres] = useState<string[]>([]);
   //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
-  //on mount, get the genres related to the displayed book and make sure to update if the item is edited
   const genresQuery = trpc.genres.getForBook.useQuery(
     { bookID: id },
     { enabled: itemType === 'book' },
   );
-  useEffect(() => {
-    if (genresQuery.data?.genres) setGenres(genresQuery.data.genres);
-  }, [genresQuery.data]);
+  const genres = genresQuery.data?.genres ?? [];
+  const canOpenEdit = itemType !== 'book' || !genresQuery.isPending;
 
   //handle deletion of the media from the database
   const { mutateAsync: databaseDelete } = trpc.database.delete.useMutation();
@@ -73,6 +71,12 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   });
   const bookDetails = isBookRow(info) ? info : null;
 
+  const mediaItem = convertMediaItemToForm({
+    item: info,
+    type: itemType,
+    genres,
+  });
+
   return (
     <div
       className={`mr-auto box-border flex w-full items-center justify-start rounded-sm p-2 ${blockClasses[itemType]}`}
@@ -82,40 +86,10 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           setAreYouSure={setAreYouSure}
           onDelete={onDelete}
           title={title}
-          //   deleteError={deleteError}
         />
       )}
       {edit && (
-        <EditDatabaseBlock
-          info={
-            // isBookRow(type, info)
-            {
-              type: itemType,
-              images: images ?? [],
-              blockInfo: {
-                title,
-                author: bookDetails?.author,
-                pubYear: bookDetails?.pubYear,
-                pageCount: bookDetails?.pageCount,
-                spineColor,
-                initialGenres: [...genres],
-              },
-              id,
-              setEdit,
-            }
-            // : {
-            //     type,
-            //     images: imageUrls ?? [],
-            //     blockInfo: {
-            //       title,
-            //       spineColor,
-            //       initialGenres: [...genres],
-            //     },
-            //     id,
-            //     setEdit,
-            //   }
-          }
-        />
+        <MediaItemAddEdit item={mediaItem} onClose={() => setEdit(false)} />
       )}
       {itemType !== 'album' ? (
         <div
@@ -152,6 +126,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
           label={'Edit'}
           width={75}
           fontSize={24}
+          disabled={!canOpenEdit}
           onClick={() => setEdit(true)}
         />
         <Button

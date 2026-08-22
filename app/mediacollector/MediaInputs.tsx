@@ -4,7 +4,7 @@ import { MEDIA_TYPE_DEFINITIONS, MediaType } from 'lib/constants/mediaTypes';
 import type { MediaVisibilityMap } from '@/mediacollector/MediaCheckboxes';
 
 // component imports
-import TextInput from '@/shared/TextInput';
+import TextInput from '@/components/shared/TextInput';
 import { useFormContext } from 'react-hook-form';
 import { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
 

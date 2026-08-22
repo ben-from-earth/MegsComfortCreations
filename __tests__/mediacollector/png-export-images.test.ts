@@ -2,58 +2,36 @@ import {
   buildPNGExportImages,
   type PNGExportImage,
 } from '@/mediacollector/png-export-images';
-import type { CollectorFormData } from '@/mediacollector/collector-form/collectorFormSchema';
+import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
 
-type CollectedBlock = CollectorFormData['collectedData'][number];
-
-function createBlock(overrides: Partial<CollectedBlock> = {}): CollectedBlock {
-  return {
-    type: 'book',
-    images: [
-      {
-        url: 'https://img/default.png',
-        selected: true,
-        isDefault: true,
-        spineColor: '#111111',
-      },
-    ],
-    blockInfo: {
-      title: 'Dune',
-      author: 'Frank Herbert',
-      pubYear: 1965,
-      pageCount: 412,
+const bookBlock: MediaItemForm = {
+  type: 'book',
+  images: [
+    {
+      url: 'https://img/default.png',
+      selected: false,
+      isDefault: true,
       spineColor: '#111111',
-      genres: [],
     },
-    blockID: 'BLK-1',
-    isDatabase: false,
-    ...overrides,
-  };
-}
+    {
+      url: 'https://img/selected.png',
+      selected: true,
+      isDefault: false,
+      spineColor: '#222222',
+    },
+  ],
+  blockInfo: {
+    title: 'Dune',
+    spineColor: '#222222',
+    genres: [],
+  },
+  blockID: 'BLK-1',
+  isDatabase: false,
+};
 
 describe('buildPNGExportImages', () => {
-  test('uses selected image for database blocks instead of the default image', () => {
-    const images = buildPNGExportImages([
-      createBlock({
-        isDatabase: true,
-        images: [
-          {
-            url: 'https://img/default.png',
-            selected: false,
-            isDefault: true,
-            spineColor: '#111111',
-          },
-          {
-            url: 'https://img/selected.png',
-            selected: true,
-            isDefault: false,
-            spineColor: '#222222',
-          },
-        ],
-      }),
-    ]);
-
-    expect(images).toEqual<PNGExportImage[]>([
+  test('uses the selected image when one is chosen', () => {
+    expect(buildPNGExportImages([bookBlock])).toEqual<PNGExportImage[]>([
       {
         url: 'https://img/selected.png',
         type: 'book',
@@ -62,62 +40,22 @@ describe('buildPNGExportImages', () => {
     ]);
   });
 
-  test('uses selected image for newly collected blocks', () => {
-    const images = buildPNGExportImages([
-      createBlock({
-        isDatabase: false,
-        type: 'movie',
-        images: [
-          {
-            url: 'https://img/default.png',
+  test('falls back to the default image when none is selected', () => {
+    expect(
+      buildPNGExportImages([
+        {
+          ...bookBlock,
+          images: bookBlock.images.map((image) => ({
+            ...image,
             selected: false,
-            isDefault: true,
-            spineColor: '#111111',
-          },
-          {
-            url: 'https://img/selected.png',
-            selected: true,
-            isDefault: false,
-            spineColor: '#333333',
-          },
-        ],
-      }),
-    ]);
-
-    expect(images).toEqual<PNGExportImage[]>([
-      {
-        url: 'https://img/selected.png',
-        type: 'movie',
-        spineColor: '#333333',
-      },
-    ]);
-  });
-
-  test('falls back to the default image when no image is selected', () => {
-    const images = buildPNGExportImages([
-      createBlock({
-        images: [
-          {
-            url: 'https://img/first.png',
-            selected: false,
-            isDefault: false,
-            spineColor: '#111111',
-          },
-          {
-            url: 'https://img/default.png',
-            selected: false,
-            isDefault: true,
-            spineColor: '#444444',
-          },
-        ],
-      }),
-    ]);
-
-    expect(images).toEqual<PNGExportImage[]>([
+          })),
+        },
+      ]),
+    ).toEqual<PNGExportImage[]>([
       {
         url: 'https://img/default.png',
         type: 'book',
-        spineColor: '#444444',
+        spineColor: '#111111',
       },
     ]);
   });

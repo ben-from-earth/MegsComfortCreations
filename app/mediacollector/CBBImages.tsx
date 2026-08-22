@@ -1,55 +1,60 @@
-// interfaces and types
-import { CollectorFormData } from './collector-form/collectorFormSchema';
 import { ChangeEvent, useRef, useState } from 'react';
-
 import { useFormContext } from 'react-hook-form';
 import { trpc } from 'lib/trpc/client';
-import MediaImageStrip from '@/shared/MediaImageStrip';
+import MediaImageStrip from '@/components/shared/MediaImageStrip';
+import { CollectorFormData } from './collector-form/collectorFormSchema';
+import { MediaType } from 'lib/constants/mediaTypes';
 
 export interface CBBImageProps {
-  blockID: number;
+  index: number;
+  blockID: string;
+  type: MediaType;
+  isDatabase: boolean;
   spineColor: string;
 }
 
-export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
-  //set local state for spine color
+export default function CBBImages({
+  index,
+  blockID,
+  type,
+  isDatabase,
+  spineColor,
+}: CBBImageProps) {
   const [color, setColor] = useState(spineColor);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [hasUploadedCustomImage, setHasUploadedCustomImage] = useState(false);
 
-  const { watch, setValue } = useFormContext<CollectorFormData>();
+  const { getValues, setValue, watch } = useFormContext<CollectorFormData>();
   const { mutateAsync: uploadCoverImage } =
     trpc.collect.uploadCoverImage.useMutation();
-  const collectedData = watch('collectedData');
-  const block = collectedData[blockID];
-  if (!block) {
+  const images = watch(`collectedData.${index}.images`);
+
+  if (!images) {
     return null;
   }
-  const { type, images, isDatabase } = block;
-  //setup connection to redux slice
 
   const handleImageSelection = (imageIdx: number) => {
-    const selectedImage = block.images[imageIdx];
+    const currentImages = getValues(`collectedData.${index}.images`);
+    const selectedImage = currentImages[imageIdx];
     if (!selectedImage) {
       return;
     }
-    const nextImages = block.images.map((image, index) => ({
-      ...image,
-      selected: index === imageIdx,
-    }));
     setColor(selectedImage.spineColor);
-    setValue(`collectedData.${blockID}`, {
-      ...block,
-      images: nextImages,
-      blockInfo: {
-        ...block.blockInfo,
-        spineColor: selectedImage.spineColor,
-      },
-    });
+    setValue(
+      `collectedData.${index}.images`,
+      currentImages.map((image, imageIndex) => ({
+        ...image,
+        selected: imageIndex === imageIdx,
+      })),
+    );
+    setValue(
+      `collectedData.${index}.blockInfo.spineColor`,
+      selectedImage.spineColor,
+    );
   };
 
-  const handleColorPick = async (blockID: number) => {
+  const handleColorPick = async () => {
     if (!window.EyeDropper) {
       console.log('EyeDropper API not supported in this browser');
       return;
@@ -57,23 +62,25 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
     const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
-      const spineColor = sRGBHex;
-      setColor(spineColor);
-      const selectedImageIndex = block.images.findIndex((image) => image.selected);
-      const imageIndexToUpdate = selectedImageIndex >= 0 ? selectedImageIndex : 0;
-      const nextImages = block.images.map((image, index) =>
-        index === imageIndexToUpdate ? { ...image, spineColor } : image,
+      const nextSpineColor = sRGBHex;
+      setColor(nextSpineColor);
+      const currentImages = getValues(`collectedData.${index}.images`);
+      const selectedImageIndex = currentImages.findIndex(
+        (image) => image.selected,
       );
-      setValue(`collectedData.${blockID}`, {
-        ...block,
-        images: nextImages,
-        blockInfo: {
-          ...block.blockInfo,
-          spineColor,
-        },
-      });
-    } catch (e) {
-      console.log(e);
+      const imageIndexToUpdate =
+        selectedImageIndex >= 0 ? selectedImageIndex : 0;
+      setValue(
+        `collectedData.${index}.images`,
+        currentImages.map((image, imageIndex) =>
+          imageIndex === imageIndexToUpdate
+            ? { ...image, spineColor: nextSpineColor }
+            : image,
+        ),
+      );
+      setValue(`collectedData.${index}.blockInfo.spineColor`, nextSpineColor);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -103,31 +110,26 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
 
     setIsUploading(true);
     try {
+      const currentImages = getValues(`collectedData.${index}.images`);
       const dataBase64 = await convertFileToBase64(file);
       const uploadedImage = await uploadCoverImage({
-        blockID: block.blockID,
-        sortOrder: images.length,
+        blockID,
+        sortOrder: currentImages.length,
         fileName: file.name,
         mimeType: file.type,
         dataBase64,
       });
 
-      setValue(`collectedData.${blockID}`, {
-        ...block,
-        images: [
-          ...images.map((image) => ({ ...image, selected: false })),
-          {
-            url: uploadedImage.url,
-            selected: true,
-            isDefault: images.length === 0,
-            spineColor: color,
-          },
-        ],
-        blockInfo: {
-          ...block.blockInfo,
+      setValue(`collectedData.${index}.images`, [
+        ...currentImages.map((image) => ({ ...image, selected: false })),
+        {
+          url: uploadedImage.url,
+          selected: true,
+          isDefault: currentImages.length === 0,
           spineColor: color,
         },
-      });
+      ]);
+      setValue(`collectedData.${index}.blockInfo.spineColor`, color);
       setHasUploadedCustomImage(true);
     } catch (error) {
       console.error('Failed to upload custom book image', error);
@@ -137,7 +139,8 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
     }
   };
 
-  const showUploadSlot = type === 'book' && !isDatabase && !hasUploadedCustomImage;
+  const showUploadSlot =
+    type === 'book' && !isDatabase && !hasUploadedCustomImage;
 
   return (
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-3">
@@ -145,7 +148,7 @@ export default function CBBImages({ blockID, spineColor }: CBBImageProps) {
         <div
           className="h-full w-5 cursor-pointer rounded-sm"
           style={{ backgroundColor: color }}
-          onClick={() => handleColorPick(blockID)}
+          onClick={() => handleColorPick()}
         ></div>
       ) : null}
       <input
