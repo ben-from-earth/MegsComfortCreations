@@ -4,6 +4,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import Button from '@/components/ui/Button';
+import Dialog from '@/components/ui/Dialog';
 import MediaImageStrip from '@/components/shared/MediaImageStrip';
 import {
   Form,
@@ -21,7 +22,7 @@ import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFor
 import { useMediaItemForm } from './use-media-item-form';
 
 export interface MediaItemAddEditProps {
-  item: MediaItemForm;
+  item?: MediaItemForm;
   onClose: () => void;
 }
 
@@ -56,9 +57,7 @@ function MediaItemTextField({
       name={`blockInfo.${name}`}
       render={({ field }) => (
         <FormItem className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 p-2">
-          <FormLabel className={labelClass}>
-            {label}:
-          </FormLabel>
+          <FormLabel className={labelClass}>{label}:</FormLabel>
           <FormControl>
             <textarea
               className="w-2xs content-center rounded-sm bg-white pl-2 text-black"
@@ -92,10 +91,18 @@ function MediaItemAddEditFields({
   type,
   blockID,
   submitError,
+  isAdd,
+  coverSearchBanner,
+  isSearchingCovers,
+  onSearchCovers,
 }: {
   type: MediaType;
   blockID: string;
   submitError: string | null;
+  isAdd: boolean;
+  coverSearchBanner: string | null;
+  isSearchingCovers: boolean;
+  onSearchCovers: () => void;
 }) {
   const allGenres = useContext(GenreContext);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -108,15 +115,23 @@ function MediaItemAddEditFields({
   const images = watch('images');
   const spineColor = watch('blockInfo.spineColor');
   const genres = watch('blockInfo.genres') ?? [];
+  const [focusedImageIndex, setFocusedImageIndex] = useState(() => {
+    const selectedIndex = images.findIndex((image) => image.selected);
+    return selectedIndex >= 0 ? selectedIndex : 0;
+  });
 
   const defaultImageIndex = Math.max(
     images.findIndex((image) => image.isDefault),
     0,
   );
-  const selectedImageIndex = images.findIndex((image) => image.selected);
+  const safeFocusedImageIndex = Math.min(
+    focusedImageIndex,
+    Math.max(images.length - 1, 0),
+  );
   const pendingDefaultImageIndex =
-    selectedImageIndex >= 0 && selectedImageIndex !== defaultImageIndex
-      ? selectedImageIndex
+    images[safeFocusedImageIndex] != null &&
+    safeFocusedImageIndex !== defaultImageIndex
+      ? safeFocusedImageIndex
       : null;
 
   const handleImageSelection = (imageIndex: number) => {
@@ -125,11 +140,16 @@ function MediaItemAddEditFields({
     if (!selectedImage) {
       return;
     }
+    setFocusedImageIndex(imageIndex);
     setValue(
       'images',
       currentImages.map((image, index) => ({
         ...image,
-        selected: index === imageIndex,
+        selected: isAdd
+          ? index === imageIndex
+            ? !image.selected
+            : image.selected
+          : index === imageIndex,
       })),
     );
     setValue('blockInfo.spineColor', selectedImage.spineColor);
@@ -146,7 +166,9 @@ function MediaItemAddEditFields({
       currentImages.map((image, index) => ({
         ...image,
         isDefault: index === pendingDefaultImageIndex,
-        selected: index === pendingDefaultImageIndex,
+        selected: isAdd
+          ? index === pendingDefaultImageIndex || image.selected
+          : index === pendingDefaultImageIndex,
       })),
     );
     if (nextDefault) {
@@ -163,8 +185,10 @@ function MediaItemAddEditFields({
     try {
       const { sRGBHex } = await eyeDropper.open();
       const currentImages = getValues('images');
-      const selectedIndex = currentImages.findIndex((image) => image.selected);
-      const imageIndexToUpdate = selectedIndex >= 0 ? selectedIndex : 0;
+      const imageIndexToUpdate =
+        currentImages[safeFocusedImageIndex] != null
+          ? safeFocusedImageIndex
+          : 0;
       setValue(
         'images',
         currentImages.map((image, index) =>
@@ -215,15 +239,20 @@ function MediaItemAddEditFields({
         mimeType: file.type,
         dataBase64,
       });
-      setValue('images', [
-        ...currentImages.map((image) => ({ ...image, selected: false })),
+      const nextImages = [
+        ...currentImages.map((image) => ({
+          ...image,
+          selected: isAdd ? image.selected : false,
+        })),
         {
           url: uploadedImage.url,
           selected: true,
           isDefault: false,
           spineColor: currentSpineColor,
         },
-      ]);
+      ];
+      setValue('images', nextImages);
+      setFocusedImageIndex(nextImages.length - 1);
     } catch (error) {
       console.error('Failed to upload image for database edit', error);
     } finally {
@@ -276,6 +305,11 @@ function MediaItemAddEditFields({
                 uploadSlotLabel="Uploading..."
               />
               <FormMessage />
+              {coverSearchBanner ? (
+                <p className="m-0 font-['Just_Another_Hand'] text-2xl tracking-wider text-red-600">
+                  {coverSearchBanner}
+                </p>
+              ) : null}
             </FormItem>
           )}
         />
@@ -320,10 +354,21 @@ function MediaItemAddEditFields({
             fontSize={25}
           />
         ) : null}
+        {isAdd ? (
+          <Button
+            type="button"
+            variant="primary"
+            label={isSearchingCovers ? 'Searching...' : 'Search Covers'}
+            disabled={isSearchingCovers}
+            onClick={onSearchCovers}
+            width={165}
+            fontSize={25}
+          />
+        ) : null}
         <Button
           type="submit"
           variant="primary"
-          label="Submit Changes"
+          label={isAdd ? 'Add Book' : 'Submit Changes'}
           width={150}
           fontSize={25}
         />
@@ -336,34 +381,62 @@ export default function MediaItemAddEdit({
   item,
   onClose,
 }: MediaItemAddEditProps) {
-  const { form, formId, onSubmit, submitError } = useMediaItemForm({
+  const {
+    form,
+    formId,
+    isAdd,
+    onSubmit,
+    submitError,
+    isDuplicateBookDialogOpen,
+    closeDuplicateBookDialog,
+    coverSearchBanner,
+    isSearchingCovers,
+    onSearchCovers,
+  } = useMediaItemForm({
     item,
     onClose,
   });
+  const type = form.getValues('type');
+  const blockID = form.getValues('blockID');
 
   return (
-    <Form {...form}>
-      <form
-        id={formId}
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center justify-center gap-1 rounded-md border-3 p-2 text-2xl tracking-wider text-black"
-      >
-        <Button
-          variant="primary"
-          width={44}
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute top-1 right-1 flex items-center justify-center"
+    <>
+      <Form {...form}>
+        <form
+          id={formId}
+          onSubmit={form.handleSubmit(onSubmit)}
+          className={`border-darkpink bg-lightpink fixed top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center justify-center gap-1 rounded-md border-3 p-2 text-2xl tracking-wider text-black ${isDuplicateBookDialogOpen ? 'z-80' : 'z-100'}`}
         >
-          <CloseIcon />
-        </Button>
-        <h1>Editing: {titleRearrange(item.blockInfo.title)}</h1>
-        <MediaItemAddEditFields
-          type={item.type}
-          blockID={item.blockID}
-          submitError={submitError}
-        />
-      </form>
-    </Form>
+          <Button
+            variant="primary"
+            width={44}
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-1 right-1 flex items-center justify-center"
+          >
+            <CloseIcon />
+          </Button>
+          <h1>
+            {item == null
+              ? 'Add Book'
+              : `Editing: ${titleRearrange(item.blockInfo.title)}`}
+          </h1>
+          <MediaItemAddEditFields
+            type={type}
+            blockID={blockID}
+            submitError={submitError}
+            isAdd={isAdd}
+            coverSearchBanner={coverSearchBanner}
+            isSearchingCovers={isSearchingCovers}
+            onSearchCovers={onSearchCovers}
+          />
+        </form>
+      </Form>
+      {isDuplicateBookDialogOpen ? (
+        <Dialog title="Book already exists" onClose={closeDuplicateBookDialog}>
+          <p>A book with this title and author already exists.</p>
+        </Dialog>
+      ) : null}
+    </>
   );
 }

@@ -62,3 +62,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Tiny one-off field updates (exclusive image select, genre toggle, number coerce) were pulled into `collected-item-field-updates.ts` so they could have unit tests.
 - Correction: Inline those operations at the call sites and delete the helper module and its tests.
 - Rule Going Forward: Do not extract a helper solely to make it testable. Leave simple UI/form wiring inline. Extract only when the same logic is reused or the name itself is the abstraction.
+
+### 2026-08-22 - No test-only helpers; skip unsolicited aria-labels
+
+- Area: Extraction / testing / a11y
+- Issue: Duplicate-book detection was pulled into `is-duplicate-book-error.ts` so it could have a unit test, and pager buttons were given aria-labels that were not requested.
+- Correction: Inline the unique-constraint check in the `database.save` catch, delete the helper and its test, and drop the extra aria-labels.
+- Rule Going Forward: Do not extract a helper just to test it. Tests stay slim and cover real business logic only — skip tests that exist only because something was extracted. Do not add aria-labels unless the user asks for them.

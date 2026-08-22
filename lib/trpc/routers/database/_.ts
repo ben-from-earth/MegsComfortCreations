@@ -381,8 +381,7 @@ export const databaseRouter = router({
           isDefault: index === 0,
           selected: index === 0,
         }));
-        const validatedData =
-          mediaItemFormSchema.safeParse(payload);
+        const validatedData = mediaItemFormSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
           results.push(
@@ -488,6 +487,23 @@ export const databaseRouter = router({
           } catch (error) {
             if (createdBookId) {
               await db.delete(books).where(eq(books.id, createdBookId));
+            }
+            const duplicateHint = `${error instanceof Error ? error.message : ''} ${
+              error instanceof Error && error.cause instanceof Error
+                ? error.cause.message
+                : ''
+            }`;
+            if (duplicateHint.includes('books_title_author_unique')) {
+              results.push(
+                createSaveFailureResult({
+                  blockID: data.blockID,
+                  title: data.blockInfo.title,
+                  error: 'Duplicate Book',
+                  message: 'A book with this title and author already exists.',
+                  errors: ['Duplicate Book'],
+                }),
+              );
+              continue;
             }
             const message =
               error instanceof Error

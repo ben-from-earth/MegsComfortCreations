@@ -89,7 +89,7 @@ export function getMediaItemFormDefaultValues(
       genres: [],
       spineColor: '#ffffff',
     },
-    images: toFormImages(undefined, '#ffffff'),
+    images: [],
   };
 }
 

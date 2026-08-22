@@ -195,7 +195,7 @@ describe('convertMediaItemToForm', () => {
 });
 
 describe('getMediaItemFormDefaultValues', () => {
-  test('returns a blank book that fails parse on empty title and has a placeholder cover', () => {
+  test('returns a blank book that fails parse on empty title and has no covers', () => {
     const defaults = getMediaItemFormDefaultValues();
 
     expect(defaults).toMatchObject({
@@ -209,14 +209,7 @@ describe('getMediaItemFormDefaultValues', () => {
         genres: [],
         spineColor: '#ffffff',
       },
-      images: [
-        {
-          url: PLACEHOLDER_MEDIA_IMAGE_URL,
-          selected: true,
-          isDefault: true,
-          spineColor: '#ffffff',
-        },
-      ],
+      images: [],
     });
     expect(defaults.blockID).toEqual(expect.any(String));
     expect(defaults.blockID.length).toBeGreaterThan(0);
