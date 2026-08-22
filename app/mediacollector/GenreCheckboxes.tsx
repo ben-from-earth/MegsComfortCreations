@@ -53,7 +53,7 @@ const GenreTag = ({
 }) => {
   return (
     <div className="border-darkpink bg-lightpink m-0.5 flex h-8 items-center gap-1 rounded border-2 px-1 text-lg text-black shadow-[0px_2px_6px_rgba(0,0,0,0.3)]">
-      <Button variant="close" onClick={onClick} />
+      <Button variant="remove" onClick={onClick} />
       <span>{genre}</span>
     </div>
   );

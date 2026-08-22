@@ -1,4 +1,6 @@
 // components
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Button from '@/components/ui/Button';
 
 // context
@@ -19,24 +21,26 @@ export default function PageSelector() {
       <div className="ml-auto flex gap-2">
         <Button
           variant="primary"
-          label={'<- Prev Page'}
-          width={125}
-          fontSize={24}
+          width={44}
+          className="flex items-center justify-center"
           disabled={page === 1 || total === 0}
           onClick={() => {
             setPage((prev: number) => prev - 1);
           }}
-        />
+        >
+          <ArrowBackIcon />
+        </Button>
         <Button
           variant="primary"
+          width={44}
+          className="flex items-center justify-center"
           disabled={page === numPages || total === 0}
-          width={125}
-          fontSize={24}
-          label={'Next Page ->'}
           onClick={() => {
             setPage((prev: number) => prev + 1);
           }}
-        />
+        >
+          <ArrowForwardIcon />
+        </Button>
       </div>
     </div>
   );

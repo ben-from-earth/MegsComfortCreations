@@ -1,5 +1,6 @@
 import { ChangeEvent, useContext, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import CloseIcon from '@mui/icons-material/Close';
 import GenreContext from 'lib/context/GenreContext';
 import GenreCheckboxes from '@/mediacollector/GenreCheckboxes';
 import Button from '@/components/ui/Button';
@@ -90,12 +91,10 @@ function MediaItemTextField({
 function MediaItemAddEditFields({
   type,
   blockID,
-  onClose,
   submitError,
 }: {
   type: MediaType;
   blockID: string;
-  onClose: () => void;
   submitError: string | null;
 }) {
   const allGenres = useContext(GenreContext);
@@ -311,21 +310,7 @@ function MediaItemAddEditFields({
           {submitError}
         </p>
       ) : null}
-      <div className="flex gap-2">
-        <Button
-          variant="primary"
-          label="Close"
-          onClick={onClose}
-          width={100}
-          fontSize={25}
-        />
-        <Button
-          type="submit"
-          variant="primary"
-          label="Submit Changes"
-          width={150}
-          fontSize={25}
-        />
+      <div className="flex w-full justify-end gap-2">
         {pendingDefaultImageIndex != null ? (
           <Button
             variant="primary"
@@ -335,6 +320,13 @@ function MediaItemAddEditFields({
             fontSize={25}
           />
         ) : null}
+        <Button
+          type="submit"
+          variant="primary"
+          label="Submit Changes"
+          width={150}
+          fontSize={25}
+        />
       </div>
     </>
   );
@@ -356,11 +348,19 @@ export default function MediaItemAddEdit({
         onSubmit={form.handleSubmit(onSubmit)}
         className="border-darkpink bg-lightpink fixed top-1/2 left-1/2 z-100 flex -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center justify-center gap-1 rounded-md border-3 p-2 text-2xl tracking-wider text-black"
       >
+        <Button
+          variant="primary"
+          width={44}
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-1 right-1 flex items-center justify-center"
+        >
+          <CloseIcon />
+        </Button>
         <h1>Editing: {titleRearrange(item.blockInfo.title)}</h1>
         <MediaItemAddEditFields
           type={item.type}
           blockID={item.blockID}
-          onClose={onClose}
           submitError={submitError}
         />
       </form>
