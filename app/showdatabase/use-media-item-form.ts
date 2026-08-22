@@ -191,6 +191,7 @@ export function useMediaItemForm({
         currentImages.length === 0
           ? appendedImages
           : [...currentImages, ...appendedImages],
+        { shouldValidate: true },
       );
 
       const currentBlockInfo = form.getValues('blockInfo');
