@@ -1,7 +1,7 @@
 import { and, eq, ilike } from 'drizzle-orm';
 import { Db } from '@/db/client';
-import { MediaType } from 'lib/constants/mediaTypes';
-import { titleRearrange } from 'lib/helpers/titleRearrange';
+import { MediaType } from 'lib/constants/media-types';
+import { titleRearrange } from 'lib/helpers/title-rearrange';
 import { books, otherMedia } from '@/db/schema';
 import {
   loadBookImagesById,

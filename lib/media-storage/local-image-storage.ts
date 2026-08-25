@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { createHash } from 'node:crypto';
 import { PutObjectCommand, S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
-import { MediaType } from 'lib/constants/mediaTypes';
+import { MediaType } from 'lib/constants/media-types';
 import { isExternalImageUrl, normalizeImagePath } from './image-path-utils';
 
 const DEFAULT_MAX_IMAGE_BYTES = 5 * 1024 * 1024;

@@ -2,13 +2,13 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { trpc } from 'lib/trpc/client';
-import { useDatabasePageContext } from 'lib/context/DatabasePageContext';
+import { useDatabasePageContext } from 'lib/context/database-page-context';
 import {
   convertMediaItemFormToDatabaseItem,
   getMediaItemFormDefaultValues,
   mediaItemFormSchema,
   type MediaItemForm,
-} from '@/mediacollector/collector-form/mediaItemFormSchema';
+} from '@/mediacollector/collector-form/media-item-form-schema';
 import {
   DATABASE_EDIT_FAILED_MESSAGE,
   GENRE_UPDATE_FAILED_MESSAGE,

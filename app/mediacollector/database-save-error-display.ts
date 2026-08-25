@@ -1,8 +1,8 @@
 import type {
   DatabaseSaveFailureResult,
   DatabaseSaveServerResponse,
-} from 'lib/interfaces/globalInterfaces';
-import type { MediaItemForm } from './collector-form/mediaItemFormSchema';
+} from 'lib/interfaces/global-interfaces';
+import type { MediaItemForm } from './collector-form/media-item-form-schema';
 
 export type DatabaseSaveFailureDisplayLine = {
   blockID: string;

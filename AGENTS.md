@@ -1,6 +1,6 @@
 # AGENTS.md
 
-1. Before any reasoning, read all skill files under `.agents/skills/**/SKILL.md`, then read `ai-assistance/LEARNINGS.md`.
+1. Before any reasoning, read all skill files under `.agents/skills/**/SKILL.md`, then read `ai-assistance/learnings.md`.
 
 ## Purpose
 
@@ -15,8 +15,8 @@ Provide shared operating instructions for AI agents working in this repository.
 
 ## Learnings Discipline
 
-- Treat `ai-assistance/LEARNINGS.md` as required context before making decisions.
-- If the user corrects agent behavior or a preventable mistake is identified, append a concise entry to `ai-assistance/LEARNINGS.md` in the existing format.
+- Treat `ai-assistance/learnings.md` as required context before making decisions.
+- If the user corrects agent behavior or a preventable mistake is identified, append a concise entry to `ai-assistance/learnings.md` in the existing format.
 - Entries should describe: issue, correction, and the durable rule going forward.
 
 ## Notes

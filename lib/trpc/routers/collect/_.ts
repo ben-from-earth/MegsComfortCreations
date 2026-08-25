@@ -4,7 +4,7 @@ import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import { genres, genresBooks } from '@/db/schema';
-import { MediaType } from 'lib/constants/mediaTypes';
+import { MediaType } from 'lib/constants/media-types';
 
 import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
@@ -13,7 +13,7 @@ import { googleApiQueryUsage } from '@/db/schema';
 import {
   convertMediaItemToForm,
   type MediaItemForm,
-} from '@/mediacollector/collector-form/mediaItemFormSchema';
+} from '@/mediacollector/collector-form/media-item-form-schema';
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 
 export const collectRouter = router({

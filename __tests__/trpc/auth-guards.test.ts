@@ -4,7 +4,7 @@ import {
   createAnonContext,
   createUserContext,
   type TrpcTestContext,
-} from '../helpers/trpcTestContext';
+} from '../helpers/trpc-test-context';
 
 const authGuardRouter = router({
   adminPing: adminProcedure.query(() => true),

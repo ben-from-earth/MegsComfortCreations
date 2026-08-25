@@ -143,7 +143,7 @@ Commands:
 
 - Apply migrations to Neon **dev**: `npm run db:migrate`
 - Emergency laptop prod migrate only: `npm run db:migrate:prod-emergency`
-- Full release sequence checklist: `ai-assistance/RELEASE_CHECKLIST.md`
+- Full release sequence checklist: `ai-assistance/release-checklist.md`
 
 ### Resetting Neon Dev
 

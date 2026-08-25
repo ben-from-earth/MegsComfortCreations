@@ -4,7 +4,7 @@ import {
   PNG_FORMAT_OPTIONS,
   PNG_FORMAT_VALUES,
   type CollectorFormData,
-} from '@/mediacollector/collector-form/collectorFormSchema';
+} from '@/mediacollector/collector-form/collector-form-schema';
 
 const validCollectorForm = {
   orderNumber: '1001',

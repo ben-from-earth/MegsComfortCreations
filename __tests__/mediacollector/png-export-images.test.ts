@@ -2,7 +2,7 @@ import {
   buildPNGExportImages,
   type PNGExportImage,
 } from '@/mediacollector/png-export-images';
-import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
+import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
 
 const bookBlock: MediaItemForm = {
   type: 'book',

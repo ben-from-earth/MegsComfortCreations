@@ -4,7 +4,7 @@ const createJestConfig = nextJest({ dir: './' });
 
 const config = {
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/__tests__/setupEnv.ts'],
+  setupFiles: ['<rootDir>/__tests__/setup-env.ts'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/app/$1',

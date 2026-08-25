@@ -6,8 +6,8 @@ import {
   PLACEHOLDER_MEDIA_IMAGE_URL,
   toFormImages,
   type MediaItemForm,
-} from '@/mediacollector/collector-form/mediaItemFormSchema';
-import type { PostSavedMediaItem } from 'lib/interfaces/globalInterfaces';
+} from '@/mediacollector/collector-form/media-item-form-schema';
+import type { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 
 function createMediaItemForm(
   overrides: Partial<MediaItemForm> = {},

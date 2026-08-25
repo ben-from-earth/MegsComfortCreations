@@ -1,7 +1,7 @@
 import { router, adminProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
-import { Genre as GenreEnum } from '@/lib/enums/genreEnums';
-import type { SuccessfulGenreLinkUnlinkResponse } from 'lib/interfaces/globalInterfaces';
+import { Genre as GenreEnum } from '@/lib/enums/genre-enums';
+import type { SuccessfulGenreLinkUnlinkResponse } from 'lib/interfaces/global-interfaces';
 import { db as defaultDb } from '@/db/client';
 import { genres, genresBooks } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';

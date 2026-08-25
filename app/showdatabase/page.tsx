@@ -7,24 +7,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 
 // components
-import DatabaseItemsContainer from '@/showdatabase/DatabaseItemsContainer';
-import PaginationInputs from '@/showdatabase/PaginationInputs';
+import DatabaseItemsContainer from '@/showdatabase/database-items-container';
+import PaginationInputs from '@/showdatabase/pagination-inputs';
 
 // context
-import DatabasePageContext from 'lib/context/DatabasePageContext';
+import DatabasePageContext from 'lib/context/database-page-context';
 
 // helpers
-import { titleRearrange } from 'lib/helpers/titleRearrange';
+import { titleRearrange } from 'lib/helpers/title-rearrange';
 
 // interfaces and types
 import {
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
-} from 'lib/interfaces/globalInterfaces';
-import { MediaType } from 'lib/constants/mediaTypes';
-import { DatabasePageContextValue } from 'lib/context/DatabasePageContext';
-import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
-import { DatabaseSortOption } from 'lib/constants/databaseSortOptions';
+} from 'lib/interfaces/global-interfaces';
+import { MediaType } from 'lib/constants/media-types';
+import { DatabasePageContextValue } from 'lib/context/database-page-context';
+import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
+import { DatabaseSortOption } from 'lib/constants/database-sort-options';
 
 export interface displayDatabaseItems {
   type: MediaType;
