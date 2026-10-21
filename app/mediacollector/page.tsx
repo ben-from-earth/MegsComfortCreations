@@ -112,12 +112,12 @@ function MediaCollectorContent({
 
     setLoadingMessage(`Gathering ${count} media covers`);
 
-    const blocks = await collectMedia(collectionList);
-    if (!blocks) {
+    const collectResult = await collectMedia(collectionList);
+    if (!collectResult) {
       return;
     }
     replace(
-      blocks.map((block) => ({
+      collectResult.blocks.map((block) => ({
         ...block,
         images: toFormImages(block.images, block.blockInfo.spineColor),
       })),

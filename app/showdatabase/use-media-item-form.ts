@@ -158,7 +158,7 @@ export function useMediaItemForm({
   const searchCovers = async (data: MediaItemForm) => {
     setIsSearchingCovers(true);
     try {
-      const blocks = await collectMedia({
+      const { blocks } = await collectMedia({
         book: [
           {
             title: data.blockInfo.title,
