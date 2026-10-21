@@ -29,6 +29,34 @@ const bookBlock: MediaItemForm = {
   isDatabase: false,
 };
 
+const databaseBookBlock: MediaItemForm = {
+  ...bookBlock,
+  blockID: 'BLK-DB',
+  isDatabase: true,
+  images: [
+    {
+      url: 'https://img/database.png',
+      selected: true,
+      isDefault: true,
+      spineColor: '#333333',
+    },
+  ],
+};
+
+const newBookBlock: MediaItemForm = {
+  ...bookBlock,
+  blockID: 'BLK-NEW',
+  isDatabase: false,
+  images: [
+    {
+      url: 'https://img/new.png',
+      selected: true,
+      isDefault: true,
+      spineColor: '#444444',
+    },
+  ],
+};
+
 describe('buildPNGExportImages', () => {
   test('uses the selected image when one is chosen', () => {
     expect(buildPNGExportImages([bookBlock])).toEqual<PNGExportImage[]>([
@@ -56,6 +84,58 @@ describe('buildPNGExportImages', () => {
         url: 'https://img/default.png',
         type: 'book',
         spineColor: '#111111',
+      },
+    ]);
+  });
+
+  test('keeps collectedData order when no export ID list is given', () => {
+    expect(
+      buildPNGExportImages([newBookBlock, databaseBookBlock]),
+    ).toEqual<PNGExportImage[]>([
+      {
+        url: 'https://img/new.png',
+        type: 'book',
+        spineColor: '#444444',
+      },
+      {
+        url: 'https://img/database.png',
+        type: 'book',
+        spineColor: '#333333',
+      },
+    ]);
+  });
+
+  test('orders remaining covers by the export ID list, not collectedData order', () => {
+    expect(
+      buildPNGExportImages(
+        [newBookBlock, databaseBookBlock],
+        [databaseBookBlock.blockID, newBookBlock.blockID],
+      ),
+    ).toEqual<PNGExportImage[]>([
+      {
+        url: 'https://img/database.png',
+        type: 'book',
+        spineColor: '#333333',
+      },
+      {
+        url: 'https://img/new.png',
+        type: 'book',
+        spineColor: '#444444',
+      },
+    ]);
+  });
+
+  test('omits export IDs that are no longer in collectedData', () => {
+    expect(
+      buildPNGExportImages(
+        [newBookBlock],
+        [databaseBookBlock.blockID, newBookBlock.blockID],
+      ),
+    ).toEqual<PNGExportImage[]>([
+      {
+        url: 'https://img/new.png',
+        type: 'book',
+        spineColor: '#444444',
       },
     ]);
   });

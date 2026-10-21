@@ -19,7 +19,15 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        run: npm ci
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000; then
+              exit 0
+            fi
+            echo "npm ci failed on attempt ${attempt}, retrying..."
+            sleep $((attempt * 10))
+          done
+          exit 1
 
       - name: Lint
         run: npm run lint

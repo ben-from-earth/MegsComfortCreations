@@ -188,9 +188,10 @@ export const collectRouter = router({
             },
           });
       }
+      const pngExportBlockIds = blocks.map((block) => block.blockID);
       const databaseSorted = [...blocks].sort((a, b) =>
         a.isDatabase === b.isDatabase ? 0 : a.isDatabase ? 1 : -1,
       );
-      return databaseSorted;
+      return { blocks: databaseSorted, pngExportBlockIds };
     }),
 });

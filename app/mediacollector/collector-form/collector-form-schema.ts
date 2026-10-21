@@ -37,6 +37,7 @@ export const collectorFormSchema = z.object({
     ),
   }),
   collectedData: z.array(mediaItemFormSchema),
+  pngExportBlockIds: z.array(z.string()),
   pngFormat: z
     .enum(PNG_FORMAT_VALUES, {
       error: 'Please select a PNG template option',

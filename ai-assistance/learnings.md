@@ -76,3 +76,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: The repo mixed PascalCase components, camelCase helpers, and kebab-case newer modules, which made imports inconsistent.
 - Correction: Renamed source, helper, test-helper, and remaining docs to kebab-case. Left Next.js reserved files, tool configs, Drizzle migrations, route directories, and public image URLs unchanged.
 - Rule Going Forward: New files use kebab-case (`media-checkboxes.tsx`) unless the name is required by Next.js, a tool, or a public URL. Exported symbols stay PascalCase/camelCase; only the filename changes.
+
+### 2026-10-21 - PNG order is not collector UX order
+
+- Area: Media collector PNG export
+- Issue: A proposal treated “PNG should follow the customer list” as a reason to also stop grouping database items at the bottom of the collector grid.
+- Correction: Collector UX stays database-last. Only the PNG is rebuilt in pasted-list order. Those are two lists.
+- Rule Going Forward: Do not change collector display order when fixing PNG order. Keep `collectedData` as the UX list. Drive PNG order from a separate encounter-order `blockID` list.

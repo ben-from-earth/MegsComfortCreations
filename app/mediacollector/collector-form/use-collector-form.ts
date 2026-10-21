@@ -19,6 +19,7 @@ const defaultValues: CollectorFormData = {
     album: [],
   },
   collectedData: [],
+  pngExportBlockIds: [],
   pngFormat: null,
 };
 
