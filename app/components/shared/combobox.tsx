@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Popover from '@mui/material/Popover';
 import PopupState, { bindPopover, bindTrigger } from 'material-ui-popup-state';
 
-import Button from '@/components/ui/Button';
+import Button from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,

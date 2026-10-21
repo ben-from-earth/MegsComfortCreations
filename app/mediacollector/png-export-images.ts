@@ -1,4 +1,4 @@
-import type { MediaItemForm } from './collector-form/mediaItemFormSchema';
+import type { MediaItemForm } from './collector-form/media-item-form-schema';
 
 export type PNGExportImage = {
   url: string;

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import NavBar from '@/components/shared/NavBar';
+import NavBar from '@/components/shared/nav-bar';
 
 import { Just_Another_Hand } from 'next/font/google';
 import { NextFont } from 'next/dist/compiled/@next/font';
-import Providers from '@/Providers';
+import Providers from '@/providers';
 import { TRPCProvider } from 'lib/trpc/provider';
 
 export const metadata: Metadata = {

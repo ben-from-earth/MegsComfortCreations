@@ -1,9 +1,9 @@
 import { Db } from '@/db/client';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { mediaImageItems } from '@/db/schema';
-import { MediaType } from 'lib/constants/mediaTypes';
+import { MediaType } from 'lib/constants/media-types';
 import { normalizeImagePath } from './image-path-utils';
-import { MediaImageItem } from 'lib/interfaces/globalInterfaces';
+import { MediaImageItem } from 'lib/interfaces/global-interfaces';
 import {
   PersistedImageFile,
   persistExternalImageToS3,

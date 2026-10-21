@@ -1,8 +1,8 @@
 import { useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { collectorFormSchema } from './collectorFormSchema';
-import type { CollectorFormData } from './collectorFormSchema';
+import { collectorFormSchema } from './collector-form-schema';
+import type { CollectorFormData } from './collector-form-schema';
 
 // library imports
 import { trpc } from 'lib/trpc/client';

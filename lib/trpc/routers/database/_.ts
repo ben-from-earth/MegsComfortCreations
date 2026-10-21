@@ -17,11 +17,11 @@ import type {
   DatabaseSaveSuccessResult,
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
-} from 'lib/interfaces/globalInterfaces';
-import { titleRearrange } from 'lib/helpers/titleRearrange';
-import { mediaItemFormSchema } from '@/mediacollector/collector-form/mediaItemFormSchema';
-import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genreEnums';
-import { DATABASE_SORT_OPTIONS } from 'lib/constants/databaseSortOptions';
+} from 'lib/interfaces/global-interfaces';
+import { titleRearrange } from 'lib/helpers/title-rearrange';
+import { mediaItemFormSchema } from '@/mediacollector/collector-form/media-item-form-schema';
+import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
+import { DATABASE_SORT_OPTIONS } from 'lib/constants/database-sort-options';
 import {
   loadBookImagesById,
   loadOtherMediaImagesById,
@@ -29,7 +29,7 @@ import {
   replaceOtherMediaImageRecords,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
-import type { MediaType } from 'lib/constants/mediaTypes';
+import type { MediaType } from 'lib/constants/media-types';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 const sortKey = z.enum(DATABASE_SORT_OPTIONS);

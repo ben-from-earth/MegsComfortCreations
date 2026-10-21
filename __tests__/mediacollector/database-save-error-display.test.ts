@@ -3,8 +3,8 @@ import {
   markSuccessfulBlocksAsInDatabase,
   toUserFriendlyDatabaseSaveReason,
 } from '@/mediacollector/database-save-error-display';
-import type { MediaItemForm } from '@/mediacollector/collector-form/mediaItemFormSchema';
-import type { DatabaseSaveFailureResult } from 'lib/interfaces/globalInterfaces';
+import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
+import type { DatabaseSaveFailureResult } from 'lib/interfaces/global-interfaces';
 
 function createBlock(overrides: Partial<MediaItemForm> = {}): MediaItemForm {
   return {

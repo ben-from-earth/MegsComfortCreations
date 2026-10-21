@@ -1,6 +1,6 @@
 import { router, adminProcedure } from 'lib/trpc/trpc';
 import { z } from 'zod';
-import { outputAuto } from 'lib/helpers/outputPNG';
+import { outputAuto } from 'lib/helpers/output-png';
 
 const templateSchema = z.union([z.literal(3), z.literal(5)]);
 const imageSchema = z.object({

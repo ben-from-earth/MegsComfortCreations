@@ -8,25 +8,25 @@ import { trpc } from 'lib/trpc/client';
 
 // components
 import Image from 'next/image';
-import QueryCounter from '@/components/shared/QueryCounter';
+import QueryCounter from '@/components/shared/query-counter';
 import MediaCheckboxes, {
   MediaVisibilityMap,
-} from '@/mediacollector/MediaCheckboxes';
-import MediaInputs from '@/mediacollector/MediaInputs';
-import PNGFormatPicker from '@/mediacollector/PNGFormatPicker';
-import LoadingWidget from '@/components/shared/LoadingWidget';
+} from '@/mediacollector/media-checkboxes';
+import MediaInputs from '@/mediacollector/media-inputs';
+import PNGFormatPicker from '@/mediacollector/png-format-picker';
+import LoadingWidget from '@/components/shared/loading-widget';
 import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
-import TitleBlockContainer from '@/mediacollector/TitleBlockContainer';
-import CollectorHeaderFields from '@/mediacollector/CollectorHeaderFields';
+import TitleBlockContainer from '@/mediacollector/title-block-container';
+import CollectorHeaderFields from '@/mediacollector/collector-header-fields';
 
 //interfaces and types
-import Button from '@/components/ui/Button';
-import Dialog from '@/components/ui/Dialog';
+import Button from '@/components/ui/button';
+import Dialog from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
-import type { CollectorFormData } from './collector-form/collectorFormSchema';
+import type { CollectorFormData } from './collector-form/collector-form-schema';
 import { useFieldArray, useFormContext, useFormState } from 'react-hook-form';
-import { toFormImages } from './collector-form/mediaItemFormSchema';
+import { toFormImages } from './collector-form/media-item-form-schema';
 import { buildPNGExportImages } from './png-export-images';
 import {
   buildDatabaseSaveFailureDisplayLines,
