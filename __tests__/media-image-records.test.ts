@@ -1,4 +1,7 @@
-import { resolveAndPersistImageList } from 'lib/media-storage/media-image-records';
+import {
+  listCoversToAppend,
+  resolveAndPersistImageList,
+} from 'lib/media-storage/media-image-records';
 import { persistExternalImageToS3 } from 'lib/media-storage/local-image-storage';
 
 jest.mock('lib/media-storage/local-image-storage', () => ({
@@ -36,5 +39,51 @@ describe('resolveAndPersistImageList', () => {
         message: 'Invalid image payload. Expected an image URL string.',
       },
     ]);
+  });
+});
+
+describe('listCoversToAppend', () => {
+  const storedCover = { url: 'https://img/stored.png' };
+
+  test('returns only covers whose urls are not already stored', () => {
+    expect(
+      listCoversToAppend(
+        [storedCover],
+        [
+          { url: 'https://img/stored.png', spineColor: '#111111' },
+          { url: 'https://img/new.png', spineColor: '#abcdef' },
+        ],
+      ),
+    ).toEqual([
+      {
+        url: 'https://img/new.png',
+        isDefault: false,
+        spineColor: '#abcdef',
+      },
+    ]);
+  });
+
+  test('makes the first new cover the default when the book has no stored covers', () => {
+    expect(
+      listCoversToAppend(
+        [],
+        [
+          { url: '  https://img/new.png  ', spineColor: '#abcdef' },
+          { url: 'https://img/new.png', spineColor: '#000000' },
+        ],
+      ),
+    ).toEqual([
+      {
+        url: 'https://img/new.png',
+        isDefault: true,
+        spineColor: '#abcdef',
+      },
+    ]);
+  });
+
+  test('skips blank urls', () => {
+    expect(
+      listCoversToAppend([], [{ url: '   ', spineColor: '#ffffff' }]),
+    ).toEqual([]);
   });
 });

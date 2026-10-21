@@ -1,4 +1,3 @@
-// library imports
 import CircularProgress from '@mui/material/CircularProgress';
 
 export default function LoadingWidget({ message }: { message: string }) {

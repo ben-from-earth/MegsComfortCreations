@@ -1,4 +1,3 @@
-// interfaces and types
 import type { DatabaseSaveFailureDisplayLine } from './database-save-error-display';
 
 export default function DatabaseSaveFailureBody({

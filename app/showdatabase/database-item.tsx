@@ -1,23 +1,12 @@
 'use client';
-// react, redux imports
 import { memo, useState } from 'react';
-
-// library imports
 import { trpc } from 'lib/trpc/client';
-
-// components
 import AreYouSure from '@/components/shared/are-you-sure';
 import Button from '@/components/ui/button';
 import MediaItemAddEdit from '@/showdatabase/media-item-add-edit';
 import MediaImageStrip from '@/components/shared/media-image-strip';
-
-// helpers
 import { titleRearrange } from 'lib/helpers/title-rearrange';
-
-// context
 import { useDatabasePageContext } from 'lib/context/database-page-context';
-
-// interfaces and types
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { isBookRow } from 'lib/helpers/handle-media-typing';
 import { MEDIA_TYPES } from 'lib/constants/media-types';
@@ -29,7 +18,6 @@ export interface DatabaseItemProps {
 }
 
 const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
-  // get necessary information from context
   const {
     databaseItems: { type: displayedListType },
     handleGetMedia,
@@ -40,10 +28,8 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
     MEDIA_TYPES.find((mediaType) => mediaType === info.mediaType) ??
     displayedListType;
 
-  //set up local state
   const [areYouSure, setAreYouSure] = useState(false);
   const [edit, setEdit] = useState(false);
-  //   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   const genresQuery = trpc.genres.getForBook.useQuery(
     { bookID: id },
@@ -52,7 +38,6 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   const genres = genresQuery.data?.genres ?? [];
   const canOpenEdit = itemType !== 'book' || !genresQuery.isPending;
 
-  //handle deletion of the media from the database
   const { mutateAsync: databaseDelete } = trpc.database.delete.useMutation();
   const onDelete = async () => {
     try {
@@ -64,7 +49,6 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
     setAreYouSure(false);
   };
 
-  //small helper for displaying list of genres
   const list = new Intl.ListFormat('en', {
     style: 'long',
     type: 'conjunction',
@@ -93,12 +77,10 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
       )}
       {itemType !== 'album' ? (
         <div
-          className={`h-36 w-6 rounded-sm`}
+          className="h-36 w-6 rounded-sm"
           style={{ backgroundColor: spineColor }}
-        ></div>
-      ) : (
-        <></>
-      )}
+        />
+      ) : null}
 
       <MediaImageStrip
         mediaType={itemType}

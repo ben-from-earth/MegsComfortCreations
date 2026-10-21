@@ -12,6 +12,7 @@ export const mediaImageSelectionSchema = z.object({
   selected: z.boolean(),
   isDefault: z.boolean(),
   spineColor: z.string(),
+  uploaded: z.boolean().optional(),
 });
 
 export const mediaItemBlockInfoSchema = z.object({

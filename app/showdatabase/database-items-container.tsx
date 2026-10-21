@@ -1,13 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-
-// components
 import PageSelector from '@/components/shared/page-selector';
 import DatabaseItem from '@/showdatabase/database-item';
 import MediaItemAddEdit from '@/showdatabase/media-item-add-edit';
-
-// context
 import { useDatabasePageContext } from 'lib/context/database-page-context';
 
 export default function DatabaseItemsContainer() {

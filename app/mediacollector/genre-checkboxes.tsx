@@ -1,13 +1,9 @@
-// react imports
 import { Combobox } from '@/components/shared/combobox';
 import Button from '@/components/ui/button';
-
-// interfaces and types
 
 export interface GenreCheckboxProps {
   allGenres: string[];
   handleGenreClick: (genreText: string, checked: boolean) => void;
-  index?: number;
   blockGenres?: string[];
 }
 
@@ -17,8 +13,6 @@ export default function GenreCheckboxes({
   blockGenres,
 }: GenreCheckboxProps) {
   const genres = blockGenres || [];
-
-  // database edit page
 
   return (
     <div className="mx-6 mb-7.5 flex w-full flex-col px-5">

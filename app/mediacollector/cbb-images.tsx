@@ -9,7 +9,6 @@ export interface CBBImageProps {
   index: number;
   blockID: string;
   type: MediaType;
-  isDatabase: boolean;
   spineColor: string;
 }
 
@@ -17,13 +16,11 @@ export default function CBBImages({
   index,
   blockID,
   type,
-  isDatabase,
   spineColor,
 }: CBBImageProps) {
   const [color, setColor] = useState(spineColor);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [hasUploadedCustomImage, setHasUploadedCustomImage] = useState(false);
 
   const { getValues, setValue, watch } = useFormContext<CollectorFormData>();
   const { mutateAsync: uploadCoverImage } =
@@ -127,10 +124,10 @@ export default function CBBImages({
           selected: true,
           isDefault: currentImages.length === 0,
           spineColor: color,
+          uploaded: true,
         },
       ]);
       setValue(`collectedData.${index}.blockInfo.spineColor`, color);
-      setHasUploadedCustomImage(true);
     } catch (error) {
       console.error('Failed to upload custom book image', error);
     } finally {
@@ -140,7 +137,7 @@ export default function CBBImages({
   };
 
   const showUploadSlot =
-    type === 'book' && !isDatabase && !hasUploadedCustomImage;
+    type === 'book' && !images.some((image) => image.uploaded);
 
   return (
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-3">

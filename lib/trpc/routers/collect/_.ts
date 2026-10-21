@@ -139,7 +139,6 @@ export const collectRouter = router({
               );
             }
           } else {
-            //if the media wasnt in the database, collect cover images
             const images = await getMediaCovers(title, author, type);
             // Count each Google API lookup; persist atomically after collection.
             googleApiQueryIncrement += 1;

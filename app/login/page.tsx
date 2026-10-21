@@ -6,8 +6,6 @@ import * as Yup from 'yup';
 import { authClient } from 'lib/auth-client';
 import { useRouter } from 'next/navigation';
 
-// ---- Formik input component ----
-
 type MyTextInputProps = {
   label: string;
   name: string;
@@ -48,8 +46,6 @@ const MyTextInput: React.FC<MyTextInputProps> = ({
     </>
   );
 };
-
-// ---- Form component ----
 
 type LoginValues = {
   email: string;

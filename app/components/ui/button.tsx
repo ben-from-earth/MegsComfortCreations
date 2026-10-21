@@ -1,11 +1,8 @@
-// library imports
 import { twMerge } from 'tailwind-merge';
 import React from 'react';
-
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import CloseIcon from '@mui/icons-material/Close';
 
-// interfaces and types
 interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   label?: string;

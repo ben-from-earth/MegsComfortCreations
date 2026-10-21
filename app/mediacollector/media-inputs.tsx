@@ -1,9 +1,6 @@
-// interfaces and types
 import titleCollectionListConversion from 'lib/helpers/title-collection-list-conversion';
 import { MEDIA_TYPE_DEFINITIONS, MediaType } from 'lib/constants/media-types';
 import type { MediaVisibilityMap } from '@/mediacollector/media-checkboxes';
-
-// component imports
 import TextInput from '@/components/shared/text-input';
 import { useFormContext } from 'react-hook-form';
 import { CollectorFormData } from '@/mediacollector/collector-form/collector-form-schema';

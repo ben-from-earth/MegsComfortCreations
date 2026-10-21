@@ -141,6 +141,66 @@ export async function resolveAndPersistImageList(
   return { images, failures };
 }
 
+export function listCoversToAppend(
+  storedImages: readonly { url: string }[],
+  uploadedImages: readonly { url: string; spineColor: string }[],
+): { url: string; isDefault: boolean; spineColor: string }[] {
+  const storedUrls = new Set(storedImages.map((image) => image.url));
+  const coversToAppend: {
+    url: string;
+    isDefault: boolean;
+    spineColor: string;
+  }[] = [];
+
+  for (const image of uploadedImages) {
+    const url = image.url.trim();
+    if (!url || storedUrls.has(url)) {
+      continue;
+    }
+    storedUrls.add(url);
+    coversToAppend.push({
+      url,
+      isDefault: storedImages.length === 0 && coversToAppend.length === 0,
+      spineColor: image.spineColor,
+    });
+  }
+
+  return coversToAppend;
+}
+
+export async function appendBookCoverRecords(
+  db: Db,
+  bookId: string,
+  covers: readonly { url: string; isDefault: boolean; spineColor: string }[],
+) {
+  if (covers.length === 0) {
+    return;
+  }
+
+  const existingRows = await db
+    .select({ sortOrder: mediaImageItems.sortOrder })
+    .from(mediaImageItems)
+    .where(eq(mediaImageItems.bookId, bookId));
+
+  let nextSortOrder = 0;
+  for (const row of existingRows) {
+    if (row.sortOrder + 1 > nextSortOrder) {
+      nextSortOrder = row.sortOrder + 1;
+    }
+  }
+
+  await db.insert(mediaImageItems).values(
+    covers.map((cover, index) => ({
+      bookId,
+      path: cover.url,
+      sourceUrl: cover.url,
+      sortOrder: nextSortOrder + index,
+      isDefault: cover.isDefault,
+      spineColor: cover.spineColor,
+    })),
+  );
+}
+
 export async function replaceBookImageRecords(
   db: Db,
   bookId: string,

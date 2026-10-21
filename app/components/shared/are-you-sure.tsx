@@ -1,10 +1,5 @@
-// react, redux imports
 import { Dispatch, SetStateAction } from 'react';
-
-// components
 import Button from '@/components/ui/button';
-
-// helpers
 import { titleRearrange } from 'lib/helpers/title-rearrange';
 
 export interface AreYouSureProps {

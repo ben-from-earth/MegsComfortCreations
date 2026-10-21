@@ -1,7 +1,4 @@
-// react, redux imports
 import { createContext, Dispatch, SetStateAction, useContext } from 'react';
-
-// interfaces and types
 import { displayDatabaseItems, genreInput } from '@/showdatabase/page';
 import { MediaType } from 'lib/constants/media-types';
 import { DatabaseSortOption } from 'lib/constants/database-sort-options';

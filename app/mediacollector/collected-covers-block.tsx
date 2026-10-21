@@ -74,7 +74,6 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         index={index}
         blockID={blockID}
         type={type}
-        isDatabase={isDatabase}
         spineColor={spineColor}
       />
 

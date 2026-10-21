@@ -55,6 +55,14 @@ describe('toUserFriendlyDatabaseSaveReason', () => {
       'The cover image could not be saved, so this item was not added to the database.',
     ],
     [
+      saveFailure({
+        error: 'Cover Append Error',
+        message: 'The new cover could not be added to this database item.',
+        errors: ['Book was not found'],
+      }),
+      'The new cover could not be added to this database item.',
+    ],
+    [
       saveFailure(),
       'Some required details for this item were missing or invalid.',
     ],

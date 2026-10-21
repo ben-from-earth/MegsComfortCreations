@@ -13,9 +13,7 @@ const QueryCounter = () => {
       <p>Today&apos;s Query Count: {qCount}</p>
       {qCount > 100 ? (
         <p>Today&apos;s Cost: {`$${(0.005 * (qCount - 100)).toFixed(2)}`}</p>
-      ) : (
-        <></>
-      )}
+      ) : null}
     </div>
   );
 };
