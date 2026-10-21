@@ -176,6 +176,42 @@ function MediaItemAddEditFields({
     }
   };
 
+  const handleDeleteImage = () => {
+    if (isAdd) {
+      return;
+    }
+    const currentImages = getValues('images');
+    if (currentImages.length <= 1) {
+      return;
+    }
+    const removedIndex = Math.min(
+      focusedImageIndex,
+      currentImages.length - 1,
+    );
+    const removedImage = currentImages[removedIndex];
+    if (!removedImage) {
+      return;
+    }
+    const remainingImages = currentImages.filter(
+      (_, index) => index !== removedIndex,
+    );
+    const nextFocusedIndex = Math.min(
+      removedIndex,
+      remainingImages.length - 1,
+    );
+    const nextImages = remainingImages.map((image, index) => ({
+      ...image,
+      isDefault: removedImage.isDefault ? index === 0 : image.isDefault,
+      selected: index === nextFocusedIndex,
+    }));
+    const nextFocusedImage = nextImages[nextFocusedIndex];
+    setValue('images', nextImages);
+    setFocusedImageIndex(nextFocusedIndex);
+    if (nextFocusedImage) {
+      setValue('blockInfo.spineColor', nextFocusedImage.spineColor);
+    }
+  };
+
   const handleColorPick = async () => {
     if (!window.EyeDropper) {
       console.log('EyeDropper API not supported in this browser');
@@ -350,6 +386,15 @@ function MediaItemAddEditFields({
             variant="primary"
             label="Set as Default"
             onClick={handleSetAsDefault}
+            width={165}
+            fontSize={25}
+          />
+        ) : null}
+        {!isAdd && images.length > 1 ? (
+          <Button
+            variant="primary"
+            label="Delete Image"
+            onClick={handleDeleteImage}
             width={165}
             fontSize={25}
           />
