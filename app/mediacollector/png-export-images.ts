@@ -18,8 +18,20 @@ function getImageForPNG(block: MediaItemForm) {
 
 export function buildPNGExportImages(
   collectedData: MediaItemForm[],
+  pngExportBlockIds?: readonly string[],
 ): PNGExportImage[] {
-  return collectedData.flatMap((block) => {
+  const collectedBlocksById = new Map(
+    collectedData.map((block) => [block.blockID, block]),
+  );
+  const blocksForExport =
+    pngExportBlockIds == null
+      ? collectedData
+      : pngExportBlockIds.flatMap((blockID) => {
+          const block = collectedBlocksById.get(blockID);
+          return block ? [block] : [];
+        });
+
+  return blocksForExport.flatMap((block) => {
     const image = getImageForPNG(block);
     if (!image) {
       return [];
