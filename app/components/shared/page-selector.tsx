@@ -1,9 +1,6 @@
-// components
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Button from '@/components/ui/button';
-
-// context
 import { useDatabasePageContext } from 'lib/context/database-page-context';
 
 export default function PageSelector({ onAdd }: { onAdd?: () => void }) {

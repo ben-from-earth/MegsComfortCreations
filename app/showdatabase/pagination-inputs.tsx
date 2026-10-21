@@ -1,23 +1,14 @@
-// react, redux imports
 import { useContext, useState } from 'react';
-
-// import icons and items from Material UI
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Button from '@/components/ui/button';
-
-// context
 import GenreContext from 'lib/context/genre-context';
-
-// interfaces and types
-
 import {
   DatabasePageContextValue,
   useDatabasePageContext,
 } from 'lib/context/database-page-context';
-
 import { MediaType } from 'lib/constants/media-types';
 import { NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import {

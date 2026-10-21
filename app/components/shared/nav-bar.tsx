@@ -1,10 +1,7 @@
-// components
 import Image from 'next/image';
 import Link from 'next/link';
 import Button from '@/components/ui/button';
 import ProfileButton from '@/components/shared/profile-button';
-
-// auth
 import { auth } from 'lib/auth';
 import { headers } from 'next/headers';
 

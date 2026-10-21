@@ -1,8 +1,5 @@
-// library imports
 import { twMerge } from 'tailwind-merge';
 import React from 'react';
-
-// components
 import Button from '@/components/ui/button';
 
 export interface DialogProps {

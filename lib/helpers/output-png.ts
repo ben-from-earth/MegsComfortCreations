@@ -1,6 +1,5 @@
 'use strict';
 
-// library imports
 import sharp, { OverlayOptions, RGBA } from 'sharp';
 import axios from 'axios';
 import JSZip from 'jszip';

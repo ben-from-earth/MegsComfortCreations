@@ -1,28 +1,18 @@
 'use client';
 
-// react, redux imports
 import { useEffect, useMemo, useRef, useState } from 'react';
-
-// library imports
 import { trpc } from 'lib/trpc/client';
-
-// components
 import DatabaseItemsContainer from '@/showdatabase/database-items-container';
 import PaginationInputs from '@/showdatabase/pagination-inputs';
-
-// context
-import DatabasePageContext from 'lib/context/database-page-context';
-
-// helpers
+import DatabasePageContext, {
+  type DatabasePageContextValue,
+} from 'lib/context/database-page-context';
 import { titleRearrange } from 'lib/helpers/title-rearrange';
-
-// interfaces and types
 import {
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
 import { MediaType } from 'lib/constants/media-types';
-import { DatabasePageContextValue } from 'lib/context/database-page-context';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DatabaseSortOption } from 'lib/constants/database-sort-options';
 
@@ -108,7 +98,6 @@ export default function ShowDatabase() {
       setAscDesc,
       setTitleSearch,
       handleGetMedia: async () => {
-        // trigger refetches based on current inputs
         await paginatedQuery.refetch();
       },
     }),

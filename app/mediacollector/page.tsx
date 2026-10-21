@@ -1,12 +1,7 @@
 'use client';
 
-// react and redux
 import { useState } from 'react';
-
-// library imports
 import { trpc } from 'lib/trpc/client';
-
-// components
 import Image from 'next/image';
 import QueryCounter from '@/components/shared/query-counter';
 import MediaCheckboxes, {
@@ -18,8 +13,6 @@ import LoadingWidget from '@/components/shared/loading-widget';
 import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
 import TitleBlockContainer from '@/mediacollector/title-block-container';
 import CollectorHeaderFields from '@/mediacollector/collector-header-fields';
-
-//interfaces and types
 import Button from '@/components/ui/button';
 import Dialog from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
@@ -81,7 +74,6 @@ function MediaCollectorContent({
       album: false,
     });
 
-  // trpc functions
   const { mutateAsync: createPNG, isPending: isCreatingPNG } =
     trpc.png.create.useMutation();
   const utils = trpc.useUtils();
@@ -96,7 +88,6 @@ function MediaCollectorContent({
       },
     });
 
-  //Set of actions that set of Media Cover Collection
   const handleCollectClick = async (): Promise<void> => {
     replace([]);
     setValue('pngExportBlockIds', []);
