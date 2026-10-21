@@ -104,6 +104,34 @@ describe('mediaItemFormSchema', () => {
   });
 });
 
+describe('mediaItemFormSchema uploaded covers', () => {
+  test('keeps an uploaded cover flag through parse', () => {
+    const parsed = mediaItemFormSchema.parse(
+      createMediaItemForm({
+        isDatabase: true,
+        images: [
+          {
+            url: 'https://img/stored.png',
+            selected: false,
+            isDefault: true,
+            spineColor: '#111111',
+          },
+          {
+            url: 'https://img/new.png',
+            selected: true,
+            isDefault: false,
+            spineColor: '#abcdef',
+            uploaded: true,
+          },
+        ],
+      }),
+    );
+
+    expect(parsed.images[1]?.uploaded).toBe(true);
+    expect(parsed.images[0]?.uploaded).toBeUndefined();
+  });
+});
+
 describe('toFormImages', () => {
   test('inserts a placeholder so an empty-image block can enter the form', () => {
     const emptyBlock = createMediaItemForm({ images: [] });

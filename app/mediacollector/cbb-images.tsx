@@ -9,7 +9,6 @@ export interface CBBImageProps {
   index: number;
   blockID: string;
   type: MediaType;
-  isDatabase: boolean;
   spineColor: string;
 }
 
@@ -17,7 +16,6 @@ export default function CBBImages({
   index,
   blockID,
   type,
-  isDatabase,
   spineColor,
 }: CBBImageProps) {
   const [color, setColor] = useState(spineColor);
@@ -127,6 +125,7 @@ export default function CBBImages({
           selected: true,
           isDefault: currentImages.length === 0,
           spineColor: color,
+          uploaded: true,
         },
       ]);
       setValue(`collectedData.${index}.blockInfo.spineColor`, color);
@@ -139,8 +138,7 @@ export default function CBBImages({
     }
   };
 
-  const showUploadSlot =
-    type === 'book' && !isDatabase && !hasUploadedCustomImage;
+  const showUploadSlot = type === 'book' && !hasUploadedCustomImage;
 
   return (
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-3">

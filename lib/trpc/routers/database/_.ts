@@ -19,10 +19,15 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
 import { titleRearrange } from 'lib/helpers/title-rearrange';
-import { mediaItemFormSchema } from '@/mediacollector/collector-form/media-item-form-schema';
+import {
+  mediaItemFormSchema,
+  PLACEHOLDER_MEDIA_IMAGE_URL,
+} from '@/mediacollector/collector-form/media-item-form-schema';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/database-sort-options';
 import {
+  appendBookCoverRecords,
+  listCoversToAppend,
   loadBookImagesById,
   loadOtherMediaImagesById,
   replaceBookImageRecords,
@@ -72,6 +77,8 @@ const IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR =
   'Image failed to save so media item creation was rolled back.';
 const IMAGE_SAVE_EDIT_NOT_APPLIED_ERROR =
   'Image failed to save so the edit was not applied.';
+const COVER_APPEND_FAILED_MESSAGE =
+  'The new cover could not be added to this database item.';
 
 function createImagePersistenceErrorResponse(
   title: string,
@@ -366,6 +373,60 @@ export const databaseRouter = router({
 
       for (const mediaItem of input) {
         if (mediaItem.isDatabase) {
+          const uploadedCovers =
+            mediaItem.type === 'book'
+              ? mediaItem.images.filter(
+                  (image) =>
+                    image.uploaded === true &&
+                    image.url !== PLACEHOLDER_MEDIA_IMAGE_URL,
+                )
+              : [];
+          if (uploadedCovers.length > 0) {
+            try {
+              const imagesByBookId = await loadBookImagesById(db, [
+                mediaItem.blockID,
+              ]);
+              const storedImages = imagesByBookId.get(mediaItem.blockID) ?? [];
+              const coversToAppend = listCoversToAppend(
+                storedImages,
+                uploadedCovers,
+              );
+              if (coversToAppend.length > 0) {
+                const [book] = await db
+                  .select({ id: books.id })
+                  .from(books)
+                  .where(eq(books.id, mediaItem.blockID))
+                  .limit(1);
+                if (!book) {
+                  results.push(
+                    createSaveFailureResult({
+                      blockID: mediaItem.blockID,
+                      title: mediaItem.blockInfo.title,
+                      error: 'Cover Append Error',
+                      message: COVER_APPEND_FAILED_MESSAGE,
+                      errors: ['Book was not found'],
+                    }),
+                  );
+                  continue;
+                }
+                await appendBookCoverRecords(db, book.id, coversToAppend);
+              }
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : COVER_APPEND_FAILED_MESSAGE;
+              results.push(
+                createSaveFailureResult({
+                  blockID: mediaItem.blockID,
+                  title: mediaItem.blockInfo.title,
+                  error: 'Cover Append Error',
+                  message: COVER_APPEND_FAILED_MESSAGE,
+                  errors: [message],
+                }),
+              );
+            }
+          }
           continue;
         }
         const selectedImages = mediaItem.images.filter((img) => img.selected);

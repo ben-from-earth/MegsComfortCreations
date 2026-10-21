@@ -18,6 +18,10 @@ export function toUserFriendlyDatabaseSaveReason(
     return 'The cover image could not be saved, so this item was not added to the database.';
   }
 
+  if (item.error === 'Cover Append Error') {
+    return 'The new cover could not be added to this database item.';
+  }
+
   if (item.error === 'Schema Violation') {
     return 'Some required details for this item were missing or invalid.';
   }
