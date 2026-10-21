@@ -45,7 +45,7 @@ describe('resolveAndPersistImageList', () => {
 describe('listCoversToAppend', () => {
   const storedCover = { url: 'https://img/stored.png' };
 
-  test('appends a new cover without replacing covers already stored', () => {
+  test('returns only covers whose urls are not already stored', () => {
     expect(
       listCoversToAppend(
         [storedCover],

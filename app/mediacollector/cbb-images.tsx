@@ -21,7 +21,6 @@ export default function CBBImages({
   const [color, setColor] = useState(spineColor);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [hasUploadedCustomImage, setHasUploadedCustomImage] = useState(false);
 
   const { getValues, setValue, watch } = useFormContext<CollectorFormData>();
   const { mutateAsync: uploadCoverImage } =
@@ -129,7 +128,6 @@ export default function CBBImages({
         },
       ]);
       setValue(`collectedData.${index}.blockInfo.spineColor`, color);
-      setHasUploadedCustomImage(true);
     } catch (error) {
       console.error('Failed to upload custom book image', error);
     } finally {
@@ -138,7 +136,8 @@ export default function CBBImages({
     }
   };
 
-  const showUploadSlot = type === 'book' && !hasUploadedCustomImage;
+  const showUploadSlot =
+    type === 'book' && !images.some((image) => image.uploaded);
 
   return (
     <div className="mx-10 mt-2.5 flex flex-row items-center gap-3">

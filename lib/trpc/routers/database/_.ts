@@ -392,24 +392,11 @@ export const databaseRouter = router({
                 uploadedCovers,
               );
               if (coversToAppend.length > 0) {
-                const [book] = await db
-                  .select({ id: books.id })
-                  .from(books)
-                  .where(eq(books.id, mediaItem.blockID))
-                  .limit(1);
-                if (!book) {
-                  results.push(
-                    createSaveFailureResult({
-                      blockID: mediaItem.blockID,
-                      title: mediaItem.blockInfo.title,
-                      error: 'Cover Append Error',
-                      message: COVER_APPEND_FAILED_MESSAGE,
-                      errors: ['Book was not found'],
-                    }),
-                  );
-                  continue;
-                }
-                await appendBookCoverRecords(db, book.id, coversToAppend);
+                await appendBookCoverRecords(
+                  db,
+                  mediaItem.blockID,
+                  coversToAppend,
+                );
               }
             } catch (error) {
               const message =
