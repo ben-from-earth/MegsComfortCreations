@@ -99,6 +99,7 @@ function MediaCollectorContent({
   //Set of actions that set of Media Cover Collection
   const handleCollectClick = async (): Promise<void> => {
     replace([]);
+    setValue('pngExportBlockIds', []);
     const collectionList = getValues('collectionList');
     let count = 0;
     for (const searchList of Object.values(collectionList)) {
@@ -122,6 +123,7 @@ function MediaCollectorContent({
         images: toFormImages(block.images, block.blockInfo.spineColor),
       })),
     );
+    setValue('pngExportBlockIds', collectResult.pngExportBlockIds);
   };
 
   const handleCreatePngClick = (
@@ -182,7 +184,10 @@ function MediaCollectorContent({
       }
 
       setLoadingMessage(`Putting together PNG export`);
-      const images = buildPNGExportImages(formValues.collectedData);
+      const images = buildPNGExportImages(
+        formValues.collectedData,
+        formValues.pngExportBlockIds,
+      );
       const template = formValues.pngFormat === '5' ? 5 : 3;
 
       const { mime, filename, dataBase64 } = await createPNG({

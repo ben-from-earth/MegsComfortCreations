@@ -17,6 +17,7 @@ const validCollectorForm = {
     album: [],
   },
   collectedData: [],
+  pngExportBlockIds: [],
   pngFormat: '3',
 } satisfies CollectorFormData;
 
