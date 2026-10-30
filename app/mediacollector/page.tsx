@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { trpc } from 'lib/trpc/client';
-import Image from 'next/image';
+import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
 import QueryCounter from '@/components/shared/query-counter';
 import MediaCheckboxes, {
   MediaVisibilityMap,
@@ -13,12 +14,16 @@ import LoadingWidget from '@/components/shared/loading-widget';
 import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
 import TitleBlockContainer from '@/mediacollector/title-block-container';
 import CollectorHeaderFields from '@/mediacollector/collector-header-fields';
-import Button from '@/components/ui/button';
 import Dialog from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
 import { useCollectorForm } from './collector-form/use-collector-form';
 import type { CollectorFormData } from './collector-form/collector-form-schema';
-import { useFieldArray, useFormContext, useFormState } from 'react-hook-form';
+import {
+  useFieldArray,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 import { toFormImages } from './collector-form/media-item-form-schema';
 import { buildPNGExportImages } from './png-export-images';
 import {
@@ -27,8 +32,59 @@ import {
   type DatabaseSaveFailureDisplayLine,
 } from './database-save-error-display';
 
-const backgroundImage = '/FlowerBackground.png';
-const mediaCollectorTitleImage = '/MegsMediaCollector.png';
+const sectionHeadingClassName =
+  'm-0 text-[13px] font-extrabold tracking-[1px] text-[#6b645d] uppercase';
+const primaryButtonClassName =
+  'flex h-12.5 cursor-pointer items-center justify-center gap-2.5 rounded-xl border-0 bg-[#3d3935] px-5.5 text-base font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#e3ddd5] disabled:text-[#5f5851]';
+
+function SearchTitlesButton({ onClick }: { onClick: () => void }) {
+  const collectionList = useWatch<CollectorFormData, 'collectionList'>({
+    name: 'collectionList',
+  });
+  let titleCount = 0;
+  for (const searchList of Object.values(collectionList ?? {})) {
+    titleCount += searchList.length;
+  }
+
+  return (
+    <button
+      type="button"
+      className={`${primaryButtonClassName} mt-auto self-stretch`}
+      onClick={onClick}
+    >
+      <SearchIcon fontSize="small" />
+      Search {titleCount} {titleCount === 1 ? 'title' : 'titles'}
+    </button>
+  );
+}
+
+function ExportButton() {
+  const collectedData = useWatch<CollectorFormData, 'collectedData'>({
+    name: 'collectedData',
+  });
+  const blocksNeedingCover = (collectedData ?? []).filter(
+    (block) => !block.isDatabase && !block.images.some((img) => img.selected),
+  ).length;
+
+  return (
+    <>
+      <button
+        type="submit"
+        className={primaryButtonClassName}
+        disabled={blocksNeedingCover > 0}
+      >
+        <DownloadIcon fontSize="small" />
+        Save &amp; download PNG
+      </button>
+      {blocksNeedingCover > 0 ? (
+        <p className="m-0 text-xs font-bold text-[#9a3b26]">
+          {blocksNeedingCover} {blocksNeedingCover === 1 ? 'item' : 'items'}{' '}
+          still {blocksNeedingCover === 1 ? 'needs' : 'need'} a cover
+        </p>
+      ) : null}
+    </>
+  );
+}
 
 function MediaCollectorContent({
   formId,
@@ -217,60 +273,51 @@ function MediaCollectorContent({
   };
 
   return (
-    <>
+    <main className="mx-auto flex max-w-440 flex-col gap-9 px-6 pt-7 pb-16">
       <form id={formId} onSubmit={handleCreatePngClick}>
-        <div
-          className="border-b-darkpink relative box-border flex h-fit w-full flex-col items-center border-b-5 bg-cover pt-1 shadow-[5px_5px_30px_rgba(0,0,0,0.3)]"
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-          }}
+        <section
+          aria-label="Media Collector"
+          className="overflow-hidden rounded-[20px] border border-[#e6e0d8] bg-white shadow-[0_8px_30px_rgba(60,50,40,0.07)]"
         >
-          <QueryCounter />
-          <Image
-            alt="Megs Media Collector Title"
-            src={mediaCollectorTitleImage}
-            width={576}
-            height={128}
-          />
-          <div className="mt-2 flex flex-col items-center gap-4">
-            <CollectorHeaderFields />
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e3e9de] bg-[#f3f6f0] px-7 py-4.5">
+            <h1 className="m-0 font-(family-name:--font-hand) text-[52px] leading-[0.9] font-normal tracking-[1px]">
+              Meg’s Media Collector
+            </h1>
+            <QueryCounter />
+          </div>
 
-            <MediaCheckboxes
-              visibility={visibleMediaInputs}
-              onToggle={handleToggleMediaInput}
-            />
+          <div className="flex flex-wrap gap-7 px-7 pt-6 pb-7">
+            <div className="flex flex-[1_1_250px] flex-col gap-3.5">
+              <h2 className={sectionHeadingClassName}>1 · Order</h2>
+              <CollectorHeaderFields />
+            </div>
 
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex flex-row items-center gap-4">
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() => {
-                    handleCollectClick();
-                  }}
-                  label="Collect Media Covers"
-                  width={175}
-                  fontSize={25}
-                />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  label="Create PNG Export"
-                  width={175}
-                  fontSize={25}
-                />
-              </div>
+            <div className="flex flex-[2_1_440px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
+              <h2 className={sectionHeadingClassName}>2 · Titles to search</h2>
+              <MediaCheckboxes
+                visibility={visibleMediaInputs}
+                onToggle={handleToggleMediaInput}
+              />
+              <MediaInputs visibility={visibleMediaInputs} />
+              <SearchTitlesButton
+                onClick={() => {
+                  void handleCollectClick();
+                }}
+              />
+            </div>
+
+            <div className="flex flex-[1_1_250px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
+              <h2 className={sectionHeadingClassName}>3 · Export</h2>
+              <PNGFormatPicker />
+              <ExportButton />
               {submitErrorMessage ? (
-                <p className="m-0 font-['Just_Another_Hand'] text-2xl tracking-wider text-red-600">
+                <p className="m-0 text-xs font-bold text-red-600">
                   {submitErrorMessage}
                 </p>
               ) : null}
             </div>
-
-            <MediaInputs visibility={visibleMediaInputs} />
           </div>
-          <PNGFormatPicker />
-        </div>
+        </section>
       </form>
       {(isCollectingMedia || isCreatingPNG || isSavingToDatabase) && (
         <LoadingWidget message={loadingMessage} />
@@ -298,7 +345,7 @@ function MediaCollectorContent({
           ]}
         />
       )}
-    </>
+    </main>
   );
 }
 

@@ -2,14 +2,22 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import TextInput from '@/components/shared/text-input';
 import {
   BOOK_CLUB_REPEAT_MAX,
+  BOOK_CLUB_REPEAT_MIN,
   type CollectorFormData,
 } from './collector-form/collector-form-schema';
 import { useFormContext } from 'react-hook-form';
+
+const labelClassName = 'flex flex-col gap-1.5 text-[13px] font-bold text-[#6b645d]';
+const inputClassName =
+  'h-11 rounded-[10px] border border-[#ddd5cb] bg-[#fcfbf9] px-3 text-[15px] text-[#2b2826] aria-invalid:border-red-600';
+const stepperButtonClassName =
+  'h-11 w-11 cursor-pointer rounded-[10px] border border-[#ddd5cb] bg-white text-xl text-[#2b2826] disabled:cursor-not-allowed disabled:opacity-40';
+const errorClassName = 'm-0 text-xs font-bold text-red-600';
 
 export default function CollectorHeaderFields() {
   const { control } = useFormContext<CollectorFormData>();
@@ -20,11 +28,12 @@ export default function CollectorHeaderFields() {
         control={control}
         name="customerName"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className={labelClassName}>
+            <FormLabel>Customer full name</FormLabel>
             <FormControl>
-              <TextInput
-                label="Customer Full Name"
-                variant="normal"
+              <input
+                type="text"
+                className={inputClassName}
                 name={field.name}
                 value={field.value}
                 onChange={field.onChange}
@@ -38,11 +47,12 @@ export default function CollectorHeaderFields() {
         control={control}
         name="orderNumber"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className={labelClassName}>
+            <FormLabel>Etsy order number</FormLabel>
             <FormControl>
-              <TextInput
-                label="Order Number"
-                variant="normal"
+              <input
+                type="text"
+                className={inputClassName}
                 name={field.name}
                 value={field.value}
                 onChange={field.onChange}
@@ -56,25 +66,61 @@ export default function CollectorHeaderFields() {
         control={control}
         name="bookClubRepeat"
         render={({ field }) => (
-          <FormItem className="flex flex-col items-center">
-            <FormControl>
-              <TextInput
-                label="Book Club Repeat Number"
-                variant="normal"
-                name={field.name}
-                value={String(field.value)}
-                onChange={(event) => {
-                  const parsed = Number(event.target.value);
-                  if (!Number.isFinite(parsed)) {
-                    field.onChange(0);
-                    return;
-                  }
-                  field.onChange(Math.min(parsed, BOOK_CLUB_REPEAT_MAX));
-                }}
-                onBlur={field.onBlur}
-              />
-            </FormControl>
-            <FormMessage />
+          <FormItem className="flex flex-col items-center gap-1.5">
+            <FormLabel className="text-[13px] font-bold text-[#6b645d]">
+              Book club repeat
+            </FormLabel>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                aria-label="Decrease repeat"
+                className={stepperButtonClassName}
+                disabled={field.value <= BOOK_CLUB_REPEAT_MIN}
+                onClick={() =>
+                  field.onChange(
+                    Math.max(field.value - 1, BOOK_CLUB_REPEAT_MIN),
+                  )
+                }
+              >
+                −
+              </button>
+              <FormControl>
+                <input
+                  type="number"
+                  min={BOOK_CLUB_REPEAT_MIN}
+                  max={BOOK_CLUB_REPEAT_MAX}
+                  className="h-11 w-18 rounded-[10px] border border-[#ddd5cb] bg-[#fcfbf9] text-center text-lg font-extrabold text-[#2b2826] aria-invalid:border-red-600"
+                  name={field.name}
+                  value={String(field.value)}
+                  onChange={(event) => {
+                    const parsed = Number(event.target.value);
+                    if (!Number.isFinite(parsed)) {
+                      field.onChange(0);
+                      return;
+                    }
+                    field.onChange(Math.min(parsed, BOOK_CLUB_REPEAT_MAX));
+                  }}
+                  onBlur={field.onBlur}
+                />
+              </FormControl>
+              <button
+                type="button"
+                aria-label="Increase repeat"
+                className={stepperButtonClassName}
+                disabled={field.value >= BOOK_CLUB_REPEAT_MAX}
+                onClick={() =>
+                  field.onChange(
+                    Math.min(
+                      Math.max(field.value + 1, BOOK_CLUB_REPEAT_MIN),
+                      BOOK_CLUB_REPEAT_MAX,
+                    ),
+                  )
+                }
+              >
+                +
+              </button>
+            </div>
+            <FormMessage className={errorClassName} />
           </FormItem>
         )}
       />

@@ -10,8 +10,8 @@ export const PNG_FORMAT_VALUES = ['3', '5'] as const;
 export type PngFormat = (typeof PNG_FORMAT_VALUES)[number];
 
 export const PNG_FORMAT_OPTIONS = [
-  { value: '3', label: '3mm PNG Format' },
-  { value: '5', label: '5mm PNG Format' },
+  { value: '3', label: '3 mm' },
+  { value: '5', label: '5 mm' },
 ] satisfies ReadonlyArray<{ value: PngFormat; label: string }>;
 
 export const collectorFormSchema = z.object({

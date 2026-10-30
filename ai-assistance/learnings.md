@@ -83,3 +83,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: A proposal treated “PNG should follow the customer list” as a reason to also stop grouping database items at the bottom of the collector grid.
 - Correction: Collector UX stays database-last. Only the PNG is rebuilt in pasted-list order. Those are two lists.
 - Rule Going Forward: Do not change collector display order when fixing PNG order. Keep `collectedData` as the UX list. Drive PNG order from a separate encounter-order `blockID` list.
+
+### 2026-10-30 - User handles browser testing
+
+- Area: Validation workflow
+- Issue: The agent opened the app in the browser to verify UI changes; the user does that review themselves.
+- Correction: Stop at lint, typecheck, and tests, then hand the browser check to the user.
+- Rule Going Forward: Do not run browser testing unless the user asks. Validate with lint, typecheck, and unit tests, and list what the user should check by hand.

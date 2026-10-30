@@ -24,7 +24,7 @@ const QueryCounter = () => {
 
   return (
     <div
-      className={`absolute top-0 right-0 m-4 flex items-center gap-3 rounded-xl border bg-white px-3.5 py-2 font-sans text-[#2b2826] ${
+      className={`flex items-center gap-3 rounded-xl border bg-white px-3.5 py-2 text-[#2b2826] ${
         isOverLimit ? 'border-[#e2b8a8]' : 'border-[#e6e0d8]'
       }`}
     >
