@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { cloneElement, useState } from 'react';
+import type { ReactElement } from 'react';
 
 import Popover from '@mui/material/Popover';
 import PopupState, { bindPopover, bindTrigger } from 'material-ui-popup-state';
@@ -19,10 +20,12 @@ export function Combobox({
   label,
   items,
   onSelect,
+  trigger,
 }: {
   label: string;
   items: { value: string }[];
   onSelect: (value: string) => void;
+  trigger?: ReactElement<Record<string, unknown>>;
 }) {
   const [search, setSearch] = useState('');
 
@@ -30,14 +33,18 @@ export function Combobox({
     <PopupState variant="popover" popupId="demo-popup-popover">
       {(popupState) => (
         <div>
-          <Button
-            {...bindTrigger(popupState)}
-            width={200}
-            fontSize={24}
-            label={`Select ${label}...`}
-            className="justify-between"
-            variant="popover"
-          />
+          {trigger ? (
+            cloneElement(trigger, bindTrigger(popupState))
+          ) : (
+            <Button
+              {...bindTrigger(popupState)}
+              width={200}
+              fontSize={24}
+              label={`Select ${label}...`}
+              className="justify-between"
+              variant="popover"
+            />
+          )}
           <Popover
             {...bindPopover(popupState)}
             anchorOrigin={{

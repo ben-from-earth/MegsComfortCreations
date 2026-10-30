@@ -12,7 +12,9 @@ import MediaInputs from '@/mediacollector/media-inputs';
 import PNGFormatPicker from '@/mediacollector/png-format-picker';
 import LoadingWidget from '@/components/shared/loading-widget';
 import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
-import TitleBlockContainer from '@/mediacollector/title-block-container';
+import TitleBlockContainer, {
+  type ResultsFilter,
+} from '@/mediacollector/title-block-container';
 import CollectorHeaderFields from '@/mediacollector/collector-header-fields';
 import Dialog from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
@@ -110,6 +112,37 @@ function ExportButton(headerActionProps: HeaderActionProps) {
   );
 }
 
+function ResultsSummary({
+  newCount,
+  databaseCount,
+}: {
+  newCount: number;
+  databaseCount: number;
+}) {
+  const collectedData = useWatch<CollectorFormData, 'collectedData'>({
+    name: 'collectedData',
+  });
+  const blocksNeedingCover = (collectedData ?? []).filter(
+    (block) => !block.isDatabase && !block.images.some((img) => img.selected),
+  ).length;
+
+  return (
+    <p className="m-0 font-semibold text-[#6b645d]">
+      {newCount + databaseCount} results · {newCount} new · {databaseCount}{' '}
+      from database
+      {blocksNeedingCover > 0 ? (
+        <>
+          {' · '}
+          <span className="font-extrabold text-[#9a3b26]">
+            {blocksNeedingCover} still {blocksNeedingCover === 1 ? 'needs' : 'need'}{' '}
+            a cover
+          </span>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
 function MediaCollectorContent({
   formId,
   onSubmit,
@@ -149,6 +182,17 @@ function MediaCollectorContent({
   const [lastSearchedTitles, setLastSearchedTitles] = useState<string | null>(
     null,
   );
+  const [resultsFilter, setResultsFilter] = useState<ResultsFilter>('all');
+  const databaseResultCount = fields.filter((field) => field.isDatabase).length;
+  const newResultCount = fields.length - databaseResultCount;
+  const resultsFilterOptions = [
+    { filter: 'new', label: 'New', count: newResultCount },
+    { filter: 'database', label: 'Database', count: databaseResultCount },
+    { filter: 'all', label: 'All', count: fields.length },
+  ] satisfies { filter: ResultsFilter; label: string; count: number }[];
+  const visibleResultCount =
+    resultsFilterOptions.find(({ filter }) => filter === resultsFilter)
+      ?.count ?? 0;
   const [visibleMediaInputs, setVisibleMediaInputs] =
     useState<MediaVisibilityMap>({
       book: true,
@@ -173,6 +217,7 @@ function MediaCollectorContent({
 
   const handleCollectClick = async (): Promise<void> => {
     replace([]);
+    setResultsFilter('all');
     setValue('pngExportBlockIds', []);
     const collectionList = getValues('collectionList');
     let count = 0;
@@ -370,13 +415,64 @@ function MediaCollectorContent({
         </Dialog>
       )}
       {fields.length > 0 && (
-        <TitleBlockContainer
-          fields={fields}
-          onDelete={remove}
-          blockIdsWithErrors={[
-            ...new Set([...blockIdsWithErrors, ...schemaErrorBlockIds]),
-          ]}
-        />
+        <section className="flex flex-col gap-4.5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="m-0 text-[26px] leading-[1.1] font-extrabold">
+                Search results
+              </h2>
+              <ResultsSummary
+                newCount={newResultCount}
+                databaseCount={databaseResultCount}
+              />
+            </div>
+            <div className="flex gap-1 rounded-full border border-[#e6e0d8] bg-white p-1">
+              {resultsFilterOptions.map(({ filter, label, count }) => {
+                const isActive = resultsFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setResultsFilter(filter)}
+                    className={`h-9.5 cursor-pointer rounded-full border-0 px-4 font-bold ${
+                      isActive
+                        ? 'bg-[#3d3935] text-white'
+                        : 'bg-transparent text-[#2b2826]'
+                    }`}
+                  >
+                    {label}{' '}
+                    <span
+                      className={`font-extrabold ${
+                        isActive
+                          ? ''
+                          : filter === 'new'
+                            ? 'text-[#9a3b26]'
+                            : 'text-[#6b645d]'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {visibleResultCount === 0 ? (
+            <p className="m-0 font-semibold text-[#6b645d]">
+              Nothing to show for this filter.
+            </p>
+          ) : (
+            <TitleBlockContainer
+              fields={fields}
+              filter={resultsFilter}
+              onDelete={remove}
+              blockIdsWithErrors={[
+                ...new Set([...blockIdsWithErrors, ...schemaErrorBlockIds]),
+              ]}
+            />
+          )}
+        </section>
       )}
     </main>
   );
