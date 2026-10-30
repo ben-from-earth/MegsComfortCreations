@@ -34,13 +34,32 @@ import {
 
 const sectionHeadingClassName =
   'm-0 text-[13px] font-extrabold tracking-[1px] text-[#6b645d] uppercase';
-const primaryButtonClassName =
-  'flex h-12.5 cursor-pointer items-center justify-center gap-2.5 rounded-xl border-0 bg-[#3d3935] px-5.5 text-base font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#e3ddd5] disabled:text-[#5f5851]';
+const actionButtonClassName =
+  'flex h-12.5 cursor-pointer items-center justify-center gap-2.5 rounded-xl px-5.5 text-base font-extrabold disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#e3ddd5] disabled:text-[#5f5851]';
+const emphasizedButtonClassName = `${actionButtonClassName} border border-transparent bg-[#3d3935] text-white`;
+const quietButtonClassName = `${actionButtonClassName} border border-[#e0d9d0] bg-[#f7f4f0] text-[#6b645d]`;
 
-function SearchTitlesButton({ onClick }: { onClick: () => void }) {
+interface HeaderActionProps {
+  hasResults: boolean;
+  lastSearchedTitles: string | null;
+}
+
+function useIsSearchNext({ hasResults, lastSearchedTitles }: HeaderActionProps) {
   const collectionList = useWatch<CollectorFormData, 'collectionList'>({
     name: 'collectionList',
   });
+  return {
+    collectionList,
+    isSearchNext:
+      !hasResults || JSON.stringify(collectionList) !== lastSearchedTitles,
+  };
+}
+
+function SearchTitlesButton({
+  onClick,
+  ...headerActionProps
+}: HeaderActionProps & { onClick: () => void }) {
+  const { collectionList, isSearchNext } = useIsSearchNext(headerActionProps);
   let titleCount = 0;
   for (const searchList of Object.values(collectionList ?? {})) {
     titleCount += searchList.length;
@@ -49,16 +68,19 @@ function SearchTitlesButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      className={`${primaryButtonClassName} mt-auto self-stretch`}
+      className={`${isSearchNext ? emphasizedButtonClassName : quietButtonClassName} mt-auto self-stretch`}
       onClick={onClick}
     >
       <SearchIcon fontSize="small" />
-      Search {titleCount} {titleCount === 1 ? 'title' : 'titles'}
+      {titleCount === 0
+        ? 'Search'
+        : `Search ${titleCount} ${titleCount === 1 ? 'title' : 'titles'}`}
     </button>
   );
 }
 
-function ExportButton() {
+function ExportButton(headerActionProps: HeaderActionProps) {
+  const { isSearchNext } = useIsSearchNext(headerActionProps);
   const collectedData = useWatch<CollectorFormData, 'collectedData'>({
     name: 'collectedData',
   });
@@ -70,7 +92,9 @@ function ExportButton() {
     <>
       <button
         type="submit"
-        className={primaryButtonClassName}
+        className={
+          isSearchNext ? quietButtonClassName : emphasizedButtonClassName
+        }
         disabled={blocksNeedingCover > 0}
       >
         <DownloadIcon fontSize="small" />
@@ -122,6 +146,9 @@ function MediaCollectorContent({
   const [databaseSaveFailureLines, setDatabaseSaveFailureLines] = useState<
     DatabaseSaveFailureDisplayLine[]
   >([]);
+  const [lastSearchedTitles, setLastSearchedTitles] = useState<string | null>(
+    null,
+  );
   const [visibleMediaInputs, setVisibleMediaInputs] =
     useState<MediaVisibilityMap>({
       book: true,
@@ -171,6 +198,7 @@ function MediaCollectorContent({
       })),
     );
     setValue('pngExportBlockIds', collectResult.pngExportBlockIds);
+    setLastSearchedTitles(JSON.stringify(collectionList));
   };
 
   const handleCreatePngClick = (
@@ -300,6 +328,8 @@ function MediaCollectorContent({
               />
               <MediaInputs visibility={visibleMediaInputs} />
               <SearchTitlesButton
+                hasResults={fields.length > 0}
+                lastSearchedTitles={lastSearchedTitles}
                 onClick={() => {
                   void handleCollectClick();
                 }}
@@ -309,7 +339,10 @@ function MediaCollectorContent({
             <div className="flex flex-[1_1_250px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
               <h2 className={sectionHeadingClassName}>3 · Export</h2>
               <PNGFormatPicker />
-              <ExportButton />
+              <ExportButton
+                hasResults={fields.length > 0}
+                lastSearchedTitles={lastSearchedTitles}
+              />
               {submitErrorMessage ? (
                 <p className="m-0 text-xs font-bold text-red-600">
                   {submitErrorMessage}

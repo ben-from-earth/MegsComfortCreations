@@ -89,7 +89,7 @@ export default function CollectorHeaderFields() {
                   type="number"
                   min={BOOK_CLUB_REPEAT_MIN}
                   max={BOOK_CLUB_REPEAT_MAX}
-                  className="h-11 w-18 rounded-[10px] border border-[#ddd5cb] bg-[#fcfbf9] text-center text-lg font-extrabold text-[#2b2826] aria-invalid:border-red-600"
+                  className="h-11 w-18 [appearance:textfield] rounded-[10px] border border-[#ddd5cb] bg-[#fcfbf9] text-center text-lg font-extrabold text-[#2b2826] aria-invalid:border-red-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   name={field.name}
                   value={String(field.value)}
                   onChange={(event) => {

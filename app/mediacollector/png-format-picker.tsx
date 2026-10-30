@@ -20,7 +20,7 @@ export default function PNGFormatPicker() {
       render={({ field }) => (
         <FormItem className="flex flex-col gap-1.5">
           <FormControl>
-            <fieldset className="m-0 rounded-[14px] border border-[#e6e0d8] bg-[#faf8f5] p-2.5">
+            <fieldset className="m-0 border-0 p-0">
               <legend className="sr-only">Bleed size</legend>
               <div className="grid grid-cols-2 gap-2">
                 {PNG_FORMAT_OPTIONS.map((option) => {
@@ -28,10 +28,10 @@ export default function PNGFormatPicker() {
                   return (
                     <label
                       key={option.value}
-                      className={`relative flex min-h-16 cursor-pointer flex-col items-center justify-center rounded-[10px] border-[1.5px] bg-white has-focus-visible:outline-2 has-focus-visible:outline-[#3d3935] ${
+                      className={`relative flex h-11 cursor-pointer items-center justify-center rounded-[10px] border-[1.5px] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-[#3d3935] ${
                         isChecked
-                          ? 'border-[#3d3935] bg-[#efebe5]'
-                          : 'border-[#ddd5cb]'
+                          ? 'border-[#3d3935] bg-[#3d3935] text-white'
+                          : 'border-[#ddd5cb] bg-white text-[#2b2826]'
                       }`}
                     >
                       <input
@@ -41,9 +41,14 @@ export default function PNGFormatPicker() {
                         value={option.value}
                         checked={isChecked}
                         onChange={() => field.onChange(option.value)}
+                        onClick={() => {
+                          if (isChecked) {
+                            field.onChange(null);
+                          }
+                        }}
                         onBlur={field.onBlur}
                       />
-                      <span className="text-xl font-extrabold">
+                      <span className="text-lg font-extrabold">
                         {option.label}
                       </span>
                     </label>
