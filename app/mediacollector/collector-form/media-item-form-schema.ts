@@ -13,6 +13,7 @@ export const mediaImageSelectionSchema = z.object({
   isDefault: z.boolean(),
   spineColor: z.string(),
   uploaded: z.boolean().optional(),
+  palette: z.array(z.string()).optional(),
 });
 
 export const mediaItemBlockInfoSchema = z.object({
@@ -37,7 +38,7 @@ export const mediaItemFormSchema = z.object({
 export type MediaItemForm = z.infer<typeof mediaItemFormSchema>;
 
 export function toFormImages(
-  images: MediaImageItem[] | undefined,
+  images: (MediaImageItem & { palette?: string[] })[] | undefined,
   fallbackSpineColor: string,
 ): MediaItemForm['images'] {
   const source =
@@ -58,6 +59,7 @@ export function toFormImages(
     selected: image.selected ?? false,
     isDefault: hasDefault ? image.isDefault : index === 0,
     spineColor: image.spineColor,
+    ...('palette' in image ? { palette: image.palette } : {}),
   }));
 
   if (mapped.some((image) => image.selected)) {

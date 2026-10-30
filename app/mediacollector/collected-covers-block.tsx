@@ -185,7 +185,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       />
 
       {type !== 'album' ? (
-        <SpineColorRow index={index} isDatabase={isDatabase} />
+        <SpineColorRow index={index} />
       ) : null}
 
       <div className="mt-auto flex items-center justify-end border-t border-[#efe9e2] px-2.5 py-2">

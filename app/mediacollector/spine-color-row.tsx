@@ -2,13 +2,7 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import ColorizeIcon from '@mui/icons-material/Colorize';
 import { CollectorFormData } from './collector-form/collector-form-schema';
 
-export default function SpineColorRow({
-  index,
-  isDatabase,
-}: {
-  index: number;
-  isDatabase: boolean;
-}) {
+export default function SpineColorRow({ index }: { index: number }) {
   const { control, getValues, setValue } = useFormContext<CollectorFormData>();
   const spineColor = useWatch({
     control,
@@ -16,7 +10,20 @@ export default function SpineColorRow({
   });
   const images =
     useWatch({ control, name: `collectedData.${index}.images` }) ?? [];
-  const hasSelectedImage = images.some((image) => image.selected);
+  const selectedImage = images.find((image) => image.selected);
+  const hasSelectedImage = selectedImage !== undefined;
+  const palette = selectedImage?.palette ?? [];
+
+  const applySpineColor = (hex: string) => {
+    const currentImages = getValues(`collectedData.${index}.images`);
+    setValue(
+      `collectedData.${index}.images`,
+      currentImages.map((image) =>
+        image.selected ? { ...image, spineColor: hex } : image,
+      ),
+    );
+    setValue(`collectedData.${index}.blockInfo.spineColor`, hex);
+  };
 
   const handleColorPick = async () => {
     if (!window.EyeDropper) {
@@ -26,24 +33,13 @@ export default function SpineColorRow({
     const eyeDropper = new window.EyeDropper();
     try {
       const { sRGBHex } = await eyeDropper.open();
-      const currentImages = getValues(`collectedData.${index}.images`);
-      setValue(
-        `collectedData.${index}.images`,
-        currentImages.map((image) =>
-          image.selected ? { ...image, spineColor: sRGBHex } : image,
-        ),
-      );
-      setValue(`collectedData.${index}.blockInfo.spineColor`, sRGBHex);
+      applySpineColor(sRGBHex);
     } catch (error) {
       console.log(error);
     }
   };
 
-  const caption = !hasSelectedImage
-    ? 'Pick a cover first'
-    : isDatabase
-      ? `Saved · ${spineColor}`
-      : spineColor;
+  const normalizedSpineColor = spineColor?.toLowerCase();
 
   return (
     <div className="mx-4.5 mb-3.5 flex flex-wrap items-center gap-2.5 rounded-xl bg-[#f7f4f0] px-3 py-2.5">
@@ -57,8 +53,35 @@ export default function SpineColorRow({
       />
       <div className="flex min-w-23 flex-col gap-px">
         <span className="text-xs font-extrabold">Spine color</span>
-        <span className="text-[11px] font-bold text-[#6b645d]">{caption}</span>
+        {hasSelectedImage ? (
+          <span className="text-[11px] font-bold text-[#6b645d]">
+            {spineColor}
+          </span>
+        ) : null}
       </div>
+      {hasSelectedImage && palette.length > 0 ? (
+        <div role="radiogroup" className="flex gap-1.5">
+          {palette.map((hex) => {
+            const isChosen = hex === normalizedSpineColor;
+            return (
+              <button
+                key={hex}
+                type="button"
+                role="radio"
+                aria-checked={isChosen}
+                title={hex}
+                onClick={() => applySpineColor(hex)}
+                className={`h-7 w-7 cursor-pointer rounded-full p-0 ${
+                  isChosen
+                    ? 'border-2 border-white shadow-[0_0_0_2px_#3d3935]'
+                    : 'border border-[rgba(0,0,0,0.15)]'
+                }`}
+                style={{ backgroundColor: hex }}
+              />
+            );
+          })}
+        </div>
+      ) : null}
       <button
         type="button"
         disabled={!hasSelectedImage}

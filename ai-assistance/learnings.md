@@ -90,3 +90,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: The agent opened the app in the browser to verify UI changes; the user does that review themselves.
 - Correction: Stop at lint, typecheck, and tests, then hand the browser check to the user.
 - Rule Going Forward: Do not run browser testing unless the user asks. Validate with lint, typecheck, and unit tests, and list what the user should check by hand.
+
+### 2026-10-30 - Trace new fields through to form state
+
+- Area: Collector data flow
+- Issue: A `palette` field added to collected images was dropped on the client because `page.tsx` rebuilds images with `toFormImages`, which copies a fixed list of fields.
+- Correction: Carry `palette` through `toFormImages` and add a test for it.
+- Rule Going Forward: When adding a field to server responses, follow it through every client mapping into the form state before calling it done.

@@ -15,6 +15,77 @@ import {
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
+import { fetchImageBufferAxios } from 'lib/helpers/output-png';
+import { extractSpinePalette } from 'lib/helpers/spine-palette';
+import sharp from 'sharp';
+
+const SPINE_PALETTE_SAMPLE_SIZE = 64;
+const SPINE_PALETTE_CONCURRENCY = 8;
+const SPINE_PALETTE_FETCH_TIMEOUT_MS = 8_000;
+const UNSET_SPINE_COLOR = '#ffffff';
+
+async function readSpinePalette(image: Buffer | string): Promise<string[]> {
+  try {
+    const imageBuffer =
+      typeof image === 'string'
+        ? await fetchImageBufferAxios(image, {
+            retries: 0,
+            timeout: SPINE_PALETTE_FETCH_TIMEOUT_MS,
+          })
+        : image;
+    const { data, info } = await sharp(imageBuffer)
+      .toColourspace('srgb')
+      .resize(SPINE_PALETTE_SAMPLE_SIZE, SPINE_PALETTE_SAMPLE_SIZE, {
+        fit: 'inside',
+      })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    return extractSpinePalette(data, info.channels);
+  } catch (error) {
+    console.warn('[readSpinePalette] unable to read cover colors', error);
+    return [];
+  }
+}
+
+async function addSpinePalettes(blocks: MediaItemForm[]) {
+  const pendingUrls = [
+    ...new Set(
+      blocks.flatMap((block) =>
+        block.images
+          .map((image) => image.url)
+          .filter((url) => /^https?:\/\//i.test(url)),
+      ),
+    ),
+  ];
+  const palettesByUrl = new Map<string, string[]>();
+  await Promise.all(
+    Array.from(
+      { length: Math.min(SPINE_PALETTE_CONCURRENCY, pendingUrls.length) },
+      async () => {
+        for (let url = pendingUrls.shift(); url; url = pendingUrls.shift()) {
+          palettesByUrl.set(url, await readSpinePalette(url));
+        }
+      },
+    ),
+  );
+
+  for (const block of blocks) {
+    block.images = block.images.map((image) => {
+      const palette = palettesByUrl.get(image.url) ?? [];
+      const spineColor =
+        !block.isDatabase && image.spineColor === UNSET_SPINE_COLOR
+          ? (palette[0] ?? image.spineColor)
+          : image.spineColor;
+      return { ...image, palette, spineColor };
+    });
+    if (!block.isDatabase) {
+      block.blockInfo.spineColor =
+        block.images.find((image) => image.selected)?.spineColor ??
+        block.blockInfo.spineColor;
+    }
+  }
+}
 
 export const collectRouter = router({
   uploadCoverImage: adminProcedure
@@ -36,20 +107,24 @@ export const collectRouter = router({
         });
       }
 
-      const uploadedImage = await persistUploadedImageToS3({
-        imageBuffer: fileBuffer,
-        mediaType: 'book',
-        mediaId: input.blockID,
-        sortOrder: input.sortOrder,
-        fileName: input.fileName,
-        mimeType: input.mimeType,
-      });
+      const [uploadedImage, palette] = await Promise.all([
+        persistUploadedImageToS3({
+          imageBuffer: fileBuffer,
+          mediaType: 'book',
+          mediaId: input.blockID,
+          sortOrder: input.sortOrder,
+          fileName: input.fileName,
+          mimeType: input.mimeType,
+        }),
+        readSpinePalette(fileBuffer),
+      ]);
 
       return {
         url: uploadedImage.publicPath,
         isDefault: input.sortOrder === 0,
-        spineColor: '#ffffff',
+        spineColor: UNSET_SPINE_COLOR,
         selected: true,
+        palette,
       };
     }),
   collectMedia: adminProcedure
@@ -187,6 +262,7 @@ export const collectRouter = router({
             },
           });
       }
+      await addSpinePalettes(blocks);
       const pngExportBlockIds = blocks.map((block) => block.blockID);
       const databaseSorted = [...blocks].sort((a, b) =>
         a.isDatabase === b.isDatabase ? 0 : a.isDatabase ? 1 : -1,

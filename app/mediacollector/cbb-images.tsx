@@ -96,16 +96,24 @@ export default function CBBImages({
         dataBase64,
       });
 
+      const uploadedSpineColor = isDatabase
+        ? spineColor
+        : (uploadedImage.palette[0] ?? spineColor);
       setValue(`collectedData.${index}.images`, [
         ...currentImages.map((image) => ({ ...image, selected: false })),
         {
           url: uploadedImage.url,
           selected: true,
           isDefault: false,
-          spineColor,
+          spineColor: uploadedSpineColor,
           uploaded: true,
+          palette: uploadedImage.palette,
         },
       ]);
+      setValue(
+        `collectedData.${index}.blockInfo.spineColor`,
+        uploadedSpineColor,
+      );
     } catch (error) {
       console.error('Failed to upload custom book image', error);
     } finally {
