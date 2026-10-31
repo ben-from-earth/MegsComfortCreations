@@ -12,10 +12,22 @@ const NUMBER_FIELD_NAMES = ['pubYear', 'pageCount'] as const;
 
 type CollectedTextFieldName = 'title' | 'author' | 'pubYear' | 'pageCount';
 
+export type CollectedFieldEditState = 'readOnly' | 'changed';
+
+const editStateClassNames: Record<
+  CollectedFieldEditState | 'editable',
+  string
+> = {
+  editable: 'border-[#e0d9d0] bg-[#fcfbf9]',
+  readOnly: 'border-[#ece6de] bg-[#f4f1ec]',
+  changed: 'border-[#c9973f] bg-[#fffaf0] shadow-[inset_0_0_0_0.5px_#c9973f]',
+};
+
 export interface CollectedItemTextFieldProps {
   name: CollectedTextFieldName;
   label: string;
   index: number;
+  editState?: CollectedFieldEditState;
 }
 
 function isNumberFieldName(
@@ -28,6 +40,7 @@ export default function CollectedItemTextField({
   name,
   label,
   index,
+  editState,
 }: CollectedItemTextFieldProps) {
   const { control } = useFormContext<CollectorFormData>();
   const isNumberField = isNumberFieldName(name);
@@ -43,9 +56,10 @@ export default function CollectedItemTextField({
             <input
               type="text"
               inputMode={isNumberField ? 'numeric' : undefined}
-              className={`h-9.5 min-w-0 rounded-lg border border-[#e0d9d0] bg-[#fcfbf9] px-2.5 text-sm text-[#2b2826] aria-invalid:border-red-600 ${
-                name === 'title' ? 'font-bold' : 'font-normal'
-              }`}
+              readOnly={editState === 'readOnly'}
+              className={`h-9.5 min-w-0 rounded-lg border px-2.5 text-sm text-[#2b2826] aria-invalid:border-red-600 ${
+                editStateClassNames[editState ?? 'editable']
+              } ${name === 'title' ? 'font-bold' : 'font-normal'}`}
               name={field.name}
               value={field.value == null ? '' : String(field.value)}
               onBlur={field.onBlur}
@@ -53,8 +67,7 @@ export default function CollectedItemTextField({
                 if (isNumberField) {
                   const parsed = Number(event.target.value);
                   field.onChange(
-                    event.target.value.trim() === '' ||
-                      !Number.isFinite(parsed)
+                    event.target.value.trim() === '' || !Number.isFinite(parsed)
                       ? null
                       : parsed,
                   );

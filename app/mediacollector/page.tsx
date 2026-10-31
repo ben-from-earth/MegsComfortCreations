@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useMemo, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -36,6 +36,14 @@ import {
   CollectingCoversModal,
   SavingItemsModal,
 } from './collector-loading-modal';
+import DatabaseEditContext, {
+  type DatabaseEditContextValue,
+} from './database-edit-context';
+import {
+  countDatabaseItemChanges,
+  diffDatabaseItem,
+  type DatabaseItemEdit,
+} from './database-item-changes';
 import {
   buildDatabaseSaveFailureDisplayLines,
   markSuccessfulBlocksAsInDatabase,
@@ -68,7 +76,10 @@ interface HeaderActionProps {
   lastSearchedTitles: string | null;
 }
 
-function useIsSearchNext({ hasResults, lastSearchedTitles }: HeaderActionProps) {
+function useIsSearchNext({
+  hasResults,
+  lastSearchedTitles,
+}: HeaderActionProps) {
   const collectionList = useWatch<CollectorFormData, 'collectionList'>({
     name: 'collectionList',
   });
@@ -144,20 +155,39 @@ function ResultsSummary({
   const collectedData = useWatch<CollectorFormData, 'collectedData'>({
     name: 'collectedData',
   });
+  const { originalsByBlockId } = use(DatabaseEditContext);
   const blocksNeedingCover = (collectedData ?? []).filter(
     (block) => !block.isDatabase && !block.images.some((img) => img.selected),
   ).length;
+  const editedDatabaseCount = (collectedData ?? []).filter((block) => {
+    const original = block.isDatabase
+      ? originalsByBlockId.get(block.blockID)
+      : undefined;
+    return (
+      original !== undefined &&
+      countDatabaseItemChanges(diffDatabaseItem(original, block)) > 0
+    );
+  }).length;
 
   return (
     <p className="m-0 font-semibold text-[#6b645d]">
-      {newCount + databaseCount} results · {newCount} new · {databaseCount}{' '}
-      from database
+      {newCount + databaseCount} results · {newCount} new · {databaseCount} from
+      database
       {blocksNeedingCover > 0 ? (
         <>
           {' · '}
           <span className="font-extrabold text-[#9a3b26]">
-            {blocksNeedingCover} still {blocksNeedingCover === 1 ? 'needs' : 'need'}{' '}
-            a cover
+            {blocksNeedingCover} still{' '}
+            {blocksNeedingCover === 1 ? 'needs' : 'need'} a cover
+          </span>
+        </>
+      ) : null}
+      {editedDatabaseCount > 0 ? (
+        <>
+          {' · '}
+          <span className="font-extrabold text-[#8a5a22]">
+            {editedDatabaseCount} database{' '}
+            {editedDatabaseCount === 1 ? 'item' : 'items'} edited
           </span>
         </>
       ) : null}
@@ -205,6 +235,30 @@ function MediaCollectorContent({
     null,
   );
   const [resultsFilter, setResultsFilter] = useState<ResultsFilter>('all');
+  const [databaseOriginals, setDatabaseOriginals] = useState<
+    ReadonlyMap<string, MediaItemForm>
+  >(() => new Map());
+  const [unlockedBlockIds, setUnlockedBlockIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const databaseEditContextValue = useMemo<DatabaseEditContextValue>(
+    () => ({
+      originalsByBlockId: databaseOriginals,
+      unlockedBlockIds,
+      setBlockUnlocked: (blockID, isUnlocked) => {
+        setUnlockedBlockIds((current) => {
+          const next = new Set(current);
+          if (isUnlocked) {
+            next.add(blockID);
+          } else {
+            next.delete(blockID);
+          }
+          return next;
+        });
+      },
+    }),
+    [databaseOriginals, unlockedBlockIds],
+  );
   const databaseResultCount = fields.filter((field) => field.isDatabase).length;
   const newResultCount = fields.length - databaseResultCount;
   const resultsFilterOptions = [
@@ -232,13 +286,20 @@ function MediaCollectorContent({
     blocks: MediaItemForm[],
     pngExportBlockIds: string[],
   ) => {
-    replace(
-      blocks.map((block) => ({
-        ...block,
-        images: toFormImages(block.images, block.blockInfo.spineColor),
-      })),
-    );
+    const formBlocks = blocks.map((block) => ({
+      ...block,
+      images: toFormImages(block.images, block.blockInfo.spineColor),
+    }));
+    replace(formBlocks);
     setValue('pngExportBlockIds', pngExportBlockIds);
+    setDatabaseOriginals(
+      new Map(
+        formBlocks
+          .filter((block) => block.isDatabase)
+          .map((block) => [block.blockID, block]),
+      ),
+    );
+    setUnlockedBlockIds(new Set());
   };
 
   const handleCollectClick = async (): Promise<void> => {
@@ -314,7 +375,42 @@ function MediaCollectorContent({
   const saveCollectedItems = async (
     formValues: CollectorFormData,
   ): Promise<boolean> => {
-    const result = await onSubmit(formValues);
+    const databaseEdits = formValues.collectedData.flatMap(
+      (block): DatabaseItemEdit[] => {
+        const original = block.isDatabase
+          ? databaseOriginals.get(block.blockID)
+          : undefined;
+        return original &&
+          countDatabaseItemChanges(diffDatabaseItem(original, block)) > 0
+          ? [{ block, original }]
+          : [];
+      },
+    );
+    const result = await onSubmit(formValues, databaseEdits);
+
+    const successfulBlockIds = new Set(
+      result.filter((res) => res.success).map((res) => res.blockID),
+    );
+    const savedEdits = databaseEdits.filter(({ block }) =>
+      successfulBlockIds.has(block.blockID),
+    );
+    if (savedEdits.length > 0) {
+      setDatabaseOriginals((current) => {
+        const next = new Map(current);
+        for (const { block } of savedEdits) {
+          next.set(block.blockID, block);
+        }
+        return next;
+      });
+      setUnlockedBlockIds((current) => {
+        const next = new Set(current);
+        for (const { block } of savedEdits) {
+          next.delete(block.blockID);
+        }
+        return next;
+      });
+    }
+
     if (result.every((res) => res.success)) {
       return true;
     }
@@ -354,9 +450,7 @@ function MediaCollectorContent({
       repeatCount: formValues.bookClubRepeat,
     });
 
-    const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
-      c.charCodeAt(0),
-    );
+    const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
     const blob = new Blob([byteArray], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -405,148 +499,152 @@ function MediaCollectorContent({
   };
 
   return (
-    <main className="mx-auto flex max-w-440 flex-col gap-9 px-6 pt-7 pb-16">
-      <form id={formId} onSubmit={handleCreatePngClick}>
-        <section
-          aria-label="Media Collector"
-          className="overflow-hidden rounded-[20px] border border-[#e6e0d8] bg-white shadow-[0_8px_30px_rgba(60,50,40,0.07)]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e3e9de] bg-[#f3f6f0] px-7 py-4.5">
-            <h1 className="m-0 font-(family-name:--font-hand) text-[52px] leading-[0.9] font-normal tracking-[1px]">
-              Meg’s Media Collector
-            </h1>
-            <QueryCounter />
-          </div>
-
-          <div className="flex flex-wrap gap-7 px-7 pt-6 pb-7">
-            <div className="flex flex-[1_1_250px] flex-col gap-3.5">
-              <h2 className={sectionHeadingClassName}>1 · Order</h2>
-              <CollectorHeaderFields />
+    <DatabaseEditContext value={databaseEditContextValue}>
+      <main className="mx-auto flex max-w-440 flex-col gap-9 px-6 pt-7 pb-16">
+        <form id={formId} onSubmit={handleCreatePngClick}>
+          <section
+            aria-label="Media Collector"
+            className="overflow-hidden rounded-[20px] border border-[#e6e0d8] bg-white shadow-[0_8px_30px_rgba(60,50,40,0.07)]"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e3e9de] bg-[#f3f6f0] px-7 py-4.5">
+              <h1 className="m-0 font-(family-name:--font-hand) text-[52px] leading-[0.9] font-normal tracking-[1px]">
+                Meg’s Media Collector
+              </h1>
+              <QueryCounter />
             </div>
 
-            <div className="flex flex-[2_1_440px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
-              <h2 className={sectionHeadingClassName}>2 · Titles to search</h2>
-              <MediaCheckboxes
-                visibility={visibleMediaInputs}
-                onToggle={handleToggleMediaInput}
-              />
-              <MediaInputs visibility={visibleMediaInputs} />
-              <SearchTitlesButton
-                hasResults={fields.length > 0}
-                lastSearchedTitles={lastSearchedTitles}
-                onClick={() => {
-                  void handleCollectClick();
-                }}
-              />
-            </div>
+            <div className="flex flex-wrap gap-7 px-7 pt-6 pb-7">
+              <div className="flex flex-[1_1_250px] flex-col gap-3.5">
+                <h2 className={sectionHeadingClassName}>1 · Order</h2>
+                <CollectorHeaderFields />
+              </div>
 
-            <div className="flex flex-[1_1_250px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
-              <h2 className={sectionHeadingClassName}>3 · Export</h2>
-              <PNGFormatPicker />
-              <ExportButton
-                hasResults={fields.length > 0}
-                lastSearchedTitles={lastSearchedTitles}
-              />
-              {submitErrorMessage ? (
-                <p className="m-0 text-xs font-bold text-red-600">
-                  {submitErrorMessage}
-                </p>
-              ) : null}
+              <div className="flex flex-[2_1_440px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
+                <h2 className={sectionHeadingClassName}>
+                  2 · Titles to search
+                </h2>
+                <MediaCheckboxes
+                  visibility={visibleMediaInputs}
+                  onToggle={handleToggleMediaInput}
+                />
+                <MediaInputs visibility={visibleMediaInputs} />
+                <SearchTitlesButton
+                  hasResults={fields.length > 0}
+                  lastSearchedTitles={lastSearchedTitles}
+                  onClick={() => {
+                    void handleCollectClick();
+                  }}
+                />
+              </div>
+
+              <div className="flex flex-[1_1_250px] flex-col gap-3.5 border-l border-[#ece6de] pl-7">
+                <h2 className={sectionHeadingClassName}>3 · Export</h2>
+                <PNGFormatPicker />
+                <ExportButton
+                  hasResults={fields.length > 0}
+                  lastSearchedTitles={lastSearchedTitles}
+                />
+                {submitErrorMessage ? (
+                  <p className="m-0 text-xs font-bold text-red-600">
+                    {submitErrorMessage}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </section>
-      </form>
-      {loadingState?.step === 'collecting' ? (
-        <CollectingCoversModal
-          progress={loadingState.progress}
-          collectionList={loadingState.collectionList}
-        />
-      ) : null}
-      {loadingState?.step === 'saving' ? (
-        <SavingItemsModal newItemCount={loadingState.newItemCount} />
-      ) : null}
-      {loadingState?.step === 'buildingPng' ? (
-        <BuildingPngModal
-          savedItemCount={loadingState.savedItemCount}
-          customerName={loadingState.customerName}
-          orderNumber={loadingState.orderNumber}
-        />
-      ) : null}
-      {databaseSaved && (
-        <Dialog title="Error" onClose={() => setDatabaseSaved(false)}>
-          <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
-        </Dialog>
-      )}
-      {showInformationalDialog && (
-        <Dialog
-          title="Error"
-          onClose={() => setShowInformationalDialog(false)}
-          className="w-5/12"
-        >
-          <p>{informationalDialogText}</p>
-        </Dialog>
-      )}
-      {fields.length > 0 && (
-        <section className="flex flex-col gap-4.5">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <h2 className="m-0 text-[26px] leading-[1.1] font-extrabold">
-                Search results
-              </h2>
-              <ResultsSummary
-                newCount={newResultCount}
-                databaseCount={databaseResultCount}
-              />
-            </div>
-            <div className="flex gap-1 rounded-full border border-[#e6e0d8] bg-white p-1">
-              {resultsFilterOptions.map(({ filter, label, count }) => {
-                const isActive = resultsFilter === filter;
-                return (
-                  <button
-                    key={filter}
-                    type="button"
-                    aria-pressed={isActive}
-                    onClick={() => setResultsFilter(filter)}
-                    className={`h-9.5 cursor-pointer rounded-full border-0 px-4 font-bold ${
-                      isActive
-                        ? 'bg-[#2a4637] text-white'
-                        : 'bg-transparent text-[#2b2826]'
-                    }`}
-                  >
-                    {label}{' '}
-                    <span
-                      className={`font-extrabold ${
+          </section>
+        </form>
+        {loadingState?.step === 'collecting' ? (
+          <CollectingCoversModal
+            progress={loadingState.progress}
+            collectionList={loadingState.collectionList}
+          />
+        ) : null}
+        {loadingState?.step === 'saving' ? (
+          <SavingItemsModal newItemCount={loadingState.newItemCount} />
+        ) : null}
+        {loadingState?.step === 'buildingPng' ? (
+          <BuildingPngModal
+            savedItemCount={loadingState.savedItemCount}
+            customerName={loadingState.customerName}
+            orderNumber={loadingState.orderNumber}
+          />
+        ) : null}
+        {databaseSaved && (
+          <Dialog title="Error" onClose={() => setDatabaseSaved(false)}>
+            <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
+          </Dialog>
+        )}
+        {showInformationalDialog && (
+          <Dialog
+            title="Error"
+            onClose={() => setShowInformationalDialog(false)}
+            className="w-5/12"
+          >
+            <p>{informationalDialogText}</p>
+          </Dialog>
+        )}
+        {fields.length > 0 && (
+          <section className="flex flex-col gap-4.5">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="m-0 text-[26px] leading-[1.1] font-extrabold">
+                  Search results
+                </h2>
+                <ResultsSummary
+                  newCount={newResultCount}
+                  databaseCount={databaseResultCount}
+                />
+              </div>
+              <div className="flex gap-1 rounded-full border border-[#e6e0d8] bg-white p-1">
+                {resultsFilterOptions.map(({ filter, label, count }) => {
+                  const isActive = resultsFilter === filter;
+                  return (
+                    <button
+                      key={filter}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => setResultsFilter(filter)}
+                      className={`h-9.5 cursor-pointer rounded-full border-0 px-4 font-bold ${
                         isActive
-                          ? ''
-                          : filter === 'new'
-                            ? 'text-[#9a3b26]'
-                            : 'text-[#6b645d]'
+                          ? 'bg-[#2a4637] text-white'
+                          : 'bg-transparent text-[#2b2826]'
                       }`}
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+                      {label}{' '}
+                      <span
+                        className={`font-extrabold ${
+                          isActive
+                            ? ''
+                            : filter === 'new'
+                              ? 'text-[#9a3b26]'
+                              : 'text-[#6b645d]'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-          {visibleResultCount === 0 ? (
-            <p className="m-0 font-semibold text-[#6b645d]">
-              Nothing to show for this filter.
-            </p>
-          ) : (
-            <TitleBlockContainer
-              fields={fields}
-              filter={resultsFilter}
-              onDelete={remove}
-              blockIdsWithErrors={[
-                ...new Set([...blockIdsWithErrors, ...schemaErrorBlockIds]),
-              ]}
-            />
-          )}
-        </section>
-      )}
-    </main>
+            {visibleResultCount === 0 ? (
+              <p className="m-0 font-semibold text-[#6b645d]">
+                Nothing to show for this filter.
+              </p>
+            ) : (
+              <TitleBlockContainer
+                fields={fields}
+                filter={resultsFilter}
+                onDelete={remove}
+                blockIdsWithErrors={[
+                  ...new Set([...blockIdsWithErrors, ...schemaErrorBlockIds]),
+                ]}
+              />
+            )}
+          </section>
+        )}
+      </main>
+    </DatabaseEditContext>
   );
 }
 

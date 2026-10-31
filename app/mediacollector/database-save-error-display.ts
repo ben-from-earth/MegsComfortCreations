@@ -22,6 +22,18 @@ export function toUserFriendlyDatabaseSaveReason(
     return 'The new cover could not be added to this database item.';
   }
 
+  if (item.error === 'Media Not Found') {
+    return 'This database item could not be found, so the edit was not saved.';
+  }
+
+  if (item.error === 'Database Edit Error') {
+    return 'The changes to this database item could not be saved.';
+  }
+
+  if (item.error === 'Genre Update Error') {
+    return 'The changes were saved, but the genres could not be updated.';
+  }
+
   if (item.error === 'Schema Violation') {
     return 'Some required details for this item were missing or invalid.';
   }

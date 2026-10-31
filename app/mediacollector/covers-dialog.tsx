@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import { MediaType } from 'lib/constants/media-types';
 import type { MediaItemForm } from './collector-form/collector-form-schema';
-import { CoverTile, UploadTile } from './cover-tile';
+import { CoverTile, UploadTile, coverDefaultBand } from './cover-tile';
 
 const secondaryButtonClassName =
   'inline-flex h-11 cursor-pointer items-center rounded-[10px] border border-[#ddd5cb] bg-white px-4.5 font-extrabold text-[#2b2826]';
@@ -15,6 +15,7 @@ export default function CoversDialog({
   mediaType,
   images,
   isUploading,
+  originalDefaultUrl,
   onCancel,
   onConfirm,
   onUploadClick,
@@ -24,6 +25,7 @@ export default function CoversDialog({
   mediaType: MediaType;
   images: MediaItemForm['images'];
   isUploading: boolean;
+  originalDefaultUrl?: string;
   onCancel: () => void;
   onConfirm: (imageIndex: number) => void;
   onUploadClick?: () => void;
@@ -65,8 +67,8 @@ export default function CoversDialog({
               {isDatabase ? 'saved covers' : 'covers'}
             </h2>
             <p className="m-0 text-[13px] font-semibold text-[#6b645d]">
-              {images.length} covers{isDatabase ? ' in the database' : ''}.
-              Pick the one to use for this order.
+              {images.length} covers{isDatabase ? ' in the database' : ''}. Pick
+              the one to use for this order.
             </p>
           </div>
           <button
@@ -88,7 +90,9 @@ export default function CoversDialog({
               url={image.url}
               mediaType={mediaType}
               isSelected={imageIndex === pickedIndex}
-              isDefault={isDatabase && image.isDefault}
+              defaultBand={
+                isDatabase ? coverDefaultBand(image, originalDefaultUrl) : null
+              }
               onClick={() => setPickedIndex(imageIndex)}
             />
           ))}

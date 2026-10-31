@@ -8,6 +8,7 @@ import {
   CoverTile,
   UploadTile,
   coverAspectClassName,
+  coverDefaultBand,
 } from './cover-tile';
 import CoversDialog from './covers-dialog';
 
@@ -18,6 +19,8 @@ export interface CBBImageProps {
   blockID: string;
   type: MediaType;
   isDatabase: boolean;
+  isLocked: boolean;
+  originalDefaultUrl?: string;
   title: string;
 }
 
@@ -26,6 +29,8 @@ export default function CBBImages({
   blockID,
   type,
   isDatabase,
+  isLocked,
+  originalDefaultUrl,
   title,
 }: CBBImageProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -54,6 +59,16 @@ export default function CBBImages({
     setValue(
       `collectedData.${index}.blockInfo.spineColor`,
       selectedImage.spineColor,
+    );
+  };
+
+  const handleSetDefault = (imageIdx: number) => {
+    setValue(
+      `collectedData.${index}.images`,
+      getValues(`collectedData.${index}.images`).map((image, imageIndex) => ({
+        ...image,
+        isDefault: imageIndex === imageIdx,
+      })),
     );
   };
 
@@ -133,9 +148,7 @@ export default function CBBImages({
       : [0, 1, 2]
     : images.map((_, imageIndex) => imageIndex);
   const overflowPreviewImage = hasOverflow
-    ? images.find(
-        (_, imageIndex) => !visibleImageIndexes.includes(imageIndex),
-      )
+    ? images.find((_, imageIndex) => !visibleImageIndexes.includes(imageIndex))
     : undefined;
 
   return (
@@ -163,8 +176,15 @@ export default function CBBImages({
               url={image.url}
               mediaType={type}
               isSelected={image.selected}
-              isDefault={isDatabase && image.isDefault}
+              defaultBand={
+                isDatabase ? coverDefaultBand(image, originalDefaultUrl) : null
+              }
               onClick={() => handleImageSelection(imageIndex)}
+              onSetDefault={
+                isDatabase && !isLocked && image.selected && !image.isDefault
+                  ? () => handleSetDefault(imageIndex)
+                  : undefined
+              }
             />
           );
         })}
@@ -175,7 +195,10 @@ export default function CBBImages({
             className={`relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-0 p-0 ${coverAspectClassName(type)}`}
           >
             {overflowPreviewImage ? (
-              <CoverImage url={overflowPreviewImage.url} alt={`${type} cover`} />
+              <CoverImage
+                url={overflowPreviewImage.url}
+                alt={`${type} cover`}
+              />
             ) : null}
             <span className="absolute inset-0 bg-[rgba(43,40,38,0.66)]" />
             <span className="relative flex flex-col items-center gap-0.5 text-white">
@@ -192,6 +215,7 @@ export default function CBBImages({
           <UploadTile
             mediaType={type}
             isUploading={isUploading}
+            isDisabled={isLocked}
             onClick={() => fileInputRef.current?.click()}
           />
         ) : null}
@@ -203,13 +227,14 @@ export default function CBBImages({
           mediaType={type}
           images={images}
           isUploading={isUploading}
+          originalDefaultUrl={originalDefaultUrl}
           onCancel={() => setIsDialogOpen(false)}
           onConfirm={(imageIndex) => {
             handleImageSelection(imageIndex);
             setIsDialogOpen(false);
           }}
           onUploadClick={
-            showUploadSlot
+            showUploadSlot && !isLocked
               ? () => {
                   setIsDialogOpen(false);
                   fileInputRef.current?.click();
