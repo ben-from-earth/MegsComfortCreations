@@ -97,3 +97,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: A `palette` field added to collected images was dropped on the client because `page.tsx` rebuilds images with `toFormImages`, which copies a fixed list of fields.
 - Correction: Carry `palette` through `toFormImages` and add a test for it.
 - Rule Going Forward: When adding a field to server responses, follow it through every client mapping into the form state before calling it done.
+
+### 2026-10-31 - Do not slow collector search for a progress bar
+
+- Area: Collector search progress
+- Issue: Progress was implemented by searching one title per HTTP request so the modal could update, which added a network round trip between each title.
+- Correction: Keep one server-side collect loop and stream progress events from that existing work.
+- Rule Going Forward: Do not split a sequential server job into extra client requests just to drive a progress bar. Report progress from the work that is already happening.

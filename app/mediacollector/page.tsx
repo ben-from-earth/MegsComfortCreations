@@ -10,7 +10,6 @@ import MediaCheckboxes, {
 } from '@/mediacollector/media-checkboxes';
 import MediaInputs from '@/mediacollector/media-inputs';
 import PNGFormatPicker from '@/mediacollector/png-format-picker';
-import LoadingWidget from '@/components/shared/loading-widget';
 import DatabaseSaveFailureBody from '@/mediacollector/database-save-failure-body';
 import TitleBlockContainer, {
   type ResultsFilter,
@@ -26,8 +25,17 @@ import {
   useFormState,
   useWatch,
 } from 'react-hook-form';
-import { toFormImages } from './collector-form/media-item-form-schema';
+import {
+  toFormImages,
+  type MediaItemForm,
+} from './collector-form/media-item-form-schema';
 import { buildPNGExportImages } from './png-export-images';
+import type { CollectorSearchProgress } from './collector-search-progress';
+import {
+  BuildingPngModal,
+  CollectingCoversModal,
+  SavingItemsModal,
+} from './collector-loading-modal';
 import {
   buildDatabaseSaveFailureDisplayLines,
   markSuccessfulBlocksAsInDatabase,
@@ -40,6 +48,20 @@ const actionButtonClassName =
   'flex h-12.5 cursor-pointer items-center justify-center gap-2.5 rounded-xl px-5.5 text-base font-extrabold disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#e3ddd5] disabled:text-[#5f5851]';
 const emphasizedButtonClassName = `${actionButtonClassName} border border-transparent bg-[#2a4637] text-white`;
 const quietButtonClassName = `${actionButtonClassName} border border-[#e0d9d0] bg-[#f7f4f0] text-[#6b645d]`;
+
+type CollectorLoadingState =
+  | {
+      step: 'collecting';
+      progress: CollectorSearchProgress;
+      collectionList: CollectorFormData['collectionList'];
+    }
+  | { step: 'saving'; newItemCount: number }
+  | {
+      step: 'buildingPng';
+      savedItemCount: number;
+      customerName: string;
+      orderNumber: string;
+    };
 
 interface HeaderActionProps {
   hasResults: boolean;
@@ -169,13 +191,13 @@ function MediaCollectorContent({
     : [];
 
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
-  const [loadingMessage, setLoadingMessage] = useState<string>('');
+  const [loadingState, setLoadingState] =
+    useState<CollectorLoadingState | null>(null);
   const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
   const [showInformationalDialog, setShowInformationalDialog] =
     useState<boolean>(false);
   const [informationalDialogText, setInformationalDialogText] =
     useState<string>('');
-  const [isSavingToDatabase, setIsSavingToDatabase] = useState<boolean>(false);
   const [databaseSaveFailureLines, setDatabaseSaveFailureLines] = useState<
     DatabaseSaveFailureDisplayLine[]
   >([]);
@@ -201,19 +223,23 @@ function MediaCollectorContent({
       album: false,
     });
 
-  const { mutateAsync: createPNG, isPending: isCreatingPNG } =
-    trpc.png.create.useMutation();
+  const { mutateAsync: createPNG } = trpc.png.create.useMutation();
   const utils = trpc.useUtils();
-  const { mutateAsync: collectMedia, isPending: isCollectingMedia } =
-    trpc.collect.collectMedia.useMutation({
-      onSuccess: () => {
-        const date = new Date().toLocaleDateString('en-CA', {
-          timeZone: 'America/New_York',
-        });
-        // Invalidate today's query count so QueryCounter refetches
-        void utils.database.getQueryCount.invalidate({ date });
-      },
-    });
+  const { mutateAsync: collectMediaStream } =
+    trpc.collect.collectMediaStream.useMutation();
+
+  const applyCollectedBlocks = (
+    blocks: MediaItemForm[],
+    pngExportBlockIds: string[],
+  ) => {
+    replace(
+      blocks.map((block) => ({
+        ...block,
+        images: toFormImages(block.images, block.blockInfo.spineColor),
+      })),
+    );
+    setValue('pngExportBlockIds', pngExportBlockIds);
+  };
 
   const handleCollectClick = async (): Promise<void> => {
     replace([]);
@@ -230,20 +256,34 @@ function MediaCollectorContent({
       return;
     }
 
-    setLoadingMessage(`Gathering ${count} media covers`);
+    setLoadingState({
+      step: 'collecting',
+      progress: { phase: 'collecting', searchedCount: 0, totalCount: count },
+      collectionList,
+    });
 
-    const collectResult = await collectMedia(collectionList);
-    if (!collectResult) {
-      return;
+    try {
+      const collectStream = await collectMediaStream(collectionList);
+      for await (const event of collectStream) {
+        if (event.type === 'progress') {
+          setLoadingState({
+            step: 'collecting',
+            progress: event.progress,
+            collectionList,
+          });
+          continue;
+        }
+
+        applyCollectedBlocks(event.blocks, event.pngExportBlockIds);
+        setLastSearchedTitles(JSON.stringify(collectionList));
+        const date = new Date().toLocaleDateString('en-CA', {
+          timeZone: 'America/New_York',
+        });
+        void utils.database.getQueryCount.invalidate({ date });
+      }
+    } finally {
+      setLoadingState(null);
     }
-    replace(
-      collectResult.blocks.map((block) => ({
-        ...block,
-        images: toFormImages(block.images, block.blockInfo.spineColor),
-      })),
-    );
-    setValue('pngExportBlockIds', collectResult.pngExportBlockIds);
-    setLastSearchedTitles(JSON.stringify(collectionList));
   };
 
   const handleCreatePngClick = (
@@ -271,67 +311,86 @@ function MediaCollectorContent({
     void handleSubmit(handleExportSubmit)();
   };
 
+  const saveCollectedItems = async (
+    formValues: CollectorFormData,
+  ): Promise<boolean> => {
+    const result = await onSubmit(formValues);
+    if (result.every((res) => res.success)) {
+      return true;
+    }
+
+    const updatedCollectedData = markSuccessfulBlocksAsInDatabase(
+      formValues.collectedData,
+      result,
+    );
+    replace(updatedCollectedData);
+
+    const failureLines = buildDatabaseSaveFailureDisplayLines(
+      result,
+      updatedCollectedData,
+    );
+    setDatabaseSaveFailureLines(failureLines);
+    setBlockIdsWithErrors(
+      failureLines
+        .map((line) => line.blockID)
+        .filter((blockID) => blockID.length > 0),
+    );
+    setDatabaseSaved(true);
+    return false;
+  };
+
+  const downloadPng = async (formValues: CollectorFormData): Promise<void> => {
+    const images = buildPNGExportImages(
+      formValues.collectedData,
+      formValues.pngExportBlockIds,
+    );
+    const template = formValues.pngFormat === '5' ? 5 : 3;
+
+    const { mime, filename, dataBase64 } = await createPNG({
+      template,
+      images,
+      customerName: formValues.customerName,
+      orderNumber: formValues.orderNumber,
+      repeatCount: formValues.bookClubRepeat,
+    });
+
+    const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
+      c.charCodeAt(0),
+    );
+    const blob = new Blob([byteArray], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportSubmit = async (
     formValues: CollectorFormData,
   ): Promise<void> => {
-    setLoadingMessage(`Adding items to database`);
-    setIsSavingToDatabase(true);
+    const newItemCount = formValues.collectedData.filter(
+      (block) => !block.isDatabase,
+    ).length;
+    setLoadingState({ step: 'saving', newItemCount });
 
     try {
-      const result = await onSubmit(formValues);
-
-      const someHaveDatabaseErrors = result.some((res) => !res.success);
-
-      if (someHaveDatabaseErrors) {
-        const updatedCollectedData = markSuccessfulBlocksAsInDatabase(
-          formValues.collectedData,
-          result,
-        );
-        replace(updatedCollectedData);
-
-        const failureLines = buildDatabaseSaveFailureDisplayLines(
-          result,
-          updatedCollectedData,
-        );
-        setDatabaseSaveFailureLines(failureLines);
-        setBlockIdsWithErrors(
-          failureLines
-            .map((line) => line.blockID)
-            .filter((blockID) => blockID.length > 0),
-        );
-        setDatabaseSaved(true);
+      const isSaved = await saveCollectedItems(formValues);
+      if (!isSaved) {
         return;
       }
 
-      setLoadingMessage(`Putting together PNG export`);
-      const images = buildPNGExportImages(
-        formValues.collectedData,
-        formValues.pngExportBlockIds,
-      );
-      const template = formValues.pngFormat === '5' ? 5 : 3;
-
-      const { mime, filename, dataBase64 } = await createPNG({
-        template,
-        images,
+      setLoadingState({
+        step: 'buildingPng',
+        savedItemCount: newItemCount,
         customerName: formValues.customerName,
         orderNumber: formValues.orderNumber,
-        repeatCount: formValues.bookClubRepeat,
       });
-
-      const byteArray = Uint8Array.from(atob(dataBase64), (c) =>
-        c.charCodeAt(0),
-      );
-      const blob = new Blob([byteArray], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      await downloadPng(formValues);
     } finally {
-      setIsSavingToDatabase(false);
+      setLoadingState(null);
     }
   };
 
@@ -397,9 +456,22 @@ function MediaCollectorContent({
           </div>
         </section>
       </form>
-      {(isCollectingMedia || isCreatingPNG || isSavingToDatabase) && (
-        <LoadingWidget message={loadingMessage} />
-      )}
+      {loadingState?.step === 'collecting' ? (
+        <CollectingCoversModal
+          progress={loadingState.progress}
+          collectionList={loadingState.collectionList}
+        />
+      ) : null}
+      {loadingState?.step === 'saving' ? (
+        <SavingItemsModal newItemCount={loadingState.newItemCount} />
+      ) : null}
+      {loadingState?.step === 'buildingPng' ? (
+        <BuildingPngModal
+          savedItemCount={loadingState.savedItemCount}
+          customerName={loadingState.customerName}
+          orderNumber={loadingState.orderNumber}
+        />
+      ) : null}
       {databaseSaved && (
         <Dialog title="Error" onClose={() => setDatabaseSaved(false)}>
           <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
