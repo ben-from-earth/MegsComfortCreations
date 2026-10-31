@@ -38,7 +38,7 @@ const sectionHeadingClassName =
   'm-0 text-[13px] font-extrabold tracking-[1px] text-[#6b645d] uppercase';
 const actionButtonClassName =
   'flex h-12.5 cursor-pointer items-center justify-center gap-2.5 rounded-xl px-5.5 text-base font-extrabold disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#e3ddd5] disabled:text-[#5f5851]';
-const emphasizedButtonClassName = `${actionButtonClassName} border border-transparent bg-[#3d3935] text-white`;
+const emphasizedButtonClassName = `${actionButtonClassName} border border-transparent bg-[#2a4637] text-white`;
 const quietButtonClassName = `${actionButtonClassName} border border-[#e0d9d0] bg-[#f7f4f0] text-[#6b645d]`;
 
 interface HeaderActionProps {
@@ -437,7 +437,7 @@ function MediaCollectorContent({
                     onClick={() => setResultsFilter(filter)}
                     className={`h-9.5 cursor-pointer rounded-full border-0 px-4 font-bold ${
                       isActive
-                        ? 'bg-[#3d3935] text-white'
+                        ? 'bg-[#2a4637] text-white'
                         : 'bg-transparent text-[#2b2826]'
                     }`}
                   >

@@ -73,7 +73,7 @@ export default function SpineColorRow({ index }: { index: number }) {
                 onClick={() => applySpineColor(hex)}
                 className={`h-7 w-7 cursor-pointer rounded-full p-0 ${
                   isChosen
-                    ? 'border-2 border-white shadow-[0_0_0_2px_#3d3935]'
+                    ? 'border-2 border-white shadow-[0_0_0_2px_#2a4637]'
                     : 'border border-[rgba(0,0,0,0.15)]'
                 }`}
                 style={{ backgroundColor: hex }}

@@ -28,9 +28,9 @@ export default function PNGFormatPicker() {
                   return (
                     <label
                       key={option.value}
-                      className={`relative flex h-11 cursor-pointer items-center justify-center rounded-[10px] border-[1.5px] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-[#3d3935] ${
+                      className={`relative flex h-11 cursor-pointer items-center justify-center rounded-[10px] border-[1.5px] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-[#2a4637] ${
                         isChecked
-                          ? 'border-[#3d3935] bg-[#3d3935] text-white'
+                          ? 'border-[#2a4637] bg-[#2a4637] text-white'
                           : 'border-[#ddd5cb] bg-white text-[#2b2826]'
                       }`}
                     >

@@ -7,7 +7,7 @@ import { CoverTile, UploadTile } from './cover-tile';
 const secondaryButtonClassName =
   'inline-flex h-11 cursor-pointer items-center rounded-[10px] border border-[#ddd5cb] bg-white px-4.5 font-extrabold text-[#2b2826]';
 const primaryButtonClassName =
-  'inline-flex h-11 cursor-pointer items-center rounded-[10px] border-0 bg-[#3d3935] px-5 font-extrabold text-white';
+  'inline-flex h-11 cursor-pointer items-center rounded-[10px] border-0 bg-[#2a4637] px-5 font-extrabold text-white';
 
 export default function CoversDialog({
   title,

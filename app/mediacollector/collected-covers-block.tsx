@@ -95,7 +95,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       <div className="flex items-center gap-4.5 px-4.5 py-3.5">
         {selectedImage ? (
           <div
-            className={`relative shrink-0 overflow-hidden rounded-md shadow-[0_0_0_3px_#ffffff,0_0_0_5px_#3d3935] ${mainCoverSizeClassName}`}
+            className={`relative shrink-0 overflow-hidden rounded-md shadow-[0_0_0_3px_#ffffff,0_0_0_5px_#2a4637] ${mainCoverSizeClassName}`}
           >
             <CoverImage url={selectedImage.url} alt={`${title} cover`} />
             {type !== 'album' ? (

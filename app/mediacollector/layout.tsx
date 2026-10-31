@@ -16,8 +16,12 @@ export default async function MediaCollectorLayout({
   await requireAdminPageAccess();
   return (
     <div
-      className={`${nunito.className} ${justAnotherHand.variable} min-h-screen bg-[#e5ebe0] text-[15px] text-[#2b2826]`}
+      className={`${nunito.className} ${justAnotherHand.variable} relative isolate min-h-screen bg-[#e5ebe0] text-[15px] text-[#2b2826]`}
     >
+      <div
+        aria-hidden
+        className="fixed inset-0 -z-10 bg-[url('/collector-background.png')] bg-cover bg-center"
+      />
       {children}
     </div>
   );

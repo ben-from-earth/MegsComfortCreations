@@ -54,7 +54,7 @@ export function CoverTile({
       onClick={onClick}
       className={`relative w-full cursor-pointer overflow-hidden rounded-md p-0 ${coverAspectClassName(mediaType)} ${
         isSelected
-          ? 'border-0 shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2b2826]'
+          ? 'border-0 shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]'
           : 'border border-black/10'
       }`}
     >

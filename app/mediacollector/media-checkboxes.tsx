@@ -30,7 +30,7 @@ export default function MediaCheckboxes({
             onClick={() => onToggle(mediaType)}
             className={`h-9 cursor-pointer rounded-full border-2 px-3.5 text-[13px] font-extrabold ${
               isVisible
-                ? 'border-[#3d3935] bg-[#efebe5] text-[#2b2826]'
+                ? 'border-[#2a4637] bg-[#efebe5] text-[#2b2826]'
                 : 'border-[#e0d9d0] bg-white text-[#6b645d]'
             }`}
           >
