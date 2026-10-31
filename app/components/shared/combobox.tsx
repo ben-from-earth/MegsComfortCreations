@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { cloneElement } from 'react';
+import type { ReactElement } from 'react';
 
 import Popover from '@mui/material/Popover';
 import PopupState, { bindPopover, bindTrigger } from 'material-ui-popup-state';
@@ -19,25 +20,29 @@ export function Combobox({
   label,
   items,
   onSelect,
+  trigger,
 }: {
   label: string;
   items: { value: string }[];
   onSelect: (value: string) => void;
+  trigger?: ReactElement<Record<string, unknown>>;
 }) {
-  const [search, setSearch] = useState('');
-
   return (
-    <PopupState variant="popover" popupId="demo-popup-popover">
+    <PopupState variant="popover" popupId={`${label}-combobox`}>
       {(popupState) => (
         <div>
-          <Button
-            {...bindTrigger(popupState)}
-            width={200}
-            fontSize={24}
-            label={`Select ${label}...`}
-            className="justify-between"
-            variant="popover"
-          />
+          {trigger ? (
+            cloneElement(trigger, bindTrigger(popupState))
+          ) : (
+            <Button
+              {...bindTrigger(popupState)}
+              width={200}
+              fontSize={24}
+              label={`Select ${label}...`}
+              className="justify-between"
+              variant="popover"
+            />
+          )}
           <Popover
             {...bindPopover(popupState)}
             anchorOrigin={{
@@ -53,24 +58,19 @@ export function Combobox({
               <CommandInput
                 placeholder={`Search ${label.toLowerCase()}...`}
                 className="h-9"
-                onValueChange={setSearch}
               />
               <CommandList>
                 <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
                 <CommandGroup>
-                  {items
-                    .filter((item) =>
-                      item.value.toLowerCase().includes(search.toLowerCase()),
-                    )
-                    .map((item) => (
-                      <CommandItem
-                        key={item.value}
-                        value={item.value}
-                        onSelect={onSelect}
-                      >
-                        {item.value}
-                      </CommandItem>
-                    ))}
+                  {items.map((item) => (
+                    <CommandItem
+                      key={item.value}
+                      value={item.value}
+                      onSelect={onSelect}
+                    >
+                      {item.value}
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </CommandList>
             </Command>

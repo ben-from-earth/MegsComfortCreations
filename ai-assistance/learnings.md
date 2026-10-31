@@ -83,3 +83,24 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: A proposal treated “PNG should follow the customer list” as a reason to also stop grouping database items at the bottom of the collector grid.
 - Correction: Collector UX stays database-last. Only the PNG is rebuilt in pasted-list order. Those are two lists.
 - Rule Going Forward: Do not change collector display order when fixing PNG order. Keep `collectedData` as the UX list. Drive PNG order from a separate encounter-order `blockID` list.
+
+### 2026-10-30 - User handles browser testing
+
+- Area: Validation workflow
+- Issue: The agent opened the app in the browser to verify UI changes; the user does that review themselves.
+- Correction: Stop at lint, typecheck, and tests, then hand the browser check to the user.
+- Rule Going Forward: Do not run browser testing unless the user asks. Validate with lint, typecheck, and unit tests, and list what the user should check by hand.
+
+### 2026-10-30 - Trace new fields through to form state
+
+- Area: Collector data flow
+- Issue: A `palette` field added to collected images was dropped on the client because `page.tsx` rebuilds images with `toFormImages`, which copies a fixed list of fields.
+- Correction: Carry `palette` through `toFormImages` and add a test for it.
+- Rule Going Forward: When adding a field to server responses, follow it through every client mapping into the form state before calling it done.
+
+### 2026-10-31 - Do not slow collector search for a progress bar
+
+- Area: Collector search progress
+- Issue: Progress was implemented by searching one title per HTTP request so the modal could update, which added a network round trip between each title.
+- Correction: Keep one server-side collect loop and stream progress events from that existing work.
+- Rule Going Forward: Do not split a sequential server job into extra client requests just to drive a progress bar. Report progress from the work that is already happening.

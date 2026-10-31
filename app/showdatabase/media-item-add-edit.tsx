@@ -1,4 +1,4 @@
-import { ChangeEvent, useContext, useRef, useState } from 'react';
+import { ChangeEvent, use, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import CloseIcon from '@mui/icons-material/Close';
 import GenreContext from 'lib/context/genre-context';
@@ -92,6 +92,7 @@ function MediaItemAddEditFields({
   blockID,
   submitError,
   isAdd,
+  originalDefaultUrl,
   coverSearchBanner,
   isSearchingCovers,
   onSearchCovers,
@@ -100,11 +101,12 @@ function MediaItemAddEditFields({
   blockID: string;
   submitError: string | null;
   isAdd: boolean;
+  originalDefaultUrl: string | undefined;
   coverSearchBanner: string | null;
   isSearchingCovers: boolean;
   onSearchCovers: () => void;
 }) {
-  const allGenres = useContext(GenreContext);
+  const allGenres = use(GenreContext);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { control, getValues, setValue, watch } =
@@ -120,19 +122,10 @@ function MediaItemAddEditFields({
     return selectedIndex >= 0 ? selectedIndex : 0;
   });
 
-  const defaultImageIndex = Math.max(
-    images.findIndex((image) => image.isDefault),
-    0,
-  );
   const safeFocusedImageIndex = Math.min(
     focusedImageIndex,
     Math.max(images.length - 1, 0),
   );
-  const pendingDefaultImageIndex =
-    images[safeFocusedImageIndex] != null &&
-    safeFocusedImageIndex !== defaultImageIndex
-      ? safeFocusedImageIndex
-      : null;
 
   const handleImageSelection = (imageIndex: number) => {
     const currentImages = getValues('images');
@@ -155,20 +148,17 @@ function MediaItemAddEditFields({
     setValue('blockInfo.spineColor', selectedImage.spineColor);
   };
 
-  const handleSetAsDefault = () => {
-    if (pendingDefaultImageIndex == null) {
-      return;
-    }
+  const handleSetAsDefault = (imageIndex: number) => {
     const currentImages = getValues('images');
-    const nextDefault = currentImages[pendingDefaultImageIndex];
+    const nextDefault = currentImages[imageIndex];
     setValue(
       'images',
       currentImages.map((image, index) => ({
         ...image,
-        isDefault: index === pendingDefaultImageIndex,
+        isDefault: index === imageIndex,
         selected: isAdd
-          ? index === pendingDefaultImageIndex || image.selected
-          : index === pendingDefaultImageIndex,
+          ? index === imageIndex || image.selected
+          : index === imageIndex,
       })),
     );
     if (nextDefault) {
@@ -334,6 +324,8 @@ function MediaItemAddEditFields({
                 defaultTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
                 showSelectionOverlay
                 onImageClick={handleImageSelection}
+                originalDefaultUrl={originalDefaultUrl}
+                onSetDefault={handleSetAsDefault}
                 showUploadButton={type === 'book'}
                 isUploading={isUploading}
                 onUploadButtonClick={() => fileInputRef.current?.click()}
@@ -381,15 +373,6 @@ function MediaItemAddEditFields({
         </p>
       ) : null}
       <div className="flex w-full justify-end gap-2">
-        {pendingDefaultImageIndex != null ? (
-          <Button
-            variant="primary"
-            label="Set as Default"
-            onClick={handleSetAsDefault}
-            width={165}
-            fontSize={25}
-          />
-        ) : null}
         {!isAdd && images.length > 1 ? (
           <Button
             variant="primary"
@@ -471,6 +454,9 @@ export default function MediaItemAddEdit({
             blockID={blockID}
             submitError={submitError}
             isAdd={isAdd}
+            originalDefaultUrl={
+              item?.images.find((image) => image.isDefault)?.url
+            }
             coverSearchBanner={coverSearchBanner}
             isSearchingCovers={isSearchingCovers}
             onSearchCovers={onSearchCovers}

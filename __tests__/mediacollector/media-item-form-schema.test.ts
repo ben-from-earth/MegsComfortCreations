@@ -150,6 +150,23 @@ describe('toFormImages', () => {
       },
     ]);
   });
+
+  test('keeps the cover palette from collection', () => {
+    expect(
+      toFormImages(
+        [
+          {
+            url: 'https://img/cover.png',
+            isDefault: true,
+            selected: true,
+            spineColor: '#b0533a',
+            palette: ['#b0533a', '#fafafa'],
+          },
+        ],
+        '#ffffff',
+      )[0]?.palette,
+    ).toEqual(['#b0533a', '#fafafa']);
+  });
 });
 
 describe('convertMediaItemToForm', () => {

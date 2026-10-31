@@ -433,7 +433,7 @@ async function sniffIsImage(
 }
 
 // Fetch an image as Buffer, with retries and MIME sniffing.
-async function fetchImageBufferAxios(
+export async function fetchImageBufferAxios(
   url: string,
   {
     maxBytes = 8 * 1024 * 1024,

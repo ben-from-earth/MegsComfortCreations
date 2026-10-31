@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import AddToPhotosIcon from '@mui/icons-material/AddToPhotos';
-import StarsIcon from '@mui/icons-material/Stars';
 import Popover from '@mui/material/Popover';
 import { MediaType } from 'lib/constants/media-types';
+import {
+  DefaultCoverRibbon,
+  SetDefaultRibbonButton,
+  defaultCoverRibbonVariant,
+  defaultCoverTileLabel,
+} from '@/components/shared/default-cover-ribbon';
 
 export interface MediaImageStripItem {
   url: string;
@@ -23,6 +28,8 @@ export interface MediaImageStripProps {
   showSelectionOverlay?: boolean;
   selectionOverlayText?: string;
   onImageClick?: (imageIndex: number) => void;
+  originalDefaultUrl?: string;
+  onSetDefault?: (imageIndex: number) => void;
   showUploadButton?: boolean;
   isUploading?: boolean;
   onUploadButtonClick?: () => void;
@@ -47,6 +54,8 @@ export default function MediaImageStrip({
   showSelectionOverlay = false,
   selectionOverlayText = 'Selected',
   onImageClick,
+  originalDefaultUrl,
+  onSetDefault,
   showUploadButton = false,
   isUploading = false,
   onUploadButtonClick,
@@ -79,19 +88,25 @@ export default function MediaImageStrip({
   const showOverflowButton = overflowImages.length > 0;
 
   const tileImageClassName = `cursor-pointer ${imageClassName}`.trim();
+  const ribbonVariant = (image: MediaImageStripItem) =>
+    defaultCoverRibbonVariant(image, originalDefaultUrl);
+  const primaryRibbon = primaryImage ? ribbonVariant(primaryImage) : null;
+  const renderRibbon = (image: MediaImageStripItem) => {
+    const variant = ribbonVariant(image);
+    return variant ? <DefaultCoverRibbon variant={variant} /> : null;
+  };
 
   const renderImageTile = (
     image: MediaImageStripItem,
     imageIndex: number,
-    key: string,
     useGridImageClass = false,
   ) => (
     <div
       className={tileClassName}
-      key={key}
       onClick={() => onImageClick?.(imageIndex)}
       role="button"
       tabIndex={0}
+      aria-label={defaultCoverTileLabel(imageIndex + 1, ribbonVariant(image))}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
@@ -137,13 +152,21 @@ export default function MediaImageStrip({
 
   return (
     <div className={className}>
-      {primaryImage
-        ? renderImageTile(
-            primaryImage,
-            primaryImageIndex,
-            `${primaryImage.url}-${primaryImageIndex}`,
-          )
-        : null}
+      {primaryImage ? (
+        <div className="relative shrink-0">
+          {renderImageTile(primaryImage, primaryImageIndex)}
+          {primaryRibbon ? (
+            <span className="pointer-events-none absolute inset-0 z-20">
+              <DefaultCoverRibbon variant={primaryRibbon} />
+            </span>
+          ) : onSetDefault ? (
+            <SetDefaultRibbonButton
+              coverNumber={primaryImageIndex + 1}
+              onClick={() => onSetDefault(primaryImageIndex)}
+            />
+          ) : null}
+        </div>
+      ) : null}
       {secondaryImages.length > 0 ? (
         <div className="grid h-31 w-21 grid-cols-2 grid-rows-2 gap-1 overflow-visible">
           {secondaryVisibleImages.map(({ image, originalIndex }) => (
@@ -152,6 +175,10 @@ export default function MediaImageStrip({
               className="relative overflow-visible rounded-sm"
               key={`${image.url}-${originalIndex}`}
               onClick={() => onImageClick?.(originalIndex)}
+              aria-label={defaultCoverTileLabel(
+                originalIndex + 1,
+                ribbonVariant(image),
+              )}
             >
               {brokenImageUrls[image.url] ? (
                 <div className="absolute inset-0 flex items-center justify-center rounded-sm bg-red-600/65 p-1 text-center text-[10px] font-bold text-white">
@@ -174,11 +201,8 @@ export default function MediaImageStrip({
                   }
                 />
               )}
-              {image.isDefault ? (
-                <div className="pointer-events-none absolute -top-2 -left-2 z-20 rounded-full bg-yellow-400 p-0.5 text-black shadow-md">
-                  <StarsIcon sx={{ fontSize: '0.95rem' }} />
-                </div>
-              ) : null}
+              {renderRibbon(image)}
+
             </button>
           ))}
           {showOverflowButton ? (
@@ -203,14 +227,18 @@ export default function MediaImageStrip({
             <button
               type="button"
               key={`${image.url}-${originalIndex}-popover`}
-              className="relative h-24 w-16 overflow-hidden rounded-sm"
+              className="relative h-24 w-16 rounded-sm"
+              aria-label={defaultCoverTileLabel(
+                originalIndex + 1,
+                ribbonVariant(image),
+              )}
               onClick={() => {
                 onImageClick?.(originalIndex);
                 setOverflowAnchorElement(null);
               }}
             >
               <Image
-                className="object-cover"
+                className="rounded-sm object-cover"
                 src={image.url}
                 alt={`${mediaType} image`}
                 fill
@@ -218,11 +246,8 @@ export default function MediaImageStrip({
                 unoptimized
                 loader={({ src }) => src}
               />
-              {image.isDefault ? (
-                <div className="pointer-events-none absolute top-1 left-1 rounded-full bg-yellow-400 p-0.5 text-black shadow-md">
-                  <StarsIcon sx={{ fontSize: '0.95rem' }} />
-                </div>
-              ) : null}
+              {renderRibbon(image)}
+
             </button>
           ))}
         </div>
