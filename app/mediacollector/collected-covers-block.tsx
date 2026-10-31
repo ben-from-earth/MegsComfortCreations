@@ -69,6 +69,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   ): CollectedFieldEditState | undefined =>
     isLocked ? 'readOnly' : isChanged ? 'changed' : undefined;
 
+  const originalDefaultUrl = original?.images.find(
+    (image) => image.isDefault,
+  )?.url;
   const selectedImage = images.find((image) => image.selected);
   const needsCover = !isDatabase && !selectedImage;
   const typeLabel =
@@ -152,11 +155,6 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                 className="absolute inset-y-0 left-0 w-2.5"
                 style={{ backgroundColor: spineColor }}
               />
-            ) : null}
-            {isDatabase && selectedImage.isDefault ? (
-              <span className="absolute top-2 right-2 rounded-full bg-white px-2 py-0.75 text-[10px] font-extrabold tracking-[0.5px] text-[#2b2826] uppercase">
-                Default
-              </span>
             ) : null}
           </div>
         ) : (
@@ -251,9 +249,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         type={type}
         isDatabase={isDatabase}
         isLocked={isLocked}
-        originalDefaultUrl={
-          original?.images.find((image) => image.isDefault)?.url
-        }
+        originalDefaultUrl={originalDefaultUrl}
         title={title}
       />
 

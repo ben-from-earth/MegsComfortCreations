@@ -2,7 +2,8 @@ import { useEffect, useId, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import { MediaType } from 'lib/constants/media-types';
 import type { MediaItemForm } from './collector-form/collector-form-schema';
-import { CoverTile, UploadTile, coverDefaultBand } from './cover-tile';
+import { CoverTile, UploadTile } from './cover-tile';
+import { defaultCoverRibbonVariant } from '@/components/shared/default-cover-ribbon';
 
 const secondaryButtonClassName =
   'inline-flex h-11 cursor-pointer items-center rounded-[10px] border border-[#ddd5cb] bg-white px-4.5 font-extrabold text-[#2b2826]';
@@ -89,9 +90,12 @@ export default function CoversDialog({
               key={`${image.url}-${imageIndex}`}
               url={image.url}
               mediaType={mediaType}
+              coverNumber={imageIndex + 1}
               isSelected={imageIndex === pickedIndex}
-              defaultBand={
-                isDatabase ? coverDefaultBand(image, originalDefaultUrl) : null
+              defaultRibbon={
+                isDatabase
+                  ? defaultCoverRibbonVariant(image, originalDefaultUrl)
+                  : null
               }
               onClick={() => setPickedIndex(imageIndex)}
             />

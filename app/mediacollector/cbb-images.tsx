@@ -8,8 +8,8 @@ import {
   CoverTile,
   UploadTile,
   coverAspectClassName,
-  coverDefaultBand,
 } from './cover-tile';
+import { defaultCoverRibbonVariant } from '@/components/shared/default-cover-ribbon';
 import CoversDialog from './covers-dialog';
 
 const MAX_TILES_WITHOUT_OVERFLOW = 4;
@@ -175,9 +175,12 @@ export default function CBBImages({
               key={`${image.url}-${imageIndex}`}
               url={image.url}
               mediaType={type}
+              coverNumber={imageIndex + 1}
               isSelected={image.selected}
-              defaultBand={
-                isDatabase ? coverDefaultBand(image, originalDefaultUrl) : null
+              defaultRibbon={
+                isDatabase
+                  ? defaultCoverRibbonVariant(image, originalDefaultUrl)
+                  : null
               }
               onClick={() => handleImageSelection(imageIndex)}
               onSetDefault={
