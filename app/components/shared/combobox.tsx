@@ -1,6 +1,6 @@
 'use client';
 
-import { cloneElement, useState } from 'react';
+import { cloneElement } from 'react';
 import type { ReactElement } from 'react';
 
 import Popover from '@mui/material/Popover';
@@ -27,10 +27,8 @@ export function Combobox({
   onSelect: (value: string) => void;
   trigger?: ReactElement<Record<string, unknown>>;
 }) {
-  const [search, setSearch] = useState('');
-
   return (
-    <PopupState variant="popover" popupId="demo-popup-popover">
+    <PopupState variant="popover" popupId={`${label}-combobox`}>
       {(popupState) => (
         <div>
           {trigger ? (
@@ -60,24 +58,19 @@ export function Combobox({
               <CommandInput
                 placeholder={`Search ${label.toLowerCase()}...`}
                 className="h-9"
-                onValueChange={setSearch}
               />
               <CommandList>
                 <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
                 <CommandGroup>
-                  {items
-                    .filter((item) =>
-                      item.value.toLowerCase().includes(search.toLowerCase()),
-                    )
-                    .map((item) => (
-                      <CommandItem
-                        key={item.value}
-                        value={item.value}
-                        onSelect={onSelect}
-                      >
-                        {item.value}
-                      </CommandItem>
-                    ))}
+                  {items.map((item) => (
+                    <CommandItem
+                      key={item.value}
+                      value={item.value}
+                      onSelect={onSelect}
+                    >
+                      {item.value}
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </CommandList>
             </Command>

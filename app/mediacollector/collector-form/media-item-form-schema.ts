@@ -59,7 +59,7 @@ export function toFormImages(
     selected: image.selected ?? false,
     isDefault: hasDefault ? image.isDefault : index === 0,
     spineColor: image.spineColor,
-    ...('palette' in image ? { palette: image.palette } : {}),
+    palette: image.palette,
   }));
 
   if (mapped.some((image) => image.selected)) {

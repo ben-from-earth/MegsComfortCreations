@@ -78,12 +78,14 @@ export function useCollectorForm() {
         (genre) => !block.blockInfo.genres.includes(genre),
       );
       try {
-        if (genresToLink.length > 0) {
-          await linkGenres({ bookID: block.blockID, genres: genresToLink });
-        }
-        if (genresToUnlink.length > 0) {
-          await unlinkGenres({ bookID: block.blockID, genres: genresToUnlink });
-        }
+        await Promise.all([
+          genresToLink.length > 0
+            ? linkGenres({ bookID: block.blockID, genres: genresToLink })
+            : null,
+          genresToUnlink.length > 0
+            ? unlinkGenres({ bookID: block.blockID, genres: genresToUnlink })
+            : null,
+        ]);
       } catch (error) {
         return failure(
           'Genre Update Error',

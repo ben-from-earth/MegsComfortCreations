@@ -1,4 +1,4 @@
-import { ChangeEvent, useContext, useRef, useState } from 'react';
+import { ChangeEvent, use, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import CloseIcon from '@mui/icons-material/Close';
 import GenreContext from 'lib/context/genre-context';
@@ -106,7 +106,7 @@ function MediaItemAddEditFields({
   isSearchingCovers: boolean;
   onSearchCovers: () => void;
 }) {
-  const allGenres = useContext(GenreContext);
+  const allGenres = use(GenreContext);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { control, getValues, setValue, watch } =

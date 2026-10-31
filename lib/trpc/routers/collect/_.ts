@@ -100,24 +100,24 @@ async function collectSearchItem(
   const mediaSearchData = await searchByTitle(db, type, title, author);
 
   if (mediaSearchData.total > 0) {
-    for (const foundMedia of mediaSearchData.foundMediaList) {
-      if (type === 'book' && !('author' in foundMedia)) {
-        continue;
-      }
+    const foundBlocks = await Promise.all(
+      mediaSearchData.foundMediaList.map(async (foundMedia) => {
+        if (type === 'book' && !('author' in foundMedia)) {
+          return null;
+        }
 
-      const databaseGenres =
-        type === 'book'
-          ? (
-              await db
-                .select({ genre: genres.genre })
-                .from(genres)
-                .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
-                .where(eq(genresBooks.bookId, foundMedia.id))
-            ).map((row) => row.genre)
-          : [];
+        const databaseGenres =
+          type === 'book'
+            ? (
+                await db
+                  .select({ genre: genres.genre })
+                  .from(genres)
+                  .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
+                  .where(eq(genresBooks.bookId, foundMedia.id))
+              ).map((row) => row.genre)
+            : [];
 
-      blocks.push(
-        convertMediaItemToForm({
+        return convertMediaItemToForm({
           item: {
             id: foundMedia.id,
             title: foundMedia.title,
@@ -133,14 +133,18 @@ async function collectSearchItem(
           },
           type,
           genres: databaseGenres,
-        }),
-      );
-    }
+        });
+      }),
+    );
+    blocks.push(...foundBlocks.filter((block) => block != null));
   } else {
-    const images = await getMediaCovers(title, author, type);
+    const imagesPromise = getMediaCovers(title, author, type);
     googleApiQueryIncrement += 1;
     if (type === 'book') {
-      const bookInfo = await getOpenLibraryData(title, author);
+      const [images, bookInfo] = await Promise.all([
+        imagesPromise,
+        getOpenLibraryData(title, author),
+      ]);
       blocks.push({
         type,
         images: images.map((url, index) => ({
@@ -154,6 +158,7 @@ async function collectSearchItem(
         isDatabase: false,
       });
     } else {
+      const images = await imagesPromise;
       blocks.push({
         type,
         images: images.map((url, index) => ({

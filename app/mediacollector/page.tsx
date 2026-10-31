@@ -223,11 +223,9 @@ function MediaCollectorContent({
   const [blockIdsWithErrors, setBlockIdsWithErrors] = useState<string[]>([]);
   const [loadingState, setLoadingState] =
     useState<CollectorLoadingState | null>(null);
-  const [databaseSaved, setDatabaseSaved] = useState<boolean>(false);
-  const [showInformationalDialog, setShowInformationalDialog] =
-    useState<boolean>(false);
-  const [informationalDialogText, setInformationalDialogText] =
-    useState<string>('');
+  const [informationalDialogText, setInformationalDialogText] = useState<
+    string | null
+  >(null);
   const [databaseSaveFailureLines, setDatabaseSaveFailureLines] = useState<
     DatabaseSaveFailureDisplayLine[]
   >([]);
@@ -365,7 +363,6 @@ function MediaCollectorContent({
         `There are ${numWithoutImages} blocks without selected images that will not be saved to the database. Please select at least one image per block or delete the block.`,
       );
       setBlockIdsWithErrors(itemsWithoutImages.map((block) => block.blockID));
-      setShowInformationalDialog(true);
       return;
     }
 
@@ -431,7 +428,6 @@ function MediaCollectorContent({
         .map((line) => line.blockID)
         .filter((blockID) => blockID.length > 0),
     );
-    setDatabaseSaved(true);
     return false;
   };
 
@@ -569,21 +565,24 @@ function MediaCollectorContent({
             orderNumber={loadingState.orderNumber}
           />
         ) : null}
-        {databaseSaved && (
-          <Dialog title="Error" onClose={() => setDatabaseSaved(false)}>
-            <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
-          </Dialog>
-        )}
-        {showInformationalDialog && (
+        {databaseSaveFailureLines.length > 0 ? (
           <Dialog
             title="Error"
-            onClose={() => setShowInformationalDialog(false)}
+            onClose={() => setDatabaseSaveFailureLines([])}
+          >
+            <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
+          </Dialog>
+        ) : null}
+        {informationalDialogText ? (
+          <Dialog
+            title="Error"
+            onClose={() => setInformationalDialogText(null)}
             className="w-5/12"
           >
             <p>{informationalDialogText}</p>
           </Dialog>
-        )}
-        {fields.length > 0 && (
+        ) : null}
+        {fields.length > 0 ? (
           <section className="flex flex-col gap-4.5">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex flex-col gap-1">
@@ -642,7 +641,7 @@ function MediaCollectorContent({
               />
             )}
           </section>
-        )}
+        ) : null}
       </main>
     </DatabaseEditContext>
   );

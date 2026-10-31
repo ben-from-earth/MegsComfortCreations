@@ -82,6 +82,30 @@ describe('toUserFriendlyDatabaseSaveReason', () => {
       }),
       'This item could not be saved to the database. Try again, or remove the block and re-collect it.',
     ],
+    [
+      saveFailure({
+        error: 'Media Not Found',
+        message: 'The database item could not be found.',
+        errors: ['Book was not found'],
+      }),
+      'This database item could not be found, so the edit was not saved.',
+    ],
+    [
+      saveFailure({
+        error: 'Database Edit Error',
+        message: 'An error occurred while trying to save the edit',
+        errors: ['Unknown error'],
+      }),
+      'The changes to this database item could not be saved.',
+    ],
+    [
+      saveFailure({
+        error: 'Genre Update Error',
+        message: 'The genres for this item could not be updated',
+        errors: ['Unknown error'],
+      }),
+      'The changes were saved, but the genres could not be updated.',
+    ],
   ] as const)('maps $error', (failure, message) => {
     expect(toUserFriendlyDatabaseSaveReason(failure)).toBe(message);
   });

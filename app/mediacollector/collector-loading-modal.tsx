@@ -2,12 +2,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CheckIcon from '@mui/icons-material/Check';
 import { MEDIA_TYPE_DEFINITIONS } from 'lib/constants/media-types';
 import type { CollectorFormData } from './collector-form/collector-form-schema';
-import {
-  COLLECT_PHASE_MAX_PERCENT,
-  COLOR_PHASE_PERCENT,
-  collectorSearchProgressPercent,
-  type CollectorSearchProgress,
-} from './collector-search-progress';
+import { type CollectorSearchProgress } from './collector-search-progress';
 
 const stepCircleClassName =
   'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold';
@@ -56,13 +51,15 @@ export function CollectingCoversModal({
   progress: CollectorSearchProgress;
   collectionList: CollectorFormData['collectionList'];
 }) {
-  const percent = collectorSearchProgressPercent(progress);
   const collectFillPercent =
-    (Math.min(percent, COLLECT_PHASE_MAX_PERCENT) / COLLECT_PHASE_MAX_PERCENT) *
-    100;
+    progress.phase === 'pickingColors'
+      ? 100
+      : progress.totalCount <= 0
+        ? 0
+        : (100 * Math.min(progress.searchedCount, progress.totalCount)) /
+          progress.totalCount;
   const colorFillPercent =
-    (Math.max(percent - COLLECT_PHASE_MAX_PERCENT, 0) / COLOR_PHASE_PERCENT) *
-    100;
+    progress.phase === 'pickingColors' && progress.isComplete ? 100 : 0;
   const isPickingColors = progress.phase === 'pickingColors';
   const mediaCountLabels = MEDIA_TYPE_DEFINITIONS.flatMap(
     ({ mediaType, label, plural }) => {
