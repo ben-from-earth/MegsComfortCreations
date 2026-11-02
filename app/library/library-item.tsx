@@ -1,5 +1,5 @@
 'use client';
-import { memo, use, useEffect, useRef, useState } from 'react';
+import { memo, use, useEffect, useRef, useState, useTransition } from 'react';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import LockIcon from '@mui/icons-material/LockOutlined';
 import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
@@ -9,7 +9,6 @@ import { useLibraryPageContext } from 'lib/context/library-page-context';
 import LibraryPendingSavesContext from 'lib/context/library-pending-saves-context';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { MEDIA_TYPE_DEFINITIONS, MEDIA_TYPES } from 'lib/constants/media-types';
-import AreYouSure from '@/components/shared/are-you-sure';
 import { Form } from '@/components/ui/form';
 import {
   convertMediaItemToForm,
@@ -23,6 +22,7 @@ import {
   diffDatabaseItem,
   restoreDatabaseItem,
 } from '@/mediacollector/database-item-changes';
+import DeleteConfirmDialog from './delete-confirm-dialog';
 import { LibraryGenreRow } from './library-genres';
 import LibraryItemCovers from './library-item-covers';
 import LibraryItemTextField from './library-item-text-field';
@@ -38,6 +38,8 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
   const [isLocked, setIsLocked] = useState(true);
   const [baseline, setBaseline] = useState(item);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, startDeleting] = useTransition();
   const { form, formId, onSubmit, submitError } = useLibraryItemForm({
     item,
     onClose: () => setIsLocked(true),
@@ -81,15 +83,18 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
     type;
   const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
 
-  const handleDelete = async () => {
-    try {
-      await databaseDelete({ id: item.blockID, type });
-      await refreshLibrary();
-    } catch {
-      console.log('There was an error deleting, try again.');
-    }
-    setIsConfirmingDelete(false);
-  };
+  const handleDelete = () =>
+    startDeleting(async () => {
+      setDeleteError(null);
+      try {
+        await databaseDelete({ id: item.blockID, type });
+        await refreshLibrary();
+      } catch {
+        setDeleteError('Couldn’t delete. Try again.');
+        return;
+      }
+      setIsConfirmingDelete(false);
+    });
 
   return (
     <Form {...form}>
@@ -133,7 +138,11 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-4.5 px-4.5 py-3.5">
+          <div
+            className={`flex gap-4.5 px-4.5 py-3.5 ${
+              type === 'book' ? 'items-center' : 'items-start'
+            }`}
+          >
             {selectedImage ? (
               <div className="flex shrink-0 overflow-hidden rounded-r-md">
                 {type !== 'album' ? (
@@ -258,7 +267,10 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             </div>
             <button
               type="button"
-              onClick={() => setIsConfirmingDelete(true)}
+              onClick={() => {
+                setDeleteError(null);
+                setIsConfirmingDelete(true);
+              }}
               className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2.5 text-[13px] font-bold text-[#9a3b26] hover:bg-[#f7f4f0]"
             >
               <DeleteIcon fontSize="small" />
@@ -268,10 +280,12 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
         </article>
       </form>
       {isConfirmingDelete ? (
-        <AreYouSure
-          setAreYouSure={setIsConfirmingDelete}
-          onDelete={handleDelete}
-          title={blockInfo.title}
+        <DeleteConfirmDialog
+          item={baseline}
+          isDeleting={isDeleting}
+          error={deleteError}
+          onCancel={() => setIsConfirmingDelete(false)}
+          onConfirm={handleDelete}
         />
       ) : null}
     </Form>
