@@ -118,3 +118,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: The brush was picked in `useEffect` on `pathname`, so the newly active tab painted one frame with the previous brush, and lazy, optimizer-served PNGs popped in late.
 - Correction: Pick in `useLayoutEffect`, serve the brushes `unoptimized` with eager loading, and `preload` all of them.
 - Rule Going Forward: When client-only state must change in step with a route change, update it in `useLayoutEffect` (not `useEffect`) and preload any images it swaps between.
+
+### 2026-11-02 - Key nav visuals on the active tab, not the URL
+
+- Area: Nav paint-smear brush
+- Issue: The brush re-picked on every `pathname` change, so moving between shop pages repainted the Shop tab even though it stayed active.
+- Correction: Derive the active tab (`'shop'` for any shop page, otherwise the matching link href) and key the pick on that.
+- Rule Going Forward: Nav state tied to "the current tab" depends on the active tab, not the raw pathname; several routes can share one tab.

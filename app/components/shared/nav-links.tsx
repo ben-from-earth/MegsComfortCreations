@@ -6,6 +6,7 @@ import { Nunito } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync, preload } from 'react-dom';
+import { SHOP_DIVISIONS } from '@/shop/shop-divisions';
 
 const nunito = Nunito({ weight: '800', subsets: ['latin'] });
 
@@ -20,13 +21,10 @@ const BRUSHES = [
   { src: '/brushes/brush-7.png', ink: '#2b2826', tilt: 1 },
 ] satisfies readonly Brush[];
 
-const SHOP_LINKS = [
-  { href: '/shop/custom-ornaments', label: 'Custom Ornaments' },
-  { href: '/shop/stickers', label: 'Stickers' },
-  { href: '/shop/bookmarks', label: 'Bookmarks' },
-  { href: '/shop/miniatures', label: 'Miniatures' },
-  { href: '/shop/3d-printing', label: '3D Printing' },
-] as const;
+const SHOP_LINKS = SHOP_DIVISIONS.map(({ slug, label }) => ({
+  href: `/shop/${slug}`,
+  label,
+}));
 
 const PUBLIC_LINKS = [
   { href: '/blog', label: 'Blog' },
@@ -82,13 +80,22 @@ export default function NavLinks({ isAdmin }: { isAdmin: boolean }) {
 
   for (const { src } of BRUSHES) preload(src, { as: 'image' });
 
+  const isShopCurrent = SHOP_LINKS.some((link) =>
+    isCurrentRoute(pathname, link.href),
+  );
+  const activeTab = isShopCurrent
+    ? 'shop'
+    : ([...PUBLIC_LINKS, ...ADMIN_LINKS].find((link) =>
+        isCurrentRoute(pathname, link.href),
+      )?.href ?? null);
+
   useLayoutEffect(() => {
     setBrushIndex((previous) => {
       if (previous === null) return Math.floor(Math.random() * BRUSHES.length);
       const next = Math.floor(Math.random() * (BRUSHES.length - 1));
       return next >= previous ? next + 1 : next;
     });
-  }, [pathname]);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!isShopOpen) return;
@@ -106,9 +113,6 @@ export default function NavLinks({ isAdmin }: { isAdmin: boolean }) {
   }, [isShopOpen]);
 
   const brush = brushIndex === null ? null : BRUSHES[brushIndex];
-  const isShopCurrent = SHOP_LINKS.some((link) =>
-    isCurrentRoute(pathname, link.href),
-  );
 
   const getShopItems = () =>
     Array.from(
