@@ -39,7 +39,7 @@ export default function LibraryPage() {
   });
 
   const [type, setType] = useState<MediaType>('book');
-  const [limit, setLimit] = useState<3 | 5 | 10>(5);
+  const [limit, setLimit] = useState<12 | 24 | 48>(12);
   const [sortBy, setSortBy] = useState<DatabaseSortOption>('title');
   const [page, setPage] = useState<number>(1);
   const [titleSearch, setTitleSearch] = useState('');

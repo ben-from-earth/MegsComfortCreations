@@ -9,8 +9,8 @@ export interface LibraryPageContextValue {
   libraryList: LibraryList;
   type: MediaType;
   setType: Dispatch<SetStateAction<MediaType>>;
-  limit: number;
-  setLimit: Dispatch<SetStateAction<3 | 5 | 10>>;
+  limit: 12 | 24 | 48;
+  setLimit: Dispatch<SetStateAction<12 | 24 | 48>>;
   sortBy: DatabaseSortOption;
   setSortBy: Dispatch<SetStateAction<DatabaseSortOption>>;
   genre: LibraryGenreFilter;

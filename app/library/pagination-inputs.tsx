@@ -47,7 +47,7 @@ export default function PaginationInputs() {
   };
   const handleLimitChange = (e: SelectChangeEvent) => {
     setPage(1);
-    setLimit(Number(e.target.value) as 3 | 5 | 10);
+    setLimit(Number(e.target.value) as 12 | 24 | 48);
   };
   const handleSortByChange = (e: SelectChangeEvent) => {
     setPage(1);
@@ -95,9 +95,9 @@ export default function PaginationInputs() {
           label="Per Page"
           onChange={handleLimitChange}
         >
-          <MenuItem value={3}>3</MenuItem>
-          <MenuItem value={5}>5</MenuItem>
-          <MenuItem value={10}>10</MenuItem>
+          <MenuItem value={12}>12</MenuItem>
+          <MenuItem value={24}>24</MenuItem>
+          <MenuItem value={48}>48</MenuItem>
         </Select>
       </FormControl>
       <FormControl

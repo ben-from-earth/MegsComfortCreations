@@ -167,7 +167,7 @@ export const databaseRouter = router({
       z.object({
         type: mediaType,
         title: z.string().optional(),
-        limit: z.number().int().positive(),
+        limit: z.union([z.literal(12), z.literal(24), z.literal(48)]),
         page: z.number().int().positive(),
         sort: sortKey,
         ascDesc: z.enum(['asc', 'desc']),
