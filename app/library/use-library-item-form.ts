@@ -14,6 +14,7 @@ import {
   GENRE_UPDATE_FAILED_MESSAGE,
   toLibrarySaveDisplayError,
 } from './library-save-error';
+import { toggleKeptCover } from './cover-edit-rules';
 
 const COVER_SEARCH_DUPLICATE_MESSAGE =
   'A book with this title and author already exists.';
@@ -22,9 +23,11 @@ const COVER_SEARCH_FAILED_MESSAGE = 'Cover search failed. Please try again.';
 export function useLibraryItemForm({
   item,
   onClose,
+  onEditSuccess,
 }: {
   item?: MediaItemForm;
   onClose: () => void;
+  onEditSuccess?: (saved: MediaItemForm) => void;
 }) {
   const formId = useId();
   const isAdd = item == null;
@@ -45,6 +48,7 @@ export function useLibraryItemForm({
 
   const itemRef = useRef(item);
   itemRef.current = item;
+  const searchCoverUrlsRef = useRef(new Set<string>());
   const initialGenresRef = useRef([...defaultValues.blockInfo.genres]);
   const itemBlockID = item?.blockID;
 
@@ -56,6 +60,7 @@ export function useLibraryItemForm({
     if (nextItem == null) {
       return;
     }
+    searchCoverUrlsRef.current = new Set();
     form.reset(nextItem);
     initialGenresRef.current = [...nextItem.blockInfo.genres];
   }, [form, itemBlockID]);
@@ -152,6 +157,10 @@ export function useLibraryItemForm({
     }
 
     await refreshLibrary();
+    if (onEditSuccess) {
+      onEditSuccess(data);
+      return;
+    }
     onClose();
   };
 
@@ -182,17 +191,38 @@ export function useLibraryItemForm({
       }
 
       const currentImages = form.getValues('images');
-      const appendedImages = newBlock.images.map((image, index) => ({
-        ...image,
-        isDefault: currentImages.length === 0 && index === 0,
-      }));
-      form.setValue(
-        'images',
-        currentImages.length === 0
-          ? appendedImages
-          : [...currentImages, ...appendedImages],
-        { shouldValidate: true },
+      const keptImages = currentImages.filter(
+        (image) =>
+          image.uploaded === true ||
+          !searchCoverUrlsRef.current.has(image.url),
       );
+      const previousDefault = currentImages.find((image) => image.isDefault);
+      const nextSearchUrls = new Set(
+        newBlock.images.map((image) => image.url),
+      );
+      const defaultWasDropped =
+        previousDefault != null &&
+        previousDefault.uploaded !== true &&
+        searchCoverUrlsRef.current.has(previousDefault.url) &&
+        !nextSearchUrls.has(previousDefault.url);
+      const keptHasDefault = keptImages.some((image) => image.isDefault);
+      const searchImages = newBlock.images.map((image) => ({
+        ...image,
+        isDefault: keptHasDefault ? false : image.isDefault,
+      }));
+      let nextImages = [...keptImages, ...searchImages];
+      if (defaultWasDropped && previousDefault) {
+        const withDroppedDefault = [
+          ...nextImages,
+          { ...previousDefault, selected: true, isDefault: true },
+        ];
+        nextImages = toggleKeptCover(
+          withDroppedDefault,
+          withDroppedDefault.length - 1,
+        ).slice(0, -1);
+      }
+      form.setValue('images', nextImages, { shouldValidate: true });
+      searchCoverUrlsRef.current = nextSearchUrls;
 
       const currentBlockInfo = form.getValues('blockInfo');
       if (

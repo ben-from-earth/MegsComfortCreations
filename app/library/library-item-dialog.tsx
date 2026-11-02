@@ -275,6 +275,7 @@ function LibraryItemDialogFields({
           selected: true,
           isDefault: false,
           spineColor: currentSpineColor,
+          uploaded: true,
         },
       ];
       setValue('images', nextImages);
