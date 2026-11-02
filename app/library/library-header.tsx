@@ -9,7 +9,7 @@ import {
   BOOK_SORT_SELECT_OPTIONS,
   NON_BOOK_SORT_SELECT_OPTIONS,
 } from 'lib/constants/database-sort-options';
-import LibraryItemDialog from '@/library/library-item-dialog';
+import AddBookDialog from '@/library/add-book-dialog';
 
 const LIBRARY_PAGE_SIZES = [12, 24, 48] as const;
 
@@ -209,11 +209,7 @@ export default function LibraryHeader() {
         </form>
       </div>
 
-      {isAdding ? (
-        <div className='font-["Just_Another_Hand"] text-2xl tracking-wider'>
-          <LibraryItemDialog onClose={() => setIsAdding(false)} />
-        </div>
-      ) : null}
+      {isAdding ? <AddBookDialog onClose={() => setIsAdding(false)} /> : null}
     </section>
   );
 }

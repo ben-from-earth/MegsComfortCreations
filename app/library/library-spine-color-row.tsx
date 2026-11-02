@@ -3,24 +3,26 @@ import ColorizeIcon from '@mui/icons-material/Colorize';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
 
 export default function LibrarySpineColorRow({
+  targetFlag,
   isLocked,
   isChanged,
 }: {
+  targetFlag: 'selected' | 'isDefault';
   isLocked: boolean;
   isChanged: boolean;
 }) {
   const { control, getValues, setValue } = useFormContext<MediaItemForm>();
-  const spineColor = useWatch({ control, name: 'blockInfo.spineColor' });
   const images = useWatch({ control, name: 'images' }) ?? [];
-  const selectedImage = images.find((image) => image.selected);
-  const hasSelectedImage = selectedImage !== undefined;
-  const palette = selectedImage?.palette ?? [];
+  const targetImage = images.find((image) => image[targetFlag]);
+  const spineColor = targetImage?.spineColor;
+  const hasTargetImage = targetImage !== undefined;
+  const palette = targetImage?.palette ?? [];
 
   const applySpineColor = (hex: string) => {
     setValue(
       'images',
       getValues('images').map((image) =>
-        image.selected ? { ...image, spineColor: hex } : image,
+        image[targetFlag] ? { ...image, spineColor: hex } : image,
       ),
     );
     setValue('blockInfo.spineColor', hex);
@@ -46,15 +48,15 @@ export default function LibrarySpineColorRow({
     <div className="mx-4.5 mb-3.5 flex flex-wrap items-center gap-2.5 rounded-xl bg-[#f7f4f0] px-3 py-2.5">
       <span
         className={`h-10 w-3 rounded-[3px] ${
-          hasSelectedImage
+          hasTargetImage
             ? 'shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)]'
             : 'border-[1.5px] border-dashed border-[#b3aaa0]'
         } ${isChanged ? 'outline-2 outline-offset-2 outline-[#c9973f]' : ''}`}
-        style={hasSelectedImage ? { backgroundColor: spineColor } : undefined}
+        style={hasTargetImage ? { backgroundColor: spineColor } : undefined}
       />
       <div className="flex min-w-23 flex-col gap-px">
         <span className="text-xs font-extrabold">Spine color</span>
-        {hasSelectedImage ? (
+        {hasTargetImage ? (
           <span
             className={`text-[11px] font-bold ${
               isChanged ? 'text-[#8a5a22]' : 'text-[#6b645d]'
@@ -64,7 +66,7 @@ export default function LibrarySpineColorRow({
           </span>
         ) : null}
       </div>
-      {hasSelectedImage && palette.length > 0 ? (
+      {hasTargetImage && palette.length > 0 ? (
         <div role="radiogroup" className="flex gap-1.5">
           {palette.map((hex) => {
             const isChosen = hex === normalizedSpineColor;
@@ -90,7 +92,7 @@ export default function LibrarySpineColorRow({
       ) : null}
       <button
         type="button"
-        disabled={!hasSelectedImage || isLocked}
+        disabled={!hasTargetImage || isLocked}
         onClick={() => void handleColorPick()}
         className="ml-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[#e0d9d0] bg-white p-0 text-[#2b2826] disabled:cursor-not-allowed disabled:text-[#b3aaa0]"
       >

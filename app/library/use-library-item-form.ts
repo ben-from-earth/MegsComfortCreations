@@ -257,7 +257,6 @@ export function useLibraryItemForm({
   return {
     form,
     formId,
-    isAdd,
     onSubmit,
     submitError,
     isDuplicateBookDialogOpen,

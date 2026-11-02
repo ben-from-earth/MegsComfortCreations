@@ -1,101 +1,36 @@
 'use client';
-import { memo, use, useState } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
+import { memo, useState } from 'react';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import LockIcon from '@mui/icons-material/LockOutlined';
 import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
 import ReplayIcon from '@mui/icons-material/Replay';
-import { useFormContext } from 'react-hook-form';
 import { trpc } from 'lib/trpc/client';
-import GenreContext from 'lib/context/genre-context';
 import { useLibraryPageContext } from 'lib/context/library-page-context';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { MEDIA_TYPE_DEFINITIONS, MEDIA_TYPES } from 'lib/constants/media-types';
 import AreYouSure from '@/components/shared/are-you-sure';
-import { Combobox } from '@/components/shared/combobox';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import {
   convertMediaItemToForm,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
 import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
-import {
-  editStateClassNames,
-  type CollectedFieldEditState,
-} from '@/mediacollector/collected-item-text-field';
+import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import { CoverImage } from '@/mediacollector/cover-tile';
 import {
   countDatabaseItemChanges,
   diffDatabaseItem,
   restoreDatabaseItem,
 } from '@/mediacollector/database-item-changes';
+import LibraryGenreChips from './library-genre-chips';
 import LibraryItemCovers from './library-item-covers';
+import LibraryItemTextField from './library-item-text-field';
 import LibrarySpineColorRow from './library-spine-color-row';
 import { useLibraryItemForm } from './use-library-item-form';
 
 const pillClassName = 'rounded-full px-2.5 py-1 text-xs font-extrabold';
 const footerButtonClassName =
   'flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-[13px] font-bold disabled:cursor-not-allowed';
-
-type LibraryTextFieldName = 'title' | 'author' | 'pubYear' | 'pageCount';
-
-function LibraryItemTextField({
-  name,
-  label,
-  editState,
-}: {
-  name: LibraryTextFieldName;
-  label: string;
-  editState?: CollectedFieldEditState;
-}) {
-  const { control } = useFormContext<MediaItemForm>();
-  const isNumberField = name === 'pubYear' || name === 'pageCount';
-
-  return (
-    <FormField
-      control={control}
-      name={`blockInfo.${name}`}
-      render={({ field }) => (
-        <FormItem className="flex min-w-0 flex-col gap-1 text-xs font-bold text-[#6b645d]">
-          <FormLabel>{label}</FormLabel>
-          <FormControl>
-            <input
-              type="text"
-              inputMode={isNumberField ? 'numeric' : undefined}
-              readOnly={editState === 'readOnly'}
-              className={`h-9.5 min-w-0 rounded-lg border px-2.5 text-sm text-[#2b2826] aria-invalid:border-red-600 ${
-                editStateClassNames[editState ?? 'editable']
-              } ${name === 'title' ? 'font-bold' : 'font-normal'}`}
-              name={field.name}
-              value={field.value == null ? '' : String(field.value)}
-              onBlur={field.onBlur}
-              onChange={(event) => {
-                if (isNumberField) {
-                  const parsed = Number(event.target.value);
-                  field.onChange(
-                    event.target.value.trim() === '' || !Number.isFinite(parsed)
-                      ? null
-                      : parsed,
-                  );
-                  return;
-                }
-                field.onChange(event.target.value);
-              }}
-            />
-          </FormControl>
-          <FormMessage className="m-0 text-xs font-bold text-red-600" />
-        </FormItem>
-      )}
-    />
-  );
-}
 
 function LibraryCard({
   item,
@@ -104,7 +39,6 @@ function LibraryCard({
   item: MediaItemForm;
   isReady: boolean;
 }) {
-  const allGenres = use(GenreContext);
   const { refreshLibrary } = useLibraryPageContext();
   const [isLocked, setIsLocked] = useState(true);
   const [baseline, setBaseline] = useState(item);
@@ -121,7 +55,6 @@ function LibraryCard({
 
   const current = form.watch();
   const { type, images, blockInfo } = current;
-  const genres = blockInfo.genres ?? [];
   const changes = diffDatabaseItem(baseline, current);
   const changeCount = countDatabaseItemChanges(changes);
   const isSaving = form.formState.isSubmitting;
@@ -138,16 +71,6 @@ function LibraryCard({
     MEDIA_TYPE_DEFINITIONS.find(({ mediaType }) => mediaType === type)?.label ??
     type;
   const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
-
-  const handleGenreClick = (genreText: string, checked: boolean) => {
-    const currentGenres = form.getValues('blockInfo.genres') ?? [];
-    form.setValue(
-      'blockInfo.genres',
-      checked
-        ? [...currentGenres, genreText]
-        : currentGenres.filter((genre) => genre !== genreText),
-    );
-  };
 
   const handleDelete = async () => {
     try {
@@ -244,50 +167,10 @@ function LibraryCard({
                       editState={fieldEditState(changes.pageCount)}
                     />
                   </div>
-                  <div
-                    className={`flex flex-wrap items-center gap-1.5 rounded-lg ${
-                      changes.genres
-                        ? 'outline-[1.5px] outline-offset-[3px] outline-[#c9973f]'
-                        : ''
-                    }`}
-                  >
-                    {genres.map((genre) => (
-                      <span
-                        key={genre}
-                        className={`inline-flex h-7 items-center gap-1 rounded-full bg-[#efebe5] text-xs font-bold ${
-                          isLocked ? 'px-2.5' : 'pr-1 pl-2.5'
-                        }`}
-                      >
-                        {genre}
-                        {isLocked ? null : (
-                          <button
-                            type="button"
-                            onClick={() => handleGenreClick(genre, false)}
-                            className="flex h-5.5 w-5.5 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#6b645d]"
-                          >
-                            <CloseIcon sx={{ fontSize: 14 }} />
-                          </button>
-                        )}
-                      </span>
-                    ))}
-                    {isLocked ? null : (
-                      <Combobox
-                        label="genres"
-                        items={allGenres
-                          .filter((genre) => !genres.includes(genre))
-                          .map((genre) => ({ value: genre }))}
-                        onSelect={(genre) => handleGenreClick(genre, true)}
-                        trigger={
-                          <button
-                            type="button"
-                            className="h-7 cursor-pointer rounded-full border border-dashed border-[#b3aaa0] bg-transparent px-2.5 text-xs font-bold text-[#6b645d]"
-                          >
-                            + Genre
-                          </button>
-                        }
-                      />
-                    )}
-                  </div>
+                  <LibraryGenreChips
+                    isLocked={isLocked}
+                    isChanged={changes.genres}
+                  />
                 </>
               ) : null}
             </div>
@@ -304,6 +187,7 @@ function LibraryCard({
 
           {type !== 'album' ? (
             <LibrarySpineColorRow
+              targetFlag="selected"
               isLocked={isLocked}
               isChanged={
                 selectedImage !== undefined &&

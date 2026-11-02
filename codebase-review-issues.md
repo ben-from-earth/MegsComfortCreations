@@ -44,7 +44,6 @@ These were open in the March review and are now fixed:
 
 - **Paths**
     - `lib/interfaces/global-interfaces.ts` (`MediaImageItem`)
-    - `app/components/shared/media-image-strip.tsx` (`MediaImageStripItem`)
     - `app/mediacollector/collector-form/collector-form-schema.ts` (`imageSelectionSchema`)
     - `lib/media-storage/media-image-records.ts`
 - **Issue**
@@ -117,15 +116,15 @@ These were open in the March review and are now fixed:
 - **Fix suggestion**
     - Parameterize parent-id column/projection in shared helpers; keep thin named wrappers.
 
-### Image-edit UI copied between collector and database editor
+### Image-edit UI copied between collector and Library
 
 - **Paths**
-    - `app/mediacollector/cbb-images.tsx`
-    - `app/library/library-item-dialog.tsx`
+    - `app/mediacollector/cbb-images.tsx`, `app/mediacollector/spine-color-row.tsx`
+    - `app/library/library-item-covers.tsx`, `app/library/library-spine-color-row.tsx`, `app/library/add-book-dialog.tsx`
 - **Issue**
-    - Selection, EyeDropper color updates, base64 conversion, upload mutation payloads, and appended image state are near duplicates.
+    - Selection, EyeDropper color updates, upload mutation payloads, and appended image state are near duplicates. Base64 conversion is shared through `lib/helpers/read-file-as-base64.ts`.
 - **Fix suggestion**
-    - Shared `fileToBase64`, selection updater, and upload/color hook; keep only context-specific commits in each component.
+    - Shared selection updater and upload/color hook; keep only context-specific commits in each component.
 
 ### Online cover fetch vs collect actions
 
@@ -224,6 +223,6 @@ Need big time test rework
 
 1. Harden PNG fetch against SSRF.
 2. Unify `MediaImage` / collector block-info / `collectionList` schemas as single sources of truth; remove redundant casts.
-3. Deduplicate collect normalization, image persistence helpers, and cbb-images / library-item-dialog image-edit logic.
+3. Deduplicate collect normalization, image persistence helpers, and collector / Library image-edit logic.
 4. Refresh README / AGENTS structure docs for the current tRPC stack.
 5. Fix Windows `test:ci`; add test typecheck to CI.
