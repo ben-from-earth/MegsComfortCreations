@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 import LibraryItems from '@/library/library-items';
-import PaginationInputs from '@/library/pagination-inputs';
+import LibraryHeader from '@/library/library-header';
 import LibraryPageContext, {
   type LibraryPageContextValue,
 } from 'lib/context/library-page-context';
@@ -106,10 +106,10 @@ export default function LibraryPage() {
 
   return (
     <LibraryPageContext.Provider value={libraryPageContextValue}>
-      <div className="flex flex-col items-center">
-        <PaginationInputs />
+      <main className="mx-auto flex max-w-440 flex-col gap-9 px-6 pt-7 pb-16">
+        <LibraryHeader />
         <LibraryItems />
-      </div>
+      </main>
     </LibraryPageContext.Provider>
   );
 }

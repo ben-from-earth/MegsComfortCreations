@@ -88,7 +88,6 @@ These were open in the March review and are now fixed:
 
 - **Paths**
     - `app/library/page.tsx` — `paginatedQuery.data as SuccessfulPaginationResponse`
-    - `app/library/pagination-inputs.tsx` — DOM string casts to `MediaType` / sort / genre / limit / direction
     - `lib/trpc/routers/collect/_.ts` — `key as MediaType` after `Object.entries`
     - `lib/trpc/routers/genres/_.ts` — DB `string[]` cast to `GenreEnum[]`; redundant `input.sort as SortKey` after Zod
     - `lib/media-storage/media-image-records.ts`, `lib/media-storage/image-path-utils.ts` — unknown object casts for url/src

@@ -3,7 +3,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Button from '@/components/ui/button';
 import { useLibraryPageContext } from 'lib/context/library-page-context';
 
-export default function PageSelector({ onAdd }: { onAdd?: () => void }) {
+export default function PageSelector() {
   const {
     libraryList: { min, max, total },
     page,
@@ -16,15 +16,6 @@ export default function PageSelector({ onAdd }: { onAdd?: () => void }) {
         <p className="pt-0.5">
           Showing {Math.min(min, total)}-{Math.min(max, total)} of {total}
         </p>
-        {onAdd ? (
-          <Button
-            variant="primary"
-            label="Add"
-            width={75}
-            fontSize={24}
-            onClick={onAdd}
-          />
-        ) : null}
       </div>
       <div className="ml-auto flex gap-2">
         <Button
