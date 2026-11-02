@@ -27,6 +27,7 @@ import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/database-sort-options';
 import {
   appendBookCoverRecords,
+  coversToPersistForNewItem,
   listCoversToAppend,
   loadBookImagesById,
   loadOtherMediaImagesById,
@@ -416,19 +417,10 @@ export const databaseRouter = router({
           }
           continue;
         }
-        const selectedImages = mediaItem.images.filter((img) => img.selected);
-        const imagesToPersist =
-          selectedImages.length > 0
-            ? selectedImages
-            : mediaItem.images.length > 0
-              ? [{ ...mediaItem.images[0], selected: true, isDefault: true }]
-              : [];
-        const payload = { ...mediaItem, images: selectedImages };
-        payload.images = imagesToPersist.map((image, index) => ({
-          ...image,
-          isDefault: index === 0,
-          selected: index === 0,
-        }));
+        const payload = {
+          ...mediaItem,
+          images: coversToPersistForNewItem(mediaItem.images),
+        };
         const validatedData = mediaItemFormSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
@@ -456,8 +448,10 @@ export const databaseRouter = router({
                   author: data.blockInfo.author ?? '',
                   pageCount: data.blockInfo.pageCount ?? null,
                   pubYear: data.blockInfo.pubYear ?? null,
-                  spineColor:
-                    data.images[0]?.spineColor ?? data.blockInfo.spineColor,
+                  spineColor: resolveDisplaySpineColor(
+                    data.images,
+                    data.blockInfo.spineColor,
+                  ),
                 })
                 .returning();
 
@@ -574,7 +568,10 @@ export const databaseRouter = router({
         const insertData = {
           mediaType: data.type,
           title: titleRearrange(data.blockInfo.title),
-          spineColor: data.images[0]?.spineColor ?? data.blockInfo.spineColor,
+          spineColor: resolveDisplaySpineColor(
+            data.images,
+            data.blockInfo.spineColor,
+          ),
         };
         let createdOtherMediaId: string | null = null;
         try {

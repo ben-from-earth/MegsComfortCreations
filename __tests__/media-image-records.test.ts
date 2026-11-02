@@ -1,4 +1,5 @@
 import {
+  coversToPersistForNewItem,
   listCoversToAppend,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
@@ -37,6 +38,101 @@ describe('resolveAndPersistImageList', () => {
       {
         sourceUrl: '',
         message: 'Invalid image payload. Expected an image URL string.',
+      },
+    ]);
+  });
+});
+
+describe('coversToPersistForNewItem', () => {
+  const covers = [
+    {
+      url: 'https://img/first.png',
+      selected: true,
+      isDefault: false,
+      spineColor: '#111111',
+    },
+    {
+      url: 'https://img/chosen.png',
+      selected: true,
+      isDefault: true,
+      spineColor: '#abcdef',
+    },
+    {
+      url: 'https://img/dropped.png',
+      selected: false,
+      isDefault: false,
+      spineColor: '#999999',
+    },
+  ];
+
+  test('keeps an explicit default and leaves spine colors unchanged', () => {
+    expect(coversToPersistForNewItem(covers)).toEqual([
+      {
+        url: 'https://img/first.png',
+        selected: true,
+        isDefault: false,
+        spineColor: '#111111',
+      },
+      {
+        url: 'https://img/chosen.png',
+        selected: true,
+        isDefault: true,
+        spineColor: '#abcdef',
+      },
+    ]);
+  });
+
+  test('uses the first kept cover when none is marked default', () => {
+    expect(
+      coversToPersistForNewItem([
+        covers[0],
+        { ...covers[1], isDefault: false },
+        covers[2],
+      ]),
+    ).toEqual([
+      {
+        url: 'https://img/first.png',
+        selected: true,
+        isDefault: true,
+        spineColor: '#111111',
+      },
+      {
+        url: 'https://img/chosen.png',
+        selected: true,
+        isDefault: false,
+        spineColor: '#abcdef',
+      },
+    ]);
+  });
+
+  test('falls back to the first image when nothing is kept', () => {
+    expect(
+      coversToPersistForNewItem([
+        { ...covers[0], selected: false },
+        { ...covers[1], selected: false, isDefault: true },
+      ]),
+    ).toEqual([
+      {
+        url: 'https://img/first.png',
+        selected: true,
+        isDefault: true,
+        spineColor: '#111111',
+      },
+    ]);
+  });
+
+  test('keeps a single selected cover as the default', () => {
+    expect(
+      coversToPersistForNewItem([
+        { ...covers[0], selected: false, isDefault: true },
+        { ...covers[1], isDefault: false },
+      ]),
+    ).toEqual([
+      {
+        url: 'https://img/chosen.png',
+        selected: true,
+        isDefault: true,
+        spineColor: '#abcdef',
       },
     ]);
   });

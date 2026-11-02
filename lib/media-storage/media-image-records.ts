@@ -62,6 +62,25 @@ function normalizeSourceImage(
   return null;
 }
 
+export function coversToPersistForNewItem<
+  T extends { selected: boolean; isDefault: boolean; spineColor: string },
+>(images: T[]): T[] {
+  const keptImages = images.filter((image) => image.selected);
+  const covers =
+    keptImages.length > 0
+      ? keptImages
+      : images.length > 0
+        ? [{ ...images[0], selected: true, isDefault: true }]
+        : [];
+  const explicitDefaultIndex = covers.findIndex((image) => image.isDefault);
+  const defaultIndex = explicitDefaultIndex >= 0 ? explicitDefaultIndex : 0;
+
+  return covers.map((image, index) => ({
+    ...image,
+    isDefault: index === defaultIndex,
+  }));
+}
+
 export async function resolveAndPersistImageList(
   mediaReference: ParentMediaReference,
   sourceImages: unknown[],
