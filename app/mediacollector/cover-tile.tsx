@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import AddIcon from '@mui/icons-material/Add';
-import CheckIcon from '@mui/icons-material/Check';
 import { MediaType } from 'lib/constants/media-types';
 import {
   DefaultCoverRibbon,
@@ -64,20 +63,13 @@ export function CoverTile({
         aria-checked={isSelected}
         aria-label={defaultCoverTileLabel(coverNumber, defaultRibbon)}
         onClick={onClick}
-        className={`relative w-full cursor-pointer rounded-md p-0 ${coverAspectClassName(mediaType)} ${
-          isSelected
-            ? 'border-0 shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]'
-            : 'border border-black/10'
+        className={`relative w-full cursor-pointer rounded-md border-0 p-0 ${coverAspectClassName(mediaType)} ${
+          isSelected ? 'shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]' : ''
         }`}
       >
         <span className="absolute inset-0 overflow-hidden rounded-md">
           <CoverImage url={url} alt={`${mediaType} cover`} />
         </span>
-        {isSelected ? (
-          <span className="absolute top-1.25 right-1.25 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#2b2826] shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
-            <CheckIcon sx={{ fontSize: 14 }} />
-          </span>
-        ) : null}
         {defaultRibbon ? <DefaultCoverRibbon variant={defaultRibbon} /> : null}
       </button>
       {onSetDefault ? (

@@ -146,16 +146,16 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
       <div className="flex items-center gap-4.5 px-4.5 py-3.5">
         {selectedImage ? (
-          <div
-            className={`relative shrink-0 overflow-hidden rounded-md shadow-[0_0_0_3px_#ffffff,0_0_0_5px_#2a4637] ${mainCoverSizeClassName}`}
-          >
-            <CoverImage url={selectedImage.url} alt={`${title} cover`} />
+          <div className="flex shrink-0 overflow-hidden rounded-r-md">
             {type !== 'album' ? (
               <div
-                className="absolute inset-y-0 left-0 w-2.5"
+                className="w-2.5 shrink-0"
                 style={{ backgroundColor: spineColor }}
               />
             ) : null}
+            <div className={`relative ${mainCoverSizeClassName}`}>
+              <CoverImage url={selectedImage.url} alt={`${title} cover`} />
+            </div>
           </div>
         ) : (
           <div

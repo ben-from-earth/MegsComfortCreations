@@ -45,9 +45,15 @@ export function DefaultCoverRibbon({
       viewBox="0 0 16 26"
       role="img"
       aria-label={ribbonLabel[variant]}
-      className="pointer-events-none absolute top-0 left-2 h-6.5 w-4 drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]"
+      className="pointer-events-none absolute top-0 left-1 h-6.5 w-4 drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]"
     >
-      <path d="M0 0h16v26l-8-6-8 6z" fill={ribbonFill[variant]} />
+      <path
+        d="M1 0h14v24l-7-5.25L1 24z"
+        fill={ribbonFill[variant]}
+        stroke="#ffffff"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -65,7 +71,7 @@ export function SetDefaultRibbonButton({
       onClick={onClick}
       aria-label={`Set cover ${coverNumber} as default`}
       title="Set as default"
-      className="absolute top-0 left-2 z-20 h-6.5 w-4 cursor-pointer border-0 bg-transparent p-0"
+      className="absolute top-0 left-1 z-20 h-6.5 w-4 cursor-pointer border-0 bg-transparent p-0"
     >
       <svg width="16" height="26" viewBox="0 0 16 26" aria-hidden="true">
         <path

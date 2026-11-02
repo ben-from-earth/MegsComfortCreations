@@ -1,11 +1,12 @@
 'use client';
-import { memo, useState } from 'react';
+import { memo, use, useEffect, useRef, useState } from 'react';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import LockIcon from '@mui/icons-material/LockOutlined';
 import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { trpc } from 'lib/trpc/client';
 import { useLibraryPageContext } from 'lib/context/library-page-context';
+import LibraryPendingSavesContext from 'lib/context/library-pending-saves-context';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { MEDIA_TYPE_DEFINITIONS, MEDIA_TYPES } from 'lib/constants/media-types';
 import AreYouSure from '@/components/shared/are-you-sure';
@@ -58,6 +59,20 @@ function LibraryCard({
   const changes = diffDatabaseItem(baseline, current);
   const changeCount = countDatabaseItemChanges(changes);
   const isSaving = form.formState.isSubmitting;
+  const hasPendingChanges = changeCount > 0;
+
+  const registerPendingSave = use(LibraryPendingSavesContext);
+  const saveRef = useRef(() => Promise.resolve());
+  useEffect(() => {
+    saveRef.current = form.handleSubmit(onSubmit);
+  });
+  useEffect(() => {
+    if (!hasPendingChanges) {
+      return;
+    }
+    return registerPendingSave(item.blockID, () => saveRef.current());
+  }, [hasPendingChanges, item.blockID, registerPendingSave]);
+
   const fieldEditState = (
     isChanged: boolean,
   ): CollectedFieldEditState | undefined =>
@@ -126,19 +141,19 @@ function LibraryCard({
 
           <div className="flex items-center gap-4.5 px-4.5 py-3.5">
             {selectedImage ? (
-              <div
-                className={`relative shrink-0 overflow-hidden rounded-md shadow-[0_0_0_3px_#ffffff,0_0_0_5px_#2a4637] ${mainCoverSizeClassName}`}
-              >
-                <CoverImage
-                  url={selectedImage.url}
-                  alt={`${blockInfo.title} cover`}
-                />
+              <div className="flex shrink-0 overflow-hidden rounded-r-md">
                 {type !== 'album' ? (
                   <div
-                    className="absolute inset-y-0 left-0 w-2.5"
+                    className="w-2.5 shrink-0"
                     style={{ backgroundColor: blockInfo.spineColor }}
                   />
                 ) : null}
+                <div className={`relative ${mainCoverSizeClassName}`}>
+                  <CoverImage
+                    url={selectedImage.url}
+                    alt={`${blockInfo.title} cover`}
+                  />
+                </div>
               </div>
             ) : null}
 

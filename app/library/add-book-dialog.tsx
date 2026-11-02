@@ -1,5 +1,4 @@
 import { ChangeEvent, useId, useRef, useState } from 'react';
-import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import { trpc } from 'lib/trpc/client';
@@ -51,20 +50,13 @@ function KeptCoverTile({
         isDefault ? 'saved' : null,
       )}
       onClick={onToggle}
-      className={`relative aspect-[2/3] w-full cursor-pointer rounded-md p-0 ${
-        isKept
-          ? 'border-0 shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]'
-          : 'border border-black/10'
+      className={`relative aspect-[2/3] w-full cursor-pointer rounded-md border-0 p-0 ${
+        isKept ? 'shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]' : ''
       }`}
     >
       <span className="absolute inset-0 overflow-hidden rounded-md">
         <CoverImage url={url} alt="book cover" />
       </span>
-      {isKept ? (
-        <span className="absolute top-1.25 right-1.25 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#2b2826] shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
-          <CheckIcon sx={{ fontSize: 14 }} />
-        </span>
-      ) : null}
       {isDefault ? <DefaultCoverRibbon variant="saved" /> : null}
     </button>
   );
@@ -186,12 +178,17 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col gap-4 overflow-y-auto px-1.5 pt-5 pb-2">
               <div className="mx-4.5 flex items-start gap-4.5">
                 {defaultImage ? (
-                  <div className="relative h-45 w-30 shrink-0 overflow-hidden rounded-md shadow-[0_0_0_3px_#ffffff,0_0_0_5px_#2a4637]">
-                    <CoverImage url={defaultImage.url} alt={`${title} cover`} />
+                  <div className="flex shrink-0 overflow-hidden rounded-r-md">
                     <div
-                      className="absolute inset-y-0 left-0 w-2.5"
+                      className="w-2.5 shrink-0"
                       style={{ backgroundColor: defaultImage.spineColor }}
                     />
+                    <div className="relative h-45 w-30">
+                      <CoverImage
+                        url={defaultImage.url}
+                        alt={`${title} cover`}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex h-45 w-30 shrink-0 items-center justify-center rounded-md border-2 border-dashed border-[#d8d0c6] bg-[#fcfbf9] p-2 text-center text-[13px] font-extrabold text-[#6b645d]">
