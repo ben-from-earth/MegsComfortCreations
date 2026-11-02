@@ -153,6 +153,7 @@ export function useLibraryItemForm({
         return;
       }
 
+      initialGenresRef.current = [...nextGenres];
       await utils.genres.getForBook.invalidate({ bookID: data.blockID });
     }
 

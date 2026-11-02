@@ -29,11 +29,16 @@ export default function LibraryItems() {
         </p>
         <LibraryPager />
       </div>
-      <div className='border-darkpink bg-lightpink relative flex min-w-lg flex-col items-center gap-2 self-center rounded-lg border-3 p-2 font-["Just_Another_Hand"] text-2xl tracking-wider shadow-[5px_5px_30px_rgba(0,0,0,0.3)]'>
-        {items.map((item) => {
-          return <LibraryItem key={`${type}-${item.id}`} info={item} />;
-        })}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(380px,100%),1fr))] items-start gap-5">
+        {items.map((item) => (
+          <LibraryItem key={`${type}-${item.id}`} info={item} />
+        ))}
       </div>
+      {total > 0 ? (
+        <div className="flex justify-end">
+          <LibraryPager />
+        </div>
+      ) : null}
     </section>
   );
 }

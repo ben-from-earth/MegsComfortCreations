@@ -26,7 +26,7 @@ const pillClassName = 'rounded-full px-2.5 py-1 text-xs font-extrabold';
 const footerButtonClassName =
   'flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-[13px] font-bold';
 
-const typeChipClassNames: Record<MediaType, string> = {
+export const typeChipClassNames: Record<MediaType, string> = {
   book: 'bg-[#efebe5] text-[#4a443f]',
   movie: 'bg-[#3d3935] text-white',
   album: 'bg-[#e4ebea] text-[#2f5452]',

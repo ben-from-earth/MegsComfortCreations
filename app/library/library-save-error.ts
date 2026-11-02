@@ -1,5 +1,5 @@
 export const GENRE_UPDATE_FAILED_MESSAGE =
-  'The item was saved, but updating genres failed. Close and try again.';
+  'The item was saved, but updating genres failed. Save again to retry.';
 
 export const LIBRARY_SAVE_FAILED_MESSAGE =
   'This item could not be saved. Please try again.';

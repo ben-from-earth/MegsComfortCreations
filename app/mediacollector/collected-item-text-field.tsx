@@ -14,7 +14,7 @@ type CollectedTextFieldName = 'title' | 'author' | 'pubYear' | 'pageCount';
 
 export type CollectedFieldEditState = 'readOnly' | 'changed';
 
-const editStateClassNames: Record<
+export const editStateClassNames: Record<
   CollectedFieldEditState | 'editable',
   string
 > = {

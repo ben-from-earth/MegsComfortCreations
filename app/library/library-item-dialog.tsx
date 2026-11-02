@@ -15,14 +15,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { trpc } from 'lib/trpc/client';
-import { titleRearrange } from 'lib/helpers/title-rearrange';
+import { readFileAsBase64 } from 'lib/helpers/read-file-as-base64';
 import { MediaType } from 'lib/constants/media-types';
 import { blockClasses, icons } from 'lib/constants/type-block-styles';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
 import { useLibraryItemForm } from './use-library-item-form';
 
 export interface LibraryItemDialogProps {
-  item?: MediaItemForm;
   onClose: () => void;
 }
 
@@ -91,8 +90,6 @@ function LibraryItemDialogFields({
   type,
   blockID,
   submitError,
-  isAdd,
-  originalDefaultUrl,
   coverSearchBanner,
   isSearchingCovers,
   onSearchCovers,
@@ -100,8 +97,6 @@ function LibraryItemDialogFields({
   type: MediaType;
   blockID: string;
   submitError: string | null;
-  isAdd: boolean;
-  originalDefaultUrl: string | undefined;
   coverSearchBanner: string | null;
   isSearchingCovers: boolean;
   onSearchCovers: () => void;
@@ -138,11 +133,7 @@ function LibraryItemDialogFields({
       'images',
       currentImages.map((image, index) => ({
         ...image,
-        selected: isAdd
-          ? index === imageIndex
-            ? !image.selected
-            : image.selected
-          : index === imageIndex,
+        selected: index === imageIndex ? !image.selected : image.selected,
       })),
     );
     setValue('blockInfo.spineColor', selectedImage.spineColor);
@@ -156,49 +147,11 @@ function LibraryItemDialogFields({
       currentImages.map((image, index) => ({
         ...image,
         isDefault: index === imageIndex,
-        selected: isAdd
-          ? index === imageIndex || image.selected
-          : index === imageIndex,
+        selected: index === imageIndex || image.selected,
       })),
     );
     if (nextDefault) {
       setValue('blockInfo.spineColor', nextDefault.spineColor);
-    }
-  };
-
-  const handleDeleteImage = () => {
-    if (isAdd) {
-      return;
-    }
-    const currentImages = getValues('images');
-    if (currentImages.length <= 1) {
-      return;
-    }
-    const removedIndex = Math.min(
-      focusedImageIndex,
-      currentImages.length - 1,
-    );
-    const removedImage = currentImages[removedIndex];
-    if (!removedImage) {
-      return;
-    }
-    const remainingImages = currentImages.filter(
-      (_, index) => index !== removedIndex,
-    );
-    const nextFocusedIndex = Math.min(
-      removedIndex,
-      remainingImages.length - 1,
-    );
-    const nextImages = remainingImages.map((image, index) => ({
-      ...image,
-      isDefault: removedImage.isDefault ? index === 0 : image.isDefault,
-      selected: index === nextFocusedIndex,
-    }));
-    const nextFocusedImage = nextImages[nextFocusedIndex];
-    setValue('images', nextImages);
-    setFocusedImageIndex(nextFocusedIndex);
-    if (nextFocusedImage) {
-      setValue('blockInfo.spineColor', nextFocusedImage.spineColor);
     }
   };
 
@@ -229,24 +182,6 @@ function LibraryItemDialogFields({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result;
-        if (typeof result !== 'string') {
-          reject(new Error('Unable to read uploaded file.'));
-          return;
-        }
-        const [, dataBase64 = ''] = result.split(',');
-        resolve(dataBase64);
-      };
-      reader.onerror = () => {
-        reject(new Error('Unable to read uploaded file.'));
-      };
-      reader.readAsDataURL(file);
-    });
-
   const handleUploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -257,7 +192,7 @@ function LibraryItemDialogFields({
     try {
       const currentImages = getValues('images');
       const currentSpineColor = getValues('blockInfo.spineColor');
-      const dataBase64 = await convertFileToBase64(file);
+      const dataBase64 = await readFileAsBase64(file);
       const uploadedImage = await uploadCoverImage({
         blockID,
         sortOrder: currentImages.length,
@@ -266,10 +201,7 @@ function LibraryItemDialogFields({
         dataBase64,
       });
       const nextImages = [
-        ...currentImages.map((image) => ({
-          ...image,
-          selected: isAdd ? image.selected : false,
-        })),
+        ...currentImages,
         {
           url: uploadedImage.url,
           selected: true,
@@ -281,7 +213,7 @@ function LibraryItemDialogFields({
       setValue('images', nextImages);
       setFocusedImageIndex(nextImages.length - 1);
     } catch (error) {
-      console.error('Failed to upload image for database edit', error);
+      console.error('Failed to upload image for new book', error);
     } finally {
       setIsUploading(false);
       event.target.value = '';
@@ -325,7 +257,6 @@ function LibraryItemDialogFields({
                 defaultTileClassName="relative z-10 h-31 w-21 overflow-hidden rounded-sm"
                 showSelectionOverlay
                 onImageClick={handleImageSelection}
-                originalDefaultUrl={originalDefaultUrl}
                 onSetDefault={handleSetAsDefault}
                 showUploadButton={type === 'book'}
                 isUploading={isUploading}
@@ -374,30 +305,19 @@ function LibraryItemDialogFields({
         </p>
       ) : null}
       <div className="flex w-full justify-end gap-2">
-        {!isAdd && images.length > 1 ? (
-          <Button
-            variant="primary"
-            label="Delete Image"
-            onClick={handleDeleteImage}
-            width={165}
-            fontSize={25}
-          />
-        ) : null}
-        {isAdd ? (
-          <Button
-            type="button"
-            variant="primary"
-            label={isSearchingCovers ? 'Searching...' : 'Search Covers'}
-            disabled={isSearchingCovers}
-            onClick={onSearchCovers}
-            width={165}
-            fontSize={25}
-          />
-        ) : null}
+        <Button
+          type="button"
+          variant="primary"
+          label={isSearchingCovers ? 'Searching...' : 'Search Covers'}
+          disabled={isSearchingCovers}
+          onClick={onSearchCovers}
+          width={165}
+          fontSize={25}
+        />
         <Button
           type="submit"
           variant="primary"
-          label={isAdd ? 'Add Book' : 'Submit Changes'}
+          label="Add Book"
           width={150}
           fontSize={25}
         />
@@ -407,13 +327,11 @@ function LibraryItemDialogFields({
 }
 
 export default function LibraryItemDialog({
-  item,
   onClose,
 }: LibraryItemDialogProps) {
   const {
     form,
     formId,
-    isAdd,
     onSubmit,
     submitError,
     isDuplicateBookDialogOpen,
@@ -421,10 +339,7 @@ export default function LibraryItemDialog({
     coverSearchBanner,
     isSearchingCovers,
     onSearchCovers,
-  } = useLibraryItemForm({
-    item,
-    onClose,
-  });
+  } = useLibraryItemForm({ onClose });
   const type = form.getValues('type');
   const blockID = form.getValues('blockID');
 
@@ -445,19 +360,11 @@ export default function LibraryItemDialog({
           >
             <CloseIcon />
           </Button>
-          <h1>
-            {item == null
-              ? 'Add Book'
-              : `Editing: ${titleRearrange(item.blockInfo.title)}`}
-          </h1>
+          <h1>Add Book</h1>
           <LibraryItemDialogFields
             type={type}
             blockID={blockID}
             submitError={submitError}
-            isAdd={isAdd}
-            originalDefaultUrl={
-              item?.images.find((image) => image.isDefault)?.url
-            }
             coverSearchBanner={coverSearchBanner}
             isSearchingCovers={isSearchingCovers}
             onSearchCovers={onSearchCovers}
