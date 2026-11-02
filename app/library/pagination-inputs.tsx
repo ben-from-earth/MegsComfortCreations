@@ -6,9 +6,9 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Button from '@/components/ui/button';
 import GenreContext from 'lib/context/genre-context';
 import {
-  DatabasePageContextValue,
-  useDatabasePageContext,
-} from 'lib/context/database-page-context';
+  LibraryPageContextValue,
+  useLibraryPageContext,
+} from 'lib/context/library-page-context';
 import { MediaType } from 'lib/constants/media-types';
 import { NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import {
@@ -31,7 +31,7 @@ export default function PaginationInputs() {
     ascDesc,
     setAscDesc,
     setTitleSearch,
-  }: DatabasePageContextValue = useDatabasePageContext();
+  }: LibraryPageContextValue = useLibraryPageContext();
   const genres = useContext(GenreContext);
   const [titleInput, setTitleInput] = useState('');
   const sortOptions =

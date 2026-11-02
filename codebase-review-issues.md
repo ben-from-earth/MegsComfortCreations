@@ -87,8 +87,8 @@ These were open in the March review and are now fixed:
 ### Forced / redundant casts
 
 - **Paths**
-    - `app/showdatabase/page.tsx` — `paginatedQuery.data as SuccessfulPaginationResponse`
-    - `app/showdatabase/pagination-inputs.tsx` — DOM string casts to `MediaType` / sort / genre / limit / direction
+    - `app/library/page.tsx` — `paginatedQuery.data as SuccessfulPaginationResponse`
+    - `app/library/pagination-inputs.tsx` — DOM string casts to `MediaType` / sort / genre / limit / direction
     - `lib/trpc/routers/collect/_.ts` — `key as MediaType` after `Object.entries`
     - `lib/trpc/routers/genres/_.ts` — DB `string[]` cast to `GenreEnum[]`; redundant `input.sort as SortKey` after Zod
     - `lib/media-storage/media-image-records.ts`, `lib/media-storage/image-path-utils.ts` — unknown object casts for url/src
@@ -122,7 +122,7 @@ These were open in the March review and are now fixed:
 
 - **Paths**
     - `app/mediacollector/cbb-images.tsx`
-    - `app/showdatabase/media-item-add-edit.tsx`
+    - `app/library/library-item-dialog.tsx`
 - **Issue**
     - Selection, EyeDropper color updates, base64 conversion, upload mutation payloads, and appended image state are near duplicates.
 - **Fix suggestion**
@@ -225,6 +225,6 @@ Need big time test rework
 
 1. Harden PNG fetch against SSRF.
 2. Unify `MediaImage` / collector block-info / `collectionList` schemas as single sources of truth; remove redundant casts.
-3. Deduplicate collect normalization, image persistence helpers, and cbb-images / media-item-add-edit image-edit logic.
+3. Deduplicate collect normalization, image persistence helpers, and cbb-images / library-item-dialog image-edit logic.
 4. Refresh README / AGENTS structure docs for the current tRPC stack.
 5. Fix Windows `test:ci`; add test typecheck to CI.

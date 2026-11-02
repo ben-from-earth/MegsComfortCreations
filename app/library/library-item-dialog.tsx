@@ -19,9 +19,9 @@ import { titleRearrange } from 'lib/helpers/title-rearrange';
 import { MediaType } from 'lib/constants/media-types';
 import { blockClasses, icons } from 'lib/constants/type-block-styles';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
-import { useMediaItemForm } from './use-media-item-form';
+import { useLibraryItemForm } from './use-library-item-form';
 
-export interface MediaItemAddEditProps {
+export interface LibraryItemDialogProps {
   item?: MediaItemForm;
   onClose: () => void;
 }
@@ -87,7 +87,7 @@ function MediaItemTextField({
   );
 }
 
-function MediaItemAddEditFields({
+function LibraryItemDialogFields({
   type,
   blockID,
   submitError,
@@ -405,10 +405,10 @@ function MediaItemAddEditFields({
   );
 }
 
-export default function MediaItemAddEdit({
+export default function LibraryItemDialog({
   item,
   onClose,
-}: MediaItemAddEditProps) {
+}: LibraryItemDialogProps) {
   const {
     form,
     formId,
@@ -420,7 +420,7 @@ export default function MediaItemAddEdit({
     coverSearchBanner,
     isSearchingCovers,
     onSearchCovers,
-  } = useMediaItemForm({
+  } = useLibraryItemForm({
     item,
     onClose,
   });
@@ -449,7 +449,7 @@ export default function MediaItemAddEdit({
               ? 'Add Book'
               : `Editing: ${titleRearrange(item.blockInfo.title)}`}
           </h1>
-          <MediaItemAddEditFields
+          <LibraryItemDialogFields
             type={type}
             blockID={blockID}
             submitError={submitError}

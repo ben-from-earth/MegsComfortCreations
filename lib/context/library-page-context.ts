@@ -1,35 +1,35 @@
 import { createContext, Dispatch, SetStateAction, useContext } from 'react';
-import { displayDatabaseItems, genreInput } from '@/showdatabase/page';
+import { LibraryGenreFilter, LibraryList } from '@/library/page';
 import { MediaType } from 'lib/constants/media-types';
 import { DatabaseSortOption } from 'lib/constants/database-sort-options';
 
-export interface DatabasePageContextValue {
+export interface LibraryPageContextValue {
   page: number;
   setPage: Dispatch<SetStateAction<number>>;
-  databaseItems: displayDatabaseItems;
+  libraryList: LibraryList;
   type: MediaType;
   setType: Dispatch<SetStateAction<MediaType>>;
   limit: number;
   setLimit: Dispatch<SetStateAction<3 | 5 | 10>>;
   sortBy: DatabaseSortOption;
   setSortBy: Dispatch<SetStateAction<DatabaseSortOption>>;
-  genre: genreInput;
-  setGenre: Dispatch<SetStateAction<genreInput>>;
+  genre: LibraryGenreFilter;
+  setGenre: Dispatch<SetStateAction<LibraryGenreFilter>>;
   ascDesc: 'asc' | 'desc';
   setAscDesc: Dispatch<SetStateAction<'asc' | 'desc'>>;
   setTitleSearch: Dispatch<SetStateAction<string>>;
-  handleGetMedia: () => Promise<void>;
+  refreshLibrary: () => Promise<void>;
 }
 
-const DatabasePageContext = createContext<DatabasePageContextValue | undefined>(
+const LibraryPageContext = createContext<LibraryPageContextValue | undefined>(
   undefined,
 );
 
-export function useDatabasePageContext() {
-  const ctx = useContext(DatabasePageContext);
+export function useLibraryPageContext() {
+  const ctx = useContext(LibraryPageContext);
   if (!ctx)
-    throw new Error('Must access database page context inside the provider');
+    throw new Error('Must access library page context inside the provider');
   return ctx;
 }
 
-export default DatabasePageContext;
+export default LibraryPageContext;

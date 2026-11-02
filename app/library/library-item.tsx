@@ -3,25 +3,25 @@ import { memo, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
 import AreYouSure from '@/components/shared/are-you-sure';
 import Button from '@/components/ui/button';
-import MediaItemAddEdit from '@/showdatabase/media-item-add-edit';
+import LibraryItemDialog from '@/library/library-item-dialog';
 import MediaImageStrip from '@/components/shared/media-image-strip';
 import { titleRearrange } from 'lib/helpers/title-rearrange';
-import { useDatabasePageContext } from 'lib/context/database-page-context';
+import { useLibraryPageContext } from 'lib/context/library-page-context';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { isBookRow } from 'lib/helpers/handle-media-typing';
 import { MEDIA_TYPES } from 'lib/constants/media-types';
 import { blockClasses } from 'lib/constants/type-block-styles';
 import { convertMediaItemToForm } from '@/mediacollector/collector-form/media-item-form-schema';
 
-export interface DatabaseItemProps {
+export interface LibraryItemProps {
   info: PostSavedMediaItem;
 }
 
-const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
+const LibraryItem = memo(function LibraryItem({ info }: LibraryItemProps) {
   const {
-    databaseItems: { type: displayedListType },
-    handleGetMedia,
-  } = useDatabasePageContext();
+    libraryList: { type: displayedListType },
+    refreshLibrary,
+  } = useLibraryPageContext();
 
   const { id, title, spineColor, images } = info;
   const itemType =
@@ -42,7 +42,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   const onDelete = async () => {
     try {
       await databaseDelete({ id, type: itemType });
-      handleGetMedia();
+      refreshLibrary();
     } catch {
       console.log('There was an error deleting, try again.');
     }
@@ -73,7 +73,7 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
         />
       )}
       {edit && (
-        <MediaItemAddEdit item={mediaItem} onClose={() => setEdit(false)} />
+        <LibraryItemDialog item={mediaItem} onClose={() => setEdit(false)} />
       )}
       {itemType !== 'album' ? (
         <div
@@ -123,4 +123,4 @@ const DatabaseItem = memo(function DatabaseItem({ info }: DatabaseItemProps) {
   );
 });
 
-export default DatabaseItem;
+export default LibraryItem;

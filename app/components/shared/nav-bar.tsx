@@ -40,10 +40,10 @@ export default async function NavBar() {
           </Link>
         )}
         {session?.user.role === 'admin' && (
-          <Link href={'/showdatabase'}>
+          <Link href={'/library'}>
             <Button
               variant="primary"
-              label="Show Database"
+              label="Library"
               width={180}
               fontSize={36}
             />

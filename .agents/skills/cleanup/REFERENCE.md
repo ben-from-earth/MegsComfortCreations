@@ -102,7 +102,7 @@ When `*.ts` or `*.tsx` is in scope.
 When React or Next files are in scope.
 
 - Pages live under `app/`. Feature UI stays next to the feature
-  (`app/mediacollector`, `app/showdatabase`). Shared chrome stays in
+  (`app/mediacollector`, `app/library`). Shared chrome stays in
   `app/components`.
 - Reuse existing tRPC hooks, form helpers, and UI primitives. Do not add
   a new context, store, or wrapper "just in case."

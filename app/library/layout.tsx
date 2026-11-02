@@ -1,6 +1,6 @@
 import { requireAdminPageAccess } from 'lib/auth/page-access';
 
-export default async function ShowDatabaseLayout({
+export default async function LibraryLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

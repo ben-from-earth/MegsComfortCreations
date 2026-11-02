@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { trpc } from 'lib/trpc/client';
-import { useDatabasePageContext } from 'lib/context/database-page-context';
+import { useLibraryPageContext } from 'lib/context/library-page-context';
 import {
   convertMediaItemFormToDatabaseItem,
   getMediaItemFormDefaultValues,
@@ -10,16 +10,16 @@ import {
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
 import {
-  DATABASE_EDIT_FAILED_MESSAGE,
+  LIBRARY_SAVE_FAILED_MESSAGE,
   GENRE_UPDATE_FAILED_MESSAGE,
-  toDatabaseEditDisplayError,
-} from './database-edit-error-display';
+  toLibrarySaveDisplayError,
+} from './library-save-error';
 
 const COVER_SEARCH_DUPLICATE_MESSAGE =
   'A book with this title and author already exists.';
 const COVER_SEARCH_FAILED_MESSAGE = 'Cover search failed. Please try again.';
 
-export function useMediaItemForm({
+export function useLibraryItemForm({
   item,
   onClose,
 }: {
@@ -60,7 +60,7 @@ export function useMediaItemForm({
     initialGenresRef.current = [...nextItem.blockInfo.genres];
   }, [form, itemBlockID]);
 
-  const { handleGetMedia } = useDatabasePageContext();
+  const { refreshLibrary } = useLibraryPageContext();
   const { mutateAsync: databaseEdit } = trpc.database.edit.useMutation();
   const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
   const { mutateAsync: collectMedia } = trpc.collect.collectMedia.useMutation();
@@ -69,7 +69,7 @@ export function useMediaItemForm({
   const utils = trpc.useUtils();
 
   const applySaveDisplayError = (error: string | undefined) => {
-    const displayError = toDatabaseEditDisplayError(error ?? 'Unknown');
+    const displayError = toLibrarySaveDisplayError(error ?? 'Unknown');
     if (displayError.placement === 'field') {
       form.setError(displayError.field, {
         type: 'server',
@@ -90,7 +90,7 @@ export function useMediaItemForm({
       try {
         results = await databaseSave([data]);
       } catch {
-        setSubmitError(DATABASE_EDIT_FAILED_MESSAGE);
+        setSubmitError(LIBRARY_SAVE_FAILED_MESSAGE);
         return;
       }
 
@@ -104,7 +104,7 @@ export function useMediaItemForm({
         return;
       }
 
-      await handleGetMedia();
+      await refreshLibrary();
       onClose();
       return;
     }
@@ -116,7 +116,7 @@ export function useMediaItemForm({
         item: convertMediaItemFormToDatabaseItem(data),
       });
     } catch {
-      setSubmitError(DATABASE_EDIT_FAILED_MESSAGE);
+      setSubmitError(LIBRARY_SAVE_FAILED_MESSAGE);
       return;
     }
 
@@ -144,14 +144,14 @@ export function useMediaItemForm({
         }
       } catch {
         setSubmitError(GENRE_UPDATE_FAILED_MESSAGE);
-        await handleGetMedia();
+        await refreshLibrary();
         return;
       }
 
       await utils.genres.getForBook.invalidate({ bookID: data.blockID });
     }
 
-    await handleGetMedia();
+    await refreshLibrary();
     onClose();
   };
 

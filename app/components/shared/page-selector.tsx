@@ -1,14 +1,14 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Button from '@/components/ui/button';
-import { useDatabasePageContext } from 'lib/context/database-page-context';
+import { useLibraryPageContext } from 'lib/context/library-page-context';
 
 export default function PageSelector({ onAdd }: { onAdd?: () => void }) {
   const {
-    databaseItems: { min, max, total },
+    libraryList: { min, max, total },
     page,
     setPage,
-  } = useDatabasePageContext();
+  } = useLibraryPageContext();
   const numPages = Math.ceil(total / (max - min + 1));
   return (
     <div className="flex w-full">
