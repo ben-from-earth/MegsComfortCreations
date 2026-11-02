@@ -104,3 +104,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Progress was implemented by searching one title per HTTP request so the modal could update, which added a network round trip between each title.
 - Correction: Keep one server-side collect loop and stream progress events from that existing work.
 - Rule Going Forward: Do not split a sequential server job into extra client requests just to drive a progress bar. Report progress from the work that is already happening.
+
+### 2026-11-02 - Search results can list deleted files
+
+- Area: Codebase search / scripted edits
+- Issue: Search returned stale forward-slash paths for the removed `app/showdatabase/` page, so the agent reported it as still existing and ran a bulk PowerShell edit against it. The failed read left the previous file's text in the variable, and the write created a bogus `are-you-sure.tsx`.
+- Correction: Deleted the stray file and confirmed paths with `Test-Path` / `git status`.
+- Rule Going Forward: Confirm a file exists on disk before calling it live or editing it. Prefer the edit tool over read/write shell loops; if a script is needed, skip the write when the read fails.

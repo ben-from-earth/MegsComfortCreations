@@ -1,5 +1,6 @@
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckIcon from '@mui/icons-material/Check';
+import Modal from '@/components/ui/modal';
 import { MEDIA_TYPE_DEFINITIONS } from 'lib/constants/media-types';
 import type { CollectorFormData } from './collector-form/collector-form-schema';
 import { type CollectorSearchProgress } from './collector-search-progress';
@@ -9,14 +10,14 @@ const stepCircleClassName =
 
 function LoadingCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-[rgba(30,30,25,0.35)] p-6">
+    <Modal className="p-6">
       <div
         role="status"
         className="flex min-h-41 w-85 max-w-full flex-col gap-4 rounded-[20px] bg-white px-4.5 py-4 text-[#2b2826] shadow-[0_24px_60px_rgba(30,30,25,0.3)]"
       >
         {children}
       </div>
-    </div>
+    </Modal>
   );
 }
 

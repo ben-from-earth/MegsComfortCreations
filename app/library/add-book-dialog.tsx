@@ -1,21 +1,23 @@
 import { ChangeEvent, useId, useRef, useState } from 'react';
+import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import { trpc } from 'lib/trpc/client';
 import { readFileAsBase64 } from 'lib/helpers/read-file-as-base64';
 import Dialog from '@/components/ui/dialog';
+import Modal from '@/components/ui/modal';
 import { Form } from '@/components/ui/form';
 import {
   DefaultCoverRibbon,
-  defaultCoverTileLabel,
+  SetDefaultRibbonButton,
 } from '@/components/shared/default-cover-ribbon';
+import { SpineColorEditor } from '@/components/shared/spine-color-editor';
 import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
 import { CoverImage, UploadTile } from '@/mediacollector/cover-tile';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
-import { toggleKeptCover } from './cover-edit-rules';
+import { updateAddBookCovers, type AddBookCoverAction } from './cover-edit-rules';
 import { AddBookGenreChips } from './library-genres';
 import LibraryItemTextField from './library-item-text-field';
-import LibrarySpineColorRow from './library-spine-color-row';
 import { useLibraryItemForm } from './use-library-item-form';
 
 const EMPTY_COVER_SLOT_COUNT = 3;
@@ -27,38 +29,65 @@ const buttonClassName =
 const secondaryButtonClassName = `${buttonClassName} border border-[#ddd5cb] bg-white text-[#2b2826]`;
 const primaryButtonClassName = `${buttonClassName} border-0 bg-[#2a4637] text-white disabled:bg-[#e3ddd5] disabled:text-[#5f5851]`;
 
-function KeptCoverTile({
-  url,
+function AddBookCoverTile({
+  image,
   coverNumber,
-  isKept,
-  isDefault,
-  onToggle,
+  isFocused,
+  onFocus,
+  onToggleKeep,
+  onSetDefault,
 }: {
-  url: string;
+  image: MediaItemForm['images'][number];
   coverNumber: number;
-  isKept: boolean;
-  isDefault: boolean;
-  onToggle: () => void;
+  isFocused: boolean;
+  onFocus: () => void;
+  onToggleKeep: () => void;
+  onSetDefault: () => void;
 }) {
+  const isKept = image.selected;
   return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={isKept}
-      aria-label={defaultCoverTileLabel(
-        coverNumber,
-        isDefault ? 'saved' : null,
-      )}
-      onClick={onToggle}
-      className={`relative aspect-[2/3] w-full cursor-pointer rounded-md border-0 p-0 ${
-        isKept ? 'shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]' : ''
-      }`}
-    >
-      <span className="absolute inset-0 overflow-hidden rounded-md">
-        <CoverImage url={url} alt="book cover" />
-      </span>
-      {isDefault ? <DefaultCoverRibbon variant="saved" /> : null}
-    </button>
+    <div className="relative">
+      <button
+        type="button"
+        aria-pressed={isFocused}
+        aria-label={`Cover ${coverNumber}${image.isDefault ? ', default' : ''}: show and edit its spine color`}
+        onClick={onFocus}
+        className={`relative flex aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-md border-0 p-0 ${
+          isFocused ? 'shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2b2826]' : ''
+        } ${isKept ? '' : 'opacity-55'}`}
+      >
+        <span
+          className="w-2 shrink-0"
+          style={{ backgroundColor: image.spineColor }}
+        />
+        <span className="relative flex-1">
+          <CoverImage url={image.url} alt="book cover" />
+        </span>
+      </button>
+      {image.isDefault ? (
+        <DefaultCoverRibbon variant="saved" className="left-2.5" />
+      ) : null}
+      {isFocused && isKept && !image.isDefault ? (
+        <SetDefaultRibbonButton
+          coverNumber={coverNumber}
+          onClick={onSetDefault}
+          className="left-2.5"
+        />
+      ) : null}
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={isKept}
+        onClick={onToggleKeep}
+        className={`absolute top-1.5 right-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border-2 border-white p-0 text-white ${
+          isKept
+            ? 'bg-[#3d3935] shadow-[0_1px_3px_rgba(0,0,0,0.3)]'
+            : 'bg-white shadow-[inset_0_0_0_1.5px_#8a837c,0_1px_3px_rgba(0,0,0,0.3)]'
+        }`}
+      >
+        {isKept ? <CheckIcon sx={{ fontSize: 16 }} /> : null}
+      </button>
+    </div>
   );
 }
 
@@ -67,6 +96,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const {
     form,
     formId,
@@ -82,23 +112,43 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
     trpc.collect.uploadCoverImage.useMutation();
 
   const title = form.watch('blockInfo.title');
+  const author = form.watch('blockInfo.author');
   const images = form.watch('images');
-  const defaultImage = images.find((image) => image.isDefault);
-  const hasKeptCover = images.some((image) => image.selected);
+  const focusedImage =
+    focusedIndex == null ? undefined : images[focusedIndex];
+  const keptCount = images.filter((image) => image.selected).length;
   const isSubmitting = form.formState.isSubmitting;
 
-  const applyImages = (nextImages: MediaItemForm['images']) => {
-    form.setValue('images', nextImages);
-    const nextDefault = nextImages.find((image) => image.isDefault);
+  const updateCovers = (
+    action: AddBookCoverAction,
+    currentImages = form.getValues('images'),
+  ) => {
+    const next = updateAddBookCovers(
+      { images: currentImages, focusedIndex },
+      action,
+    );
+    form.setValue('images', next.images);
+    const nextDefault = next.images.find((image) => image.isDefault);
     if (nextDefault) {
       form.setValue('blockInfo.spineColor', nextDefault.spineColor);
     }
+    setFocusedIndex(next.focusedIndex);
   };
 
   const handleSearch = async () => {
     await onSearchCovers();
-    if (!form.getFieldState('blockInfo.title').invalid) {
+    if (
+      !form.getFieldState('blockInfo.title').invalid &&
+      !form.getFieldState('blockInfo.author').invalid
+    ) {
       setHasSearched(true);
+      const searchedImages = form.getValues('images');
+      const defaultIndex = searchedImages.findIndex(
+        (image) => image.isDefault,
+      );
+      setFocusedIndex(
+        defaultIndex >= 0 ? defaultIndex : searchedImages.length > 0 ? 0 : null,
+      );
     }
   };
 
@@ -133,7 +183,10 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
           palette: uploadedImage.palette,
         },
       ];
-      applyImages(toggleKeptCover(withUpload, withUpload.length - 1));
+      updateCovers(
+        { type: 'toggleKeep', index: withUpload.length - 1 },
+        withUpload,
+      );
     } catch (error) {
       console.error('Failed to upload cover for new book', error);
     } finally {
@@ -144,13 +197,10 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-80 flex items-center justify-center bg-[rgba(43,48,40,0.55)] p-4">
+      <Modal aria-labelledby={headingId}>
         <Form {...form}>
           <form
             id={formId}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={headingId}
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex max-h-[90vh] w-200 max-w-full flex-col overflow-hidden rounded-[20px] bg-white text-[#2b2826] shadow-[0_24px_60px_rgba(30,30,25,0.3)]"
           >
@@ -177,22 +227,25 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
 
             <div className="flex flex-col gap-4 overflow-y-auto px-1.5 pt-5 pb-2">
               <div className="mx-4.5 flex items-start gap-4.5">
-                {defaultImage ? (
+                {focusedImage ? (
                   <div className="flex shrink-0 overflow-hidden rounded-r-md">
                     <div
                       className="w-2.5 shrink-0"
-                      style={{ backgroundColor: defaultImage.spineColor }}
+                      style={{ backgroundColor: focusedImage.spineColor }}
                     />
                     <div className="relative h-45 w-30">
                       <CoverImage
-                        url={defaultImage.url}
+                        url={focusedImage.url}
                         alt={`${title} cover`}
                       />
+                      {focusedImage.isDefault ? (
+                        <DefaultCoverRibbon variant="saved" />
+                      ) : null}
                     </div>
                   </div>
                 ) : (
                   <div className="flex h-45 w-30 shrink-0 items-center justify-center rounded-md border-2 border-dashed border-[#d8d0c6] bg-[#fcfbf9] p-2 text-center text-[13px] font-extrabold text-[#6b645d]">
-                    No cover yet
+                    Search for covers
                   </div>
                 )}
                 <div className="flex min-w-0 flex-1 flex-col gap-2.5">
@@ -207,7 +260,11 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
               </div>
 
               <div className="mx-4.5 flex items-center justify-between gap-3">
-                <h3 className={sectionHeadingClassName}>Covers</h3>
+                <h3 className={sectionHeadingClassName}>
+                  {hasSearched
+                    ? `Covers · ${keptCount} of ${images.length} kept`
+                    : 'Covers'}
+                </h3>
                 <button
                   type="button"
                   disabled={isSearchingCovers}
@@ -241,7 +298,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
               />
               <div
                 className={`mx-4.5 grid grid-cols-5 gap-2.5 rounded-lg ${
-                  hasSearched && !hasKeptCover
+                  hasSearched && keptCount === 0
                     ? 'outline-[1.5px] outline-offset-[6px] outline-[#b0533a] outline-dashed'
                     : ''
                 }`}
@@ -249,19 +306,25 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
                 {hasSearched ? (
                   <>
                     {images.map((image, imageIndex) => (
-                      <KeptCoverTile
+                      <AddBookCoverTile
                         key={`${image.url}-${imageIndex}`}
-                        url={image.url}
+                        image={image}
                         coverNumber={imageIndex + 1}
-                        isKept={image.selected}
-                        isDefault={image.isDefault}
-                        onToggle={() =>
-                          applyImages(
-                            toggleKeptCover(
-                              form.getValues('images'),
-                              imageIndex,
-                            ),
-                          )
+                        isFocused={imageIndex === focusedIndex}
+                        onFocus={() =>
+                          updateCovers({ type: 'focus', index: imageIndex })
+                        }
+                        onToggleKeep={() =>
+                          updateCovers({
+                            type: 'toggleKeep',
+                            index: imageIndex,
+                          })
+                        }
+                        onSetDefault={() =>
+                          updateCovers({
+                            type: 'setDefault',
+                            index: imageIndex,
+                          })
                         }
                       />
                     ))}
@@ -281,11 +344,21 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
                 )}
               </div>
 
-              <div className={defaultImage ? '' : 'opacity-50'}>
-                <LibrarySpineColorRow
-                  coverRole="isDefault"
+              <div className={focusedImage ? '' : 'opacity-50'}>
+                <SpineColorEditor
+                  spineColor={focusedImage?.spineColor}
+                  palette={focusedImage?.palette ?? []}
+                  hasCover={focusedImage !== undefined}
                   isLocked={false}
                   isChanged={false}
+                  caption={
+                    focusedImage && focusedIndex != null
+                      ? `Cover ${focusedIndex + 1} · ${focusedImage.spineColor}`
+                      : 'Search for covers first'
+                  }
+                  onApply={(spineColor) =>
+                    updateCovers({ type: 'setSpineColor', spineColor })
+                  }
                 />
               </div>
 
@@ -308,7 +381,8 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
                 type="submit"
                 disabled={
                   title.trim() === '' ||
-                  !images.some((image) => image.selected) ||
+                  (author ?? '').trim() === '' ||
+                  keptCount === 0 ||
                   isSubmitting
                 }
                 className={primaryButtonClassName}
@@ -318,7 +392,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
             </div>
           </form>
         </Form>
-      </div>
+      </Modal>
       {isDuplicateBookDialogOpen ? (
         <Dialog title="Book already exists" onClose={closeDuplicateBookDialog}>
           <p>A book with this title and author already exists.</p>

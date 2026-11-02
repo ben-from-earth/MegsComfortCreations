@@ -20,6 +20,16 @@ export function removeLibraryCover<T extends LibraryCoverFlags>(
   }));
 }
 
+function findKeptIndexFrom(images: LibraryCoverFlags[], startIndex: number) {
+  for (let offset = 0; offset < images.length; offset++) {
+    const imageIndex = (startIndex + offset) % images.length;
+    if (images[imageIndex]?.selected) {
+      return imageIndex;
+    }
+  }
+  return -1;
+}
+
 export function toggleKeptCover<T extends LibraryCoverFlags>(
   images: T[],
   index: number,
@@ -31,9 +41,63 @@ export function toggleKeptCover<T extends LibraryCoverFlags>(
   const toggled = images.map((image, imageIndex) =>
     imageIndex === index ? { ...image, selected: !image.selected } : image,
   );
-  const firstKeptIndex = toggled.findIndex((image) => image.selected);
+  const keptDefaultIndex = toggled.findIndex(
+    (image) => image.isDefault && image.selected,
+  );
+  const defaultIndex =
+    keptDefaultIndex >= 0 ? keptDefaultIndex : findKeptIndexFrom(toggled, index);
   return toggled.map((image, imageIndex) => ({
     ...image,
-    isDefault: imageIndex === firstKeptIndex,
+    isDefault: imageIndex === defaultIndex,
   }));
+}
+
+export type AddBookCoverState<T> = {
+  images: T[];
+  focusedIndex: number | null;
+};
+
+export type AddBookCoverAction =
+  | { type: 'focus' | 'toggleKeep' | 'setDefault'; index: number }
+  | { type: 'setSpineColor'; spineColor: string };
+
+export function updateAddBookCovers<
+  T extends LibraryCoverFlags & { spineColor: string },
+>(
+  { images, focusedIndex }: AddBookCoverState<T>,
+  action: AddBookCoverAction,
+): AddBookCoverState<T> {
+  switch (action.type) {
+    case 'focus':
+      return { images, focusedIndex: action.index };
+    case 'toggleKeep': {
+      const toggled = toggleKeptCover(images, action.index);
+      return {
+        images: toggled,
+        focusedIndex: toggled[action.index]?.selected
+          ? action.index
+          : focusedIndex,
+      };
+    }
+    case 'setDefault':
+      if (!images[action.index]?.selected) {
+        return { images, focusedIndex };
+      }
+      return {
+        images: images.map((image, imageIndex) => ({
+          ...image,
+          isDefault: imageIndex === action.index,
+        })),
+        focusedIndex,
+      };
+    case 'setSpineColor':
+      return {
+        images: images.map((image, imageIndex) =>
+          imageIndex === focusedIndex
+            ? { ...image, spineColor: action.spineColor }
+            : image,
+        ),
+        focusedIndex,
+      };
+  }
 }

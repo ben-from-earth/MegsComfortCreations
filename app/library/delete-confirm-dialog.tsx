@@ -3,6 +3,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { MEDIA_TYPE_DEFINITIONS } from 'lib/constants/media-types';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
 import { CoverImage } from '@/mediacollector/cover-tile';
+import Modal from '@/components/ui/modal';
 
 const buttonClassName =
   'inline-flex h-11 cursor-pointer items-center gap-2 rounded-[10px] px-4.5 font-extrabold focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3d3935] disabled:cursor-not-allowed disabled:opacity-60';
@@ -25,25 +26,12 @@ export default function DeleteConfirmDialog({
   onCancel,
   onConfirm,
 }: DeleteConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const headingId = useId();
   const descriptionId = useId();
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-    const opener = document.activeElement;
-    dialog.showModal();
     cancelButtonRef.current?.focus();
-    return () => {
-      dialog.close();
-      if (opener instanceof HTMLElement) {
-        opener.focus();
-      }
-    };
   }, []);
 
   const handleCancel = () => {
@@ -69,22 +57,16 @@ export default function DeleteConfirmDialog({
   ].join(' · ');
 
   return (
-    <dialog
-      ref={dialogRef}
+    <Modal
       role="alertdialog"
-      aria-modal="true"
       aria-labelledby={headingId}
       aria-describedby={descriptionId}
-      onCancel={(event) => {
-        event.preventDefault();
-        handleCancel();
-      }}
+      onClose={handleCancel}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           handleCancel();
         }
       }}
-      className="fixed inset-0 m-0 hidden h-full max-h-none w-full max-w-none items-center justify-center border-0 bg-[rgba(43,48,40,0.55)] p-4 text-[#2b2826] backdrop:bg-transparent open:flex"
     >
       <div className="flex w-115 max-w-full flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_24px_60px_rgba(30,30,25,0.3)]">
         <div className="flex flex-col gap-4.5 px-6.5 pt-6.5 pb-5">
@@ -161,6 +143,6 @@ export default function DeleteConfirmDialog({
           </button>
         </div>
       </div>
-    </dialog>
+    </Modal>
   );
 }

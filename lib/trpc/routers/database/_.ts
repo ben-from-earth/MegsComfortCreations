@@ -28,7 +28,11 @@ import type {
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
-import { titleRearrange } from 'lib/helpers/title-rearrange';
+import {
+  toDisplayTitle,
+  toStoredTitle,
+  toTitleSearchTerm,
+} from 'lib/helpers/title-articles';
 import {
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
@@ -258,7 +262,7 @@ export const databaseRouter = router({
         })();
         const titleFilter =
           title && title.trim().length > 0
-            ? ilike(books.title, `%${title}%`)
+            ? ilike(books.title, `%${toTitleSearchTerm(title)}%`)
             : undefined;
         const whereFilter = and(genreFilter, titleFilter);
 
@@ -295,6 +299,7 @@ export const databaseRouter = router({
           const images = imagesByBookId.get(row.id) ?? [];
           return {
             ...row,
+            title: toDisplayTitle(row.title),
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
             genres: genresByBookId.get(row.id) ?? [],
@@ -326,7 +331,7 @@ export const databaseRouter = router({
         ascDesc === 'asc' ? asc(otherMedia.title) : desc(otherMedia.title);
       const titleFilter =
         title && title.trim().length > 0
-          ? ilike(otherMedia.title, `%${title}%`)
+          ? ilike(otherMedia.title, `%${toTitleSearchTerm(title)}%`)
           : undefined;
       const whereFilter = and(eq(otherMedia.mediaType, type), titleFilter);
 
@@ -357,6 +362,7 @@ export const databaseRouter = router({
         const images = imagesByOtherMediaId.get(row.id) ?? [];
         return {
           ...row,
+          title: toDisplayTitle(row.title),
           images,
           spineColor: resolveDisplaySpineColor(images, row.spineColor),
         };
@@ -491,7 +497,7 @@ export const databaseRouter = router({
               const [insertedBook] = await tx
                 .insert(books)
                 .values({
-                  title: titleRearrange(data.blockInfo.title),
+                  title: toStoredTitle(data.blockInfo.title),
                   author: data.blockInfo.author ?? '',
                   pageCount: data.blockInfo.pageCount ?? null,
                   pubYear: data.blockInfo.pubYear ?? null,
@@ -562,10 +568,11 @@ export const databaseRouter = router({
               createSaveSuccessResult({
                 blockID: data.blockID,
                 title: data.blockInfo.title,
-                message: `${titleRearrange(book.title)} successfully added to database.`,
+                message: `${toDisplayTitle(book.title)} successfully added to database.`,
                 type: data.type,
                 actionAttemptItem: {
                   ...book,
+                  title: toDisplayTitle(book.title),
                   images,
                   spineColor: persistedSpineColor,
                   genres: data.blockInfo.genres,
@@ -614,7 +621,7 @@ export const databaseRouter = router({
 
         const insertData = {
           mediaType: data.type,
-          title: titleRearrange(data.blockInfo.title),
+          title: toStoredTitle(data.blockInfo.title),
           spineColor: resolveDisplaySpineColor(
             data.images,
             data.blockInfo.spineColor,
@@ -629,7 +636,7 @@ export const databaseRouter = router({
               .returning();
             if (!insertedOtherMedia) {
               throw new Error(
-                `${titleRearrange(insertData.title)} could not be saved to the database.`,
+                `${toDisplayTitle(insertData.title)} could not be saved to the database.`,
               );
             }
             return insertedOtherMedia;
@@ -680,10 +687,11 @@ export const databaseRouter = router({
             createSaveSuccessResult({
               blockID: data.blockID,
               title: data.blockInfo.title,
-              message: `${titleRearrange(insertData.title)} successfully added to database.`,
+              message: `${toDisplayTitle(insertData.title)} successfully added to database.`,
               type: data.type,
               actionAttemptItem: {
                 ...savedOtherMedia,
+                title: toDisplayTitle(savedOtherMedia.title),
                 images,
                 spineColor: persistedSpineColor,
                 blockID: data.blockID,
@@ -734,7 +742,7 @@ export const databaseRouter = router({
         const data = validation.data;
         const whereExpression = data.id
           ? eq(books.id, data.id)
-          : eq(books.title, data.title);
+          : eq(books.title, toStoredTitle(data.title));
         const [existingBook] = await db
           .select()
           .from(books)
@@ -768,7 +776,7 @@ export const databaseRouter = router({
         const [book] = await db
           .update(books)
           .set({
-            title: data.title,
+            title: toStoredTitle(data.title),
             author: data.author ?? '',
             pageCount: data.pageCount ?? null,
             pubYear: data.pubYear ?? null,
@@ -782,9 +790,10 @@ export const databaseRouter = router({
         await replaceBookImageRecords(db, book.id, resolvedImages.images);
 
         return {
-          message: `${titleRearrange(book.title)} successfully edited.`,
+          message: `${toDisplayTitle(book.title)} successfully edited.`,
           actionAttemptItem: {
             ...book,
+            title: toDisplayTitle(book.title),
             images,
             spineColor: persistedSpineColor,
           },
@@ -805,7 +814,10 @@ export const databaseRouter = router({
       const data = validation.data;
       const whereExpression = data.id
         ? and(eq(otherMedia.id, data.id), eq(otherMedia.mediaType, type))
-        : and(eq(otherMedia.title, data.title), eq(otherMedia.mediaType, type));
+        : and(
+            eq(otherMedia.title, toStoredTitle(data.title)),
+            eq(otherMedia.mediaType, type),
+          );
       const [existingOtherMedia] = await db
         .select()
         .from(otherMedia)
@@ -840,7 +852,7 @@ export const databaseRouter = router({
         .update(otherMedia)
         .set({
           mediaType: type,
-          title: data.title,
+          title: toStoredTitle(data.title),
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)
@@ -855,9 +867,10 @@ export const databaseRouter = router({
       );
 
       return {
-        message: `${titleRearrange(savedOtherMedia.title)} successfully edited.`,
+        message: `${toDisplayTitle(savedOtherMedia.title)} successfully edited.`,
         actionAttemptItem: {
           ...savedOtherMedia,
+          title: toDisplayTitle(savedOtherMedia.title),
           images,
           spineColor: persistedSpineColor,
         },

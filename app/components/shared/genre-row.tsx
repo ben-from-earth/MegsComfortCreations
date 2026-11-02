@@ -26,7 +26,7 @@ const VISIBLE_GENRE_COUNT = 2;
 const labelClassName =
   'text-[11px] font-extrabold tracking-[1px] text-[#6b645d] uppercase';
 const popoverClassName =
-  'absolute z-20 rounded-xl bg-white shadow-[0_12px_28px_rgba(40,35,30,0.18)]';
+  'absolute z-30 rounded-xl bg-white shadow-[0_12px_28px_rgba(40,35,30,0.18)]';
 const addGenreButtonClassName =
   'h-7 shrink-0 cursor-pointer rounded-full border border-dashed border-[#b3aaa0] bg-white px-2.5 text-[11px] font-bold text-[#6b645d]';
 

@@ -1,4 +1,5 @@
 import {
+  addBookFormSchema,
   convertMediaItemFormToDatabaseItem,
   convertMediaItemToForm,
   getMediaItemFormDefaultValues,
@@ -101,6 +102,33 @@ describe('mediaItemFormSchema', () => {
         ),
       ).toBe(true);
     }
+  });
+});
+
+describe('addBookFormSchema', () => {
+  test.each([null, '   '])('rejects author %p', (author) => {
+    const form = createMediaItemForm();
+    const result = addBookFormSchema.safeParse({
+      ...form,
+      blockInfo: { ...form.blockInfo, author },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.path.join('.') === 'blockInfo.author' &&
+            issue.message === 'Author is Required',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  test('accepts a book with an author', () => {
+    expect(addBookFormSchema.safeParse(createMediaItemForm()).success).toBe(
+      true,
+    );
   });
 });
 

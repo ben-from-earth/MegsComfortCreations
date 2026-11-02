@@ -6,6 +6,7 @@ export function SpineColorEditor({
   hasCover,
   isLocked,
   isChanged,
+  caption,
   onApply,
 }: {
   spineColor: string | undefined;
@@ -13,6 +14,7 @@ export function SpineColorEditor({
   hasCover: boolean;
   isLocked: boolean;
   isChanged: boolean;
+  caption?: string;
   onApply: (hex: string) => void;
 }) {
   const handleColorPick = async () => {
@@ -43,13 +45,13 @@ export function SpineColorEditor({
       />
       <div className="flex min-w-23 flex-col gap-px">
         <span className="text-xs font-extrabold">Spine color</span>
-        {hasCover ? (
+        {caption !== undefined || hasCover ? (
           <span
             className={`text-[11px] font-bold ${
               isChanged ? 'text-[#8a5a22]' : 'text-[#6b645d]'
             }`}
           >
-            {spineColor}
+            {caption ?? spineColor}
           </span>
         ) : null}
       </div>

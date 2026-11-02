@@ -1,3 +1,5 @@
+import { twMerge } from 'tailwind-merge';
+
 export type DefaultCoverRibbonVariant = 'saved' | 'new';
 
 const ribbonFill: Record<DefaultCoverRibbonVariant, string> = {
@@ -37,15 +39,20 @@ export function defaultCoverTileLabel(
 
 export function DefaultCoverRibbon({
   variant,
+  className,
 }: {
   variant: DefaultCoverRibbonVariant;
+  className?: string;
 }) {
   return (
     <svg
       viewBox="0 0 16 26"
       role="img"
       aria-label={ribbonLabel[variant]}
-      className="pointer-events-none absolute top-0 left-1 h-6.5 w-4 drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]"
+      className={twMerge(
+        'pointer-events-none absolute top-0 left-1 h-6.5 w-4 drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.35)]',
+        className,
+      )}
     >
       <path
         d="M1 0h14v24l-7-5.25L1 24z"
@@ -61,9 +68,11 @@ export function DefaultCoverRibbon({
 export function SetDefaultRibbonButton({
   coverNumber,
   onClick,
+  className,
 }: {
   coverNumber: number;
   onClick: () => void;
+  className?: string;
 }) {
   return (
     <button
@@ -71,7 +80,10 @@ export function SetDefaultRibbonButton({
       onClick={onClick}
       aria-label={`Set cover ${coverNumber} as default`}
       title="Set as default"
-      className="absolute top-0 left-1 z-20 h-6.5 w-4 cursor-pointer border-0 bg-transparent p-0"
+      className={twMerge(
+        'absolute top-0 left-1 z-20 h-6.5 w-4 cursor-pointer border-0 bg-transparent p-0',
+        className,
+      )}
     >
       <svg width="16" height="26" viewBox="0 0 16 26" aria-hidden="true">
         <path

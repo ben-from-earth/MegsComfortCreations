@@ -208,7 +208,6 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
 
           {type !== 'album' ? (
             <LibrarySpineColorRow
-              coverRole="selected"
               isLocked={isLocked}
               isChanged={
                 selectedImage !== undefined &&

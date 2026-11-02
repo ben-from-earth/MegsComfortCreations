@@ -7,7 +7,6 @@ import LibraryHeader from '@/library/library-header';
 import LibraryPageContext, {
   type LibraryPageContextValue,
 } from 'lib/context/library-page-context';
-import { titleRearrange } from 'lib/helpers/title-rearrange';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { MediaType } from 'lib/constants/media-types';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
@@ -50,7 +49,7 @@ export default function LibraryPage() {
     page,
     ascDesc,
     genre,
-    title: titleRearrange(titleSearch),
+    title: titleSearch,
   });
 
   useEffect(() => {

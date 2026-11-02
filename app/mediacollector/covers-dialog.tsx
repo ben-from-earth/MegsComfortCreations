@@ -1,5 +1,6 @@
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
+import Modal from '@/components/ui/modal';
 import { MediaType } from 'lib/constants/media-types';
 import type { MediaItemForm } from './collector-form/collector-form-schema';
 import { CoverTile, UploadTile } from './cover-tile';
@@ -39,26 +40,17 @@ export default function CoversDialog({
     ),
   );
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onCancel();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCancel]);
-
   return (
-    <div
-      className="fixed inset-0 z-100 flex items-center justify-center bg-[rgba(43,48,40,0.55)] p-4"
-      onClick={onCancel}
+    <Modal
+      aria-labelledby={headingId}
+      onClose={onCancel}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onCancel();
+        }
+      }}
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={headingId}
-        onClick={(event) => event.stopPropagation()}
         className="flex max-h-[90vh] w-190 max-w-full flex-col overflow-hidden rounded-[20px] bg-white text-[#2b2826] shadow-[0_24px_60px_rgba(30,30,25,0.3)]"
       >
         <div className="flex items-start justify-between gap-4 px-6 pt-5.5 pb-3.5">
@@ -126,6 +118,6 @@ export default function CoversDialog({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

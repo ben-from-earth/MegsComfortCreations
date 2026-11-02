@@ -35,6 +35,15 @@ export const mediaItemFormSchema = z.object({
   isDatabase: z.boolean(),
 });
 
+export const addBookFormSchema = mediaItemFormSchema.extend({
+  blockInfo: mediaItemBlockInfoSchema.extend({
+    author: mediaItemBlockInfoSchema.shape.author.refine(
+      (author) => author != null && author.trim() !== '',
+      'Author is Required',
+    ),
+  }),
+});
+
 export type MediaItemForm = z.infer<typeof mediaItemFormSchema>;
 
 export function toFormImages(

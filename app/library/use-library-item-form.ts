@@ -4,6 +4,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { trpc } from 'lib/trpc/client';
 import { useLibraryPageContext } from 'lib/context/library-page-context';
 import {
+  addBookFormSchema,
   convertMediaItemFormToDatabaseItem,
   getMediaItemFormDefaultValues,
   mediaItemFormSchema,
@@ -40,7 +41,9 @@ export function useLibraryItemForm({
   const [isSearchingCovers, setIsSearchingCovers] = useState(false);
   const defaultValues = getMediaItemFormDefaultValues(item);
   const form = useForm<MediaItemForm>({
-    resolver: standardSchemaResolver(mediaItemFormSchema),
+    resolver: standardSchemaResolver(
+      isAdd ? addBookFormSchema : mediaItemFormSchema,
+    ),
     defaultValues,
     mode: 'onSubmit',
     reValidateMode: 'onChange',
@@ -247,8 +250,11 @@ export function useLibraryItemForm({
 
   const onSearchCovers = async () => {
     setCoverSearchBanner(null);
-    const isTitleValid = await form.trigger('blockInfo.title');
-    if (!isTitleValid) {
+    const isSearchInputValid = await form.trigger([
+      'blockInfo.title',
+      'blockInfo.author',
+    ]);
+    if (!isSearchInputValid) {
       return;
     }
     await searchCovers(form.getValues());
