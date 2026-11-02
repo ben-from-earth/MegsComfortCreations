@@ -1,6 +1,6 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import { and, asc, desc, ilike, isNull, sql, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, exists, ilike, notExists, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb } from '@/db/client';
 import {
@@ -206,9 +206,22 @@ export const databaseRouter = router({
             return undefined;
           }
           if (genre === NO_GENRE_FILTER) {
-            return isNull(genresBooks.bookId);
+            return notExists(
+              db
+                .select({ bookId: genresBooks.bookId })
+                .from(genresBooks)
+                .where(eq(genresBooks.bookId, books.id)),
+            );
           }
-          return eq(genres.genre, genre);
+          return exists(
+            db
+              .select({ bookId: genresBooks.bookId })
+              .from(genresBooks)
+              .innerJoin(genres, eq(genresBooks.genreId, genres.id))
+              .where(
+                and(eq(genresBooks.bookId, books.id), eq(genres.genre, genre)),
+              ),
+          );
         })();
         const titleFilter =
           title && title.trim().length > 0
@@ -227,8 +240,6 @@ export const databaseRouter = router({
             mediaType: sql<'book'>`'book'`,
           })
           .from(books)
-          .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
-          .leftJoin(genres, eq(genresBooks.genreId, genres.id))
           .where(whereFilter)
           .orderBy(orderExpression)
           .limit(limit)
@@ -236,11 +247,9 @@ export const databaseRouter = router({
 
         const [{ count }] = await db
           .select({
-            count: sql<number>`cast(count(distinct ${books.id}) as int)`,
+            count: sql<number>`cast(count(*) as int)`,
           })
           .from(books)
-          .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
-          .leftJoin(genres, eq(genresBooks.genreId, genres.id))
           .where(whereFilter);
 
         const imagesByBookId = await loadBookImagesById(

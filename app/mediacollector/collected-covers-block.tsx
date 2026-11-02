@@ -1,12 +1,10 @@
 import { memo, use } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import LockIcon from '@mui/icons-material/LockOutlined';
 import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { useFormContext, useWatch } from 'react-hook-form';
-import GenreContext from 'lib/context/genre-context';
-import { Combobox } from '@/components/shared/combobox';
+import { GenreRow } from '@/components/shared/genre-row';
 import CBBImages from '@/mediacollector/cbb-images';
 import CollectedItemTextField, {
   type CollectedFieldEditState,
@@ -50,7 +48,6 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   blockID,
   onDelete,
 }: CollectedCoversBlockProps) {
-  const allGenres = use(GenreContext);
   const { originalsByBlockId, unlockedBlockIds, setBlockUnlocked } =
     use(DatabaseEditContext);
   const { control, getValues, setValue } = useFormContext<CollectorFormData>();
@@ -105,12 +102,12 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
         hasError || needsCover
-          ? 'border-2 border-[#b0533a]'
+          ? 'border-[#b0533a] ring-1 ring-[#b0533a]'
           : changeCount > 0
-            ? 'border-2 border-[#c9973f]'
-            : 'border border-[#e6e0d8]'
+            ? 'border-[#c9973f] ring-1 ring-[#c9973f]'
+            : 'border-[#e6e0d8]'
       }`}
     >
       <div className="flex items-center justify-between gap-2 px-4.5 pt-3.5">
@@ -194,54 +191,22 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                   editState={fieldEditState(changes?.pageCount)}
                 />
               </div>
-              <div
-                className={`flex flex-wrap items-center gap-1.5 rounded-lg ${
-                  changes?.genres
-                    ? 'outline-[1.5px] outline-offset-[3px] outline-[#c9973f]'
-                    : ''
-                }`}
-              >
-                {genres.map((genre) => (
-                  <span
-                    key={genre}
-                    className={`inline-flex h-7 items-center gap-1 rounded-full bg-[#efebe5] text-xs font-bold ${
-                      isLocked ? 'px-2.5' : 'pr-1 pl-2.5'
-                    }`}
-                  >
-                    {genre}
-                    {isLocked ? null : (
-                      <button
-                        type="button"
-                        onClick={() => handleGenreClick(genre, false)}
-                        className="flex h-5.5 w-5.5 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-[#6b645d]"
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </button>
-                    )}
-                  </span>
-                ))}
-                {isLocked ? null : (
-                  <Combobox
-                    label="genres"
-                    items={allGenres
-                      .filter((genre) => !genres.includes(genre))
-                      .map((genre) => ({ value: genre }))}
-                    onSelect={(genre) => handleGenreClick(genre, true)}
-                    trigger={
-                      <button
-                        type="button"
-                        className="h-7 cursor-pointer rounded-full border border-dashed border-[#b3aaa0] bg-transparent px-2.5 text-xs font-bold text-[#6b645d]"
-                      >
-                        + Genre
-                      </button>
-                    }
-                  />
-                )}
-              </div>
             </>
           ) : null}
         </div>
       </div>
+
+      {type === 'book' ? (
+        <GenreRow
+          genres={genres}
+          isEditable={!isLocked}
+          isChanged={changes?.genres ?? false}
+          onAdd={(genre) => handleGenreClick(genre, true)}
+          onRemove={(genre) => handleGenreClick(genre, false)}
+        />
+      ) : (
+        <div className="mx-4.5 mb-3.5 h-10" />
+      )}
 
       <CBBImages
         index={index}

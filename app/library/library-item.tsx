@@ -23,7 +23,7 @@ import {
   diffDatabaseItem,
   restoreDatabaseItem,
 } from '@/mediacollector/database-item-changes';
-import LibraryGenreChips from './library-genre-chips';
+import { LibraryGenreRow } from './library-genre-chips';
 import LibraryItemCovers from './library-item-covers';
 import LibraryItemTextField from './library-item-text-field';
 import LibrarySpineColorRow from './library-spine-color-row';
@@ -101,10 +101,10 @@ function LibraryCard({
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
         <article
-          className={`relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+          className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
             changeCount > 0
-              ? 'border-2 border-[#c9973f]'
-              : 'border border-[#e6e0d8]'
+              ? 'border-[#c9973f] ring-1 ring-[#c9973f]'
+              : 'border-[#e6e0d8]'
           }`}
         >
           <div className="flex items-center justify-between gap-2 px-4.5 pt-3.5">
@@ -182,14 +182,17 @@ function LibraryCard({
                       editState={fieldEditState(changes.pageCount)}
                     />
                   </div>
-                  <LibraryGenreChips
-                    isLocked={isLocked}
-                    isChanged={changes.genres}
-                  />
                 </>
               ) : null}
             </div>
           </div>
+
+          {type === 'book' ? (
+            <LibraryGenreRow
+              isEditable={!isLocked}
+              isChanged={changes.genres}
+            />
+          ) : null}
 
           <LibraryItemCovers
             type={type}

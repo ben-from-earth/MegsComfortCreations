@@ -106,7 +106,7 @@ export default function LibraryPage() {
 
   return (
     <LibraryPageContext.Provider value={libraryPageContextValue}>
-      <main className="mx-auto flex max-w-440 flex-col gap-9 px-6 pt-7 pb-16">
+      <main className="mx-auto flex max-w-440 flex-col gap-4.5 px-6 pt-7 pb-16">
         <LibraryHeader />
         <LibraryItems />
       </main>

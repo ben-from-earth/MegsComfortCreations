@@ -13,7 +13,7 @@ import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
 import { CoverImage, UploadTile } from '@/mediacollector/cover-tile';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
 import { canAddBook, toggleKeptCover } from './cover-edit-rules';
-import LibraryGenreChips from './library-genre-chips';
+import { AddBookGenreChips } from './library-genre-chips';
 import LibraryItemTextField from './library-item-text-field';
 import LibrarySpineColorRow from './library-spine-color-row';
 import { useLibraryItemForm } from './use-library-item-form';
@@ -202,7 +202,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
                     <LibraryItemTextField name="pubYear" label="Published" />
                     <LibraryItemTextField name="pageCount" label="Pages" />
                   </div>
-                  <LibraryGenreChips isLocked={false} isChanged={false} />
+                  <AddBookGenreChips />
                 </div>
               </div>
 
