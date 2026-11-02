@@ -1,4 +1,4 @@
-import { createContext, Dispatch, SetStateAction, useContext } from 'react';
+import { createContext, Dispatch, SetStateAction, use } from 'react';
 import { LibraryGenreFilter, LibraryList } from '@/library/page';
 import { MediaType } from 'lib/constants/media-types';
 import { DatabaseSortOption } from 'lib/constants/database-sort-options';
@@ -26,10 +26,10 @@ const LibraryPageContext = createContext<LibraryPageContextValue | undefined>(
 );
 
 export function useLibraryPageContext() {
-  const ctx = useContext(LibraryPageContext);
-  if (!ctx)
+  const libraryPage = use(LibraryPageContext);
+  if (!libraryPage)
     throw new Error('Must access library page context inside the provider');
-  return ctx;
+  return libraryPage;
 }
 
 export default LibraryPageContext;

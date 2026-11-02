@@ -70,7 +70,7 @@ export default function LibraryItems() {
         </div>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(min(380px,100%),1fr))] items-start gap-5">
           {items.map((item) => (
-            <LibraryItem key={`${type}-${item.id}`} info={item} />
+            <LibraryItem key={`${type}-${item.id}`} item={item} />
           ))}
         </div>
         {total > 0 ? (

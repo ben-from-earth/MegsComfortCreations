@@ -21,6 +21,7 @@ export interface PostSavedMediaItem {
   author?: string;
   pageCount?: number | null;
   pubYear?: number | null;
+  genres?: string[];
 }
 
 export interface SuccessfulPaginationResponse {

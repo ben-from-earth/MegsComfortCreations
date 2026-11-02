@@ -12,8 +12,8 @@ import {
 import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
 import { CoverImage, UploadTile } from '@/mediacollector/cover-tile';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
-import { canAddBook, toggleKeptCover } from './cover-edit-rules';
-import { AddBookGenreChips } from './library-genre-chips';
+import { toggleKeptCover } from './cover-edit-rules';
+import { AddBookGenreChips } from './library-genres';
 import LibraryItemTextField from './library-item-text-field';
 import LibrarySpineColorRow from './library-spine-color-row';
 import { useLibraryItemForm } from './use-library-item-form';
@@ -283,7 +283,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
 
               <div className={defaultImage ? '' : 'opacity-50'}>
                 <LibrarySpineColorRow
-                  targetFlag="isDefault"
+                  coverRole="isDefault"
                   isLocked={false}
                   isChanged={false}
                 />
@@ -306,7 +306,11 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
               </button>
               <button
                 type="submit"
-                disabled={!canAddBook(title, images) || isSubmitting}
+                disabled={
+                  title.trim() === '' ||
+                  !images.some((image) => image.selected) ||
+                  isSubmitting
+                }
                 className={primaryButtonClassName}
               >
                 {isSubmitting ? 'Adding…' : 'Add book'}

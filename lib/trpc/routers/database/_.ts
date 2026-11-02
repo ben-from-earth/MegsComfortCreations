@@ -1,8 +1,18 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import { and, asc, desc, eq, exists, ilike, notExists, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  notExists,
+  sql,
+} from 'drizzle-orm';
 import { z } from 'zod';
-import { db as defaultDb } from '@/db/client';
+import { db as defaultDb, type Db } from '@/db/client';
 import {
   books,
   genres,
@@ -72,6 +82,29 @@ function resolveDisplaySpineColor(
 ) {
   const defaultImage = images.find((image) => image.isDefault);
   return defaultImage?.spineColor ?? fallbackSpineColor;
+}
+
+async function loadBookGenresById(db: Db, bookIds: string[]) {
+  if (bookIds.length === 0) {
+    return new Map<string, string[]>();
+  }
+
+  const rows = await db
+    .select({
+      bookId: genresBooks.bookId,
+      genre: genres.genre,
+    })
+    .from(genresBooks)
+    .innerJoin(genres, eq(genresBooks.genreId, genres.id))
+    .where(inArray(genresBooks.bookId, bookIds));
+
+  const genresByBookId = new Map<string, string[]>();
+  for (const row of rows) {
+    const currentGenres = genresByBookId.get(row.bookId) ?? [];
+    currentGenres.push(row.genre);
+    genresByBookId.set(row.bookId, currentGenres);
+  }
+  return genresByBookId;
 }
 
 const IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR =
@@ -229,39 +262,42 @@ export const databaseRouter = router({
             : undefined;
         const whereFilter = and(genreFilter, titleFilter);
 
-        const rows = await db
-          .select({
-            id: books.id,
-            title: books.title,
-            author: books.author,
-            pageCount: books.pageCount,
-            pubYear: books.pubYear,
-            spineColor: books.spineColor,
-            mediaType: sql<'book'>`'book'`,
-          })
-          .from(books)
-          .where(whereFilter)
-          .orderBy(orderExpression)
-          .limit(limit)
-          .offset(offset);
+        const [rows, [{ count }]] = await Promise.all([
+          db
+            .select({
+              id: books.id,
+              title: books.title,
+              author: books.author,
+              pageCount: books.pageCount,
+              pubYear: books.pubYear,
+              spineColor: books.spineColor,
+              mediaType: sql<'book'>`'book'`,
+            })
+            .from(books)
+            .where(whereFilter)
+            .orderBy(orderExpression)
+            .limit(limit)
+            .offset(offset),
+          db
+            .select({
+              count: sql<number>`cast(count(*) as int)`,
+            })
+            .from(books)
+            .where(whereFilter),
+        ]);
+        const bookIds = rows.map((row) => row.id);
+        const [imagesByBookId, genresByBookId] = await Promise.all([
+          loadBookImagesById(db, bookIds),
+          loadBookGenresById(db, bookIds),
+        ]);
 
-        const [{ count }] = await db
-          .select({
-            count: sql<number>`cast(count(*) as int)`,
-          })
-          .from(books)
-          .where(whereFilter);
-
-        const imagesByBookId = await loadBookImagesById(
-          db,
-          rows.map((row) => row.id),
-        );
         const rowsWithResolvedImages = rows.map((row) => {
           const images = imagesByBookId.get(row.id) ?? [];
           return {
             ...row,
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
+            genres: genresByBookId.get(row.id) ?? [],
           };
         });
 
@@ -294,22 +330,24 @@ export const databaseRouter = router({
           : undefined;
       const whereFilter = and(eq(otherMedia.mediaType, type), titleFilter);
 
-      const rows = await db
-        .select({
-          id: otherMedia.id,
-          mediaType: otherMedia.mediaType,
-          title: otherMedia.title,
-          spineColor: otherMedia.spineColor,
-        })
-        .from(otherMedia)
-        .where(whereFilter)
-        .orderBy(orderExpression)
-        .limit(limit)
-        .offset(offset);
-      const [{ count }] = await db
-        .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(otherMedia)
-        .where(whereFilter);
+      const [rows, [{ count }]] = await Promise.all([
+        db
+          .select({
+            id: otherMedia.id,
+            mediaType: otherMedia.mediaType,
+            title: otherMedia.title,
+            spineColor: otherMedia.spineColor,
+          })
+          .from(otherMedia)
+          .where(whereFilter)
+          .orderBy(orderExpression)
+          .limit(limit)
+          .offset(offset),
+        db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(otherMedia)
+          .where(whereFilter),
+      ]);
 
       const imagesByOtherMediaId = await loadOtherMediaImagesById(
         db,

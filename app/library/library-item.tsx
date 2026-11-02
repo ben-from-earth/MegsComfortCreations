@@ -23,7 +23,7 @@ import {
   diffDatabaseItem,
   restoreDatabaseItem,
 } from '@/mediacollector/database-item-changes';
-import { LibraryGenreRow } from './library-genre-chips';
+import { LibraryGenreRow } from './library-genres';
 import LibraryItemCovers from './library-item-covers';
 import LibraryItemTextField from './library-item-text-field';
 import LibrarySpineColorRow from './library-spine-color-row';
@@ -33,13 +33,7 @@ const pillClassName = 'rounded-full px-2.5 py-1 text-xs font-extrabold';
 const footerButtonClassName =
   'flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-[13px] font-bold disabled:cursor-not-allowed';
 
-function LibraryCard({
-  item,
-  isReady,
-}: {
-  item: MediaItemForm;
-  isReady: boolean;
-}) {
+function LibraryCard({ item }: { item: MediaItemForm }) {
   const { refreshLibrary } = useLibraryPageContext();
   const [isLocked, setIsLocked] = useState(true);
   const [baseline, setBaseline] = useState(item);
@@ -205,7 +199,7 @@ function LibraryCard({
 
           {type !== 'album' ? (
             <LibrarySpineColorRow
-              targetFlag="selected"
+              coverRole="selected"
               isLocked={isLocked}
               isChanged={
                 selectedImage !== undefined &&
@@ -225,9 +219,8 @@ function LibraryCard({
               {isLocked ? (
                 <button
                   type="button"
-                  disabled={!isReady}
                   onClick={() => setIsLocked(false)}
-                  className={`${footerButtonClassName} border-[#e0d9d0] bg-white text-[#2b2826] disabled:text-[#b3aaa0]`}
+                  className={`${footerButtonClassName} border-[#e0d9d0] bg-white text-[#2b2826]`}
                 >
                   <LockOpenIcon sx={{ fontSize: 16 }} />
                   Unlock
@@ -286,33 +279,23 @@ function LibraryCard({
 }
 
 export interface LibraryItemProps {
-  info: PostSavedMediaItem;
+  item: PostSavedMediaItem;
 }
 
-const LibraryItem = memo(function LibraryItem({ info }: LibraryItemProps) {
+const LibraryItem = memo(function LibraryItem({ item }: LibraryItemProps) {
   const {
     libraryList: { type: displayedListType },
   } = useLibraryPageContext();
   const itemType =
-    MEDIA_TYPES.find((mediaType) => mediaType === info.mediaType) ??
+    MEDIA_TYPES.find((mediaType) => mediaType === item.mediaType) ??
     displayedListType;
-  const genresQuery = trpc.genres.getForBook.useQuery(
-    { bookID: info.id },
-    { enabled: itemType === 'book' },
-  );
-  const isReady = itemType !== 'book' || !genresQuery.isPending;
-  const item = convertMediaItemToForm({
-    item: info,
-    type: itemType,
-    genres: genresQuery.data?.genres ?? [],
-  });
 
   return (
-    // The card's form captures its values on mount, so remount once book genres load.
     <LibraryCard
-      key={isReady ? 'ready' : 'loading'}
-      item={item}
-      isReady={isReady}
+      item={convertMediaItemToForm({
+        item,
+        type: itemType,
+      })}
     />
   );
 });

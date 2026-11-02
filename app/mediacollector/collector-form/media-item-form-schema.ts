@@ -99,7 +99,7 @@ export function getMediaItemFormDefaultValues(
 export function convertMediaItemToForm({
   item,
   type,
-  genres = [],
+  genres,
 }: {
   item: PostSavedMediaItem;
   type: MediaType;
@@ -114,7 +114,7 @@ export function convertMediaItemToForm({
     blockInfo: {
       title: item.title,
       spineColor: defaultImage?.spineColor ?? item.spineColor,
-      genres,
+      genres: genres ?? item.genres ?? [],
       author: item.author ?? null,
       pubYear: item.pubYear ?? null,
       pageCount: item.pageCount ?? null,

@@ -37,10 +37,3 @@ export function toggleKeptCover<T extends LibraryCoverFlags>(
     isDefault: imageIndex === firstKeptIndex,
   }));
 }
-
-export function canAddBook(
-  title: string,
-  images: Pick<LibraryCoverFlags, 'selected'>[],
-): boolean {
-  return title.trim() !== '' && images.some((image) => image.selected);
-}

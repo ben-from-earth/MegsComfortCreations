@@ -8,10 +8,7 @@ import LibraryPageContext, {
   type LibraryPageContextValue,
 } from 'lib/context/library-page-context';
 import { titleRearrange } from 'lib/helpers/title-rearrange';
-import {
-  PostSavedMediaItem,
-  SuccessfulPaginationResponse,
-} from 'lib/interfaces/global-interfaces';
+import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { MediaType } from 'lib/constants/media-types';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DatabaseSortOption } from 'lib/constants/database-sort-options';
@@ -46,16 +43,9 @@ export default function LibraryPage() {
   const [genre, setGenre] = useState<LibraryGenreFilter>('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
   const latestPaginationStateRef = useRef({ type, page, limit });
-  const effectiveSort = useMemo(() => {
-    if (type === 'book') {
-      return sortBy;
-    }
-    return 'title';
-  }, [type, sortBy]);
-
   const paginatedQuery = trpc.database.getPaginated.useQuery({
     type,
-    sort: effectiveSort,
+    sort: type === 'book' ? sortBy : 'title',
     limit,
     page,
     ascDesc,
@@ -71,13 +61,13 @@ export default function LibraryPage() {
     if (!paginatedQuery.data) return;
     const { type: currentType, page: currentPage, limit: currentLimit } =
       latestPaginationStateRef.current;
-    const r = paginatedQuery.data as SuccessfulPaginationResponse;
+    const pagination = paginatedQuery.data;
     setLibraryList({
       type: currentType,
-      items: r.paginatedList,
-      total: r.total,
+      items: pagination.paginatedList,
+      total: pagination.total,
       min: (currentPage - 1) * currentLimit + 1,
-      max: Math.min(currentPage * currentLimit, r.total),
+      max: Math.min(currentPage * currentLimit, pagination.total),
     });
   }, [paginatedQuery.data]);
 

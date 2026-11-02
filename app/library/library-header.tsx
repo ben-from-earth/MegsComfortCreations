@@ -37,7 +37,7 @@ export default function LibraryHeader() {
   } = useLibraryPageContext();
   const genres = use(GenreContext);
   const [titleInput, setTitleInput] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const isBook = type === 'book';
   const sortOptions = isBook
     ? BOOK_SORT_SELECT_OPTIONS
@@ -65,7 +65,7 @@ export default function LibraryHeader() {
           <button
             type="button"
             className={primaryButtonClassName}
-            onClick={() => setIsAdding(true)}
+            onClick={() => setIsAddBookOpen(true)}
           >
             <AddIcon fontSize="small" />
             Add book
@@ -209,7 +209,9 @@ export default function LibraryHeader() {
         </form>
       </div>
 
-      {isAdding ? <AddBookDialog onClose={() => setIsAdding(false)} /> : null}
+      {isAddBookOpen ? (
+        <AddBookDialog onClose={() => setIsAddBookOpen(false)} />
+      ) : null}
     </section>
   );
 }

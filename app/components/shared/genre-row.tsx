@@ -13,7 +13,6 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils/classnames';
-import { filterGenresBySearch, splitVisibleGenres } from './genre-options';
 
 interface GenreEditActions {
   onAdd: (genre: string) => void;
@@ -21,6 +20,8 @@ interface GenreEditActions {
 }
 
 type GenrePopover = 'add' | 'all';
+
+const VISIBLE_GENRE_COUNT = 2;
 
 const labelClassName =
   'text-[11px] font-extrabold tracking-[1px] text-[#6b645d] uppercase';
@@ -106,7 +107,10 @@ function GenreSearchList({
 }: GenreEditActions & { genres: string[] }) {
   const allGenres = use(GenreContext);
   const [search, setSearch] = useState('');
-  const options = filterGenresBySearch(allGenres, search);
+  const genreSearch = search.trim().toLowerCase();
+  const options = allGenres.filter((genre) =>
+    genre.toLowerCase().includes(genreSearch),
+  );
 
   return (
     <Command shouldFilter={false} className="bg-transparent">
@@ -210,7 +214,8 @@ export function GenreRow({
   const addTriggerRef = useRef<HTMLButtonElement>(null);
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
   const [openPopover, setOpenPopover] = useState<GenrePopover | null>(null);
-  const { visibleGenres, moreCount } = splitVisibleGenres(genres);
+  const visibleGenres = genres.slice(0, VISIBLE_GENRE_COUNT);
+  const moreCount = Math.max(genres.length - VISIBLE_GENRE_COUNT, 0);
 
   const closePopover = (shouldReturnFocus: boolean) => {
     const trigger = openPopover === 'add' ? addTriggerRef : moreTriggerRef;

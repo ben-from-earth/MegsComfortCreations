@@ -190,9 +190,8 @@ describe('convertMediaItemToForm', () => {
   test('maps a persisted database row onto MediaItemForm', () => {
     expect(
       convertMediaItemToForm({
-        item: persistedBook,
+        item: { ...persistedBook, genres: ['Science Fiction'] },
         type: 'book',
-        genres: ['Science Fiction'],
       }),
     ).toEqual({
       type: 'book',

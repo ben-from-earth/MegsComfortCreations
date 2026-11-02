@@ -1,5 +1,4 @@
 import {
-  canAddBook,
   removeLibraryCover,
   toggleKeptCover,
 } from '@/library/cover-edit-rules';
@@ -78,13 +77,5 @@ describe('toggleKeptCover', () => {
       { url: 'first', selected: false, isDefault: false },
       { url: 'second', selected: false, isDefault: false },
     ]);
-  });
-});
-
-describe('canAddBook', () => {
-  test('requires a title and one kept cover', () => {
-    expect(canAddBook('  ', covers)).toBe(false);
-    expect(canAddBook('Crawdads', [{ selected: false }])).toBe(false);
-    expect(canAddBook('  Crawdads  ', covers)).toBe(true);
   });
 });

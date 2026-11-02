@@ -117,43 +117,67 @@ export async function resolveAndPersistImageList(
   const resolvedDefaultIndex =
     explicitDefaultIndex >= 0 ? explicitDefaultIndex : defaultImageIndex;
 
-  for (let index = 0; index < normalizedSourceImages.length; index += 1) {
-    const rawSourceImage = normalizedSourceImages[index];
-    const sourceUrl = normalizeImagePath(
-      typeof rawSourceImage === 'string' ? rawSourceImage : rawSourceImage.url,
-    );
-    if (!sourceUrl) {
-      if (!(rawSourceImage == null || rawSourceImage === '')) {
-        failures.push({
-          sourceUrl: '',
-          message: 'Invalid image payload. Expected an image URL string.',
-        });
+  const persistResults = await Promise.all(
+    normalizedSourceImages.map(async (
+      rawSourceImage,
+      index,
+    ): Promise<
+      | { image: PersistedMediaImageRecord }
+      | { failure: { sourceUrl: string; message: string } }
+      | null
+    > => {
+      const sourceUrl = normalizeImagePath(
+        typeof rawSourceImage === 'string'
+          ? rawSourceImage
+          : rawSourceImage.url,
+      );
+      if (!sourceUrl) {
+        return rawSourceImage == null || rawSourceImage === ''
+          ? null
+          : {
+              failure: {
+                sourceUrl: '',
+                message: 'Invalid image payload. Expected an image URL string.',
+              },
+            };
       }
+
+      try {
+        const persistedImage = await persistExternalImageToS3({
+          sourceUrl,
+          mediaType: mediaReference.mediaType,
+          mediaId: mediaReference.mediaId,
+          sortOrder: index,
+        });
+        const spineColor =
+          typeof rawSourceImage === 'object' && rawSourceImage.spineColor
+            ? rawSourceImage.spineColor
+            : fallbackSpineColor;
+        return {
+          image: {
+            ...persistedImage,
+            isDefault: index === resolvedDefaultIndex,
+            spineColor,
+          },
+        };
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Unknown image persistence error';
+        return { failure: { sourceUrl, message } };
+      }
+    }),
+  );
+
+  for (const persistResult of persistResults) {
+    if (persistResult == null) {
       continue;
     }
-
-    try {
-      const persistedImage = await persistExternalImageToS3({
-        sourceUrl,
-        mediaType: mediaReference.mediaType,
-        mediaId: mediaReference.mediaId,
-        sortOrder: index,
-      });
-      const spineColor =
-        typeof rawSourceImage === 'object' && rawSourceImage.spineColor
-          ? rawSourceImage.spineColor
-          : fallbackSpineColor;
-      images.push({
-        ...persistedImage,
-        isDefault: index === resolvedDefaultIndex,
-        spineColor,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unknown image persistence error';
-      failures.push({ sourceUrl, message });
+    if ('image' in persistResult) {
+      images.push(persistResult.image);
+    } else {
+      failures.push(persistResult.failure);
     }
   }
 

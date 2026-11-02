@@ -71,7 +71,6 @@ export function useLibraryItemForm({
   const { mutateAsync: collectMedia } = trpc.collect.collectMedia.useMutation();
   const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
-  const utils = trpc.useUtils();
 
   const applySaveDisplayError = (error: string | undefined) => {
     const displayError = toLibrarySaveDisplayError(error ?? 'Unknown');
@@ -141,12 +140,14 @@ export function useLibraryItemForm({
       );
 
       try {
-        if (genresToLink.length > 0) {
-          await linkGenres({ bookID: data.blockID, genres: genresToLink });
-        }
-        if (genresToUnlink.length > 0) {
-          await unlinkGenres({ bookID: data.blockID, genres: genresToUnlink });
-        }
+        await Promise.all([
+          genresToLink.length > 0
+            ? linkGenres({ bookID: data.blockID, genres: genresToLink })
+            : null,
+          genresToUnlink.length > 0
+            ? unlinkGenres({ bookID: data.blockID, genres: genresToUnlink })
+            : null,
+        ]);
       } catch {
         setSubmitError(GENRE_UPDATE_FAILED_MESSAGE);
         await refreshLibrary();
@@ -154,7 +155,6 @@ export function useLibraryItemForm({
       }
 
       initialGenresRef.current = [...nextGenres];
-      await utils.genres.getForBook.invalidate({ bookID: data.blockID });
     }
 
     await refreshLibrary();
