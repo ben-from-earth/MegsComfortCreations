@@ -83,7 +83,7 @@ npm run dev
 │   ├── docs
 │   ├── mediacollector
 │   ├── profile
-│   ├── showdatabase
+│   ├── library
 │   ├── globals.css
 │   ├── layout.tsx
 │   ├── page.tsx

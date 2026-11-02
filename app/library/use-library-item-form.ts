@@ -2,29 +2,33 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { trpc } from 'lib/trpc/client';
-import { useDatabasePageContext } from 'lib/context/database-page-context';
+import { useLibraryPageContext } from 'lib/context/library-page-context';
 import {
+  addBookFormSchema,
   convertMediaItemFormToDatabaseItem,
   getMediaItemFormDefaultValues,
   mediaItemFormSchema,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
 import {
-  DATABASE_EDIT_FAILED_MESSAGE,
+  LIBRARY_SAVE_FAILED_MESSAGE,
   GENRE_UPDATE_FAILED_MESSAGE,
-  toDatabaseEditDisplayError,
-} from './database-edit-error-display';
+  toLibrarySaveDisplayError,
+} from './library-save-error';
+import { toggleKeptCover } from './cover-edit-rules';
 
 const COVER_SEARCH_DUPLICATE_MESSAGE =
   'A book with this title and author already exists.';
 const COVER_SEARCH_FAILED_MESSAGE = 'Cover search failed. Please try again.';
 
-export function useMediaItemForm({
+export function useLibraryItemForm({
   item,
   onClose,
+  onEditSuccess,
 }: {
   item?: MediaItemForm;
   onClose: () => void;
+  onEditSuccess?: (saved: MediaItemForm) => void;
 }) {
   const formId = useId();
   const isAdd = item == null;
@@ -37,7 +41,9 @@ export function useMediaItemForm({
   const [isSearchingCovers, setIsSearchingCovers] = useState(false);
   const defaultValues = getMediaItemFormDefaultValues(item);
   const form = useForm<MediaItemForm>({
-    resolver: standardSchemaResolver(mediaItemFormSchema),
+    resolver: standardSchemaResolver(
+      isAdd ? addBookFormSchema : mediaItemFormSchema,
+    ),
     defaultValues,
     mode: 'onSubmit',
     reValidateMode: 'onChange',
@@ -45,6 +51,7 @@ export function useMediaItemForm({
 
   const itemRef = useRef(item);
   itemRef.current = item;
+  const searchCoverUrlsRef = useRef(new Set<string>());
   const initialGenresRef = useRef([...defaultValues.blockInfo.genres]);
   const itemBlockID = item?.blockID;
 
@@ -56,20 +63,20 @@ export function useMediaItemForm({
     if (nextItem == null) {
       return;
     }
+    searchCoverUrlsRef.current = new Set();
     form.reset(nextItem);
     initialGenresRef.current = [...nextItem.blockInfo.genres];
   }, [form, itemBlockID]);
 
-  const { handleGetMedia } = useDatabasePageContext();
+  const { refreshLibrary } = useLibraryPageContext();
   const { mutateAsync: databaseEdit } = trpc.database.edit.useMutation();
   const { mutateAsync: databaseSave } = trpc.database.save.useMutation();
   const { mutateAsync: collectMedia } = trpc.collect.collectMedia.useMutation();
   const { mutateAsync: linkGenres } = trpc.genres.link.useMutation();
   const { mutateAsync: unlinkGenres } = trpc.genres.unlink.useMutation();
-  const utils = trpc.useUtils();
 
   const applySaveDisplayError = (error: string | undefined) => {
-    const displayError = toDatabaseEditDisplayError(error ?? 'Unknown');
+    const displayError = toLibrarySaveDisplayError(error ?? 'Unknown');
     if (displayError.placement === 'field') {
       form.setError(displayError.field, {
         type: 'server',
@@ -90,7 +97,7 @@ export function useMediaItemForm({
       try {
         results = await databaseSave([data]);
       } catch {
-        setSubmitError(DATABASE_EDIT_FAILED_MESSAGE);
+        setSubmitError(LIBRARY_SAVE_FAILED_MESSAGE);
         return;
       }
 
@@ -104,7 +111,7 @@ export function useMediaItemForm({
         return;
       }
 
-      await handleGetMedia();
+      await refreshLibrary();
       onClose();
       return;
     }
@@ -116,7 +123,7 @@ export function useMediaItemForm({
         item: convertMediaItemFormToDatabaseItem(data),
       });
     } catch {
-      setSubmitError(DATABASE_EDIT_FAILED_MESSAGE);
+      setSubmitError(LIBRARY_SAVE_FAILED_MESSAGE);
       return;
     }
 
@@ -136,22 +143,28 @@ export function useMediaItemForm({
       );
 
       try {
-        if (genresToLink.length > 0) {
-          await linkGenres({ bookID: data.blockID, genres: genresToLink });
-        }
-        if (genresToUnlink.length > 0) {
-          await unlinkGenres({ bookID: data.blockID, genres: genresToUnlink });
-        }
+        await Promise.all([
+          genresToLink.length > 0
+            ? linkGenres({ bookID: data.blockID, genres: genresToLink })
+            : null,
+          genresToUnlink.length > 0
+            ? unlinkGenres({ bookID: data.blockID, genres: genresToUnlink })
+            : null,
+        ]);
       } catch {
         setSubmitError(GENRE_UPDATE_FAILED_MESSAGE);
-        await handleGetMedia();
+        await refreshLibrary();
         return;
       }
 
-      await utils.genres.getForBook.invalidate({ bookID: data.blockID });
+      initialGenresRef.current = [...nextGenres];
     }
 
-    await handleGetMedia();
+    await refreshLibrary();
+    if (onEditSuccess) {
+      onEditSuccess(data);
+      return;
+    }
     onClose();
   };
 
@@ -182,17 +195,38 @@ export function useMediaItemForm({
       }
 
       const currentImages = form.getValues('images');
-      const appendedImages = newBlock.images.map((image, index) => ({
-        ...image,
-        isDefault: currentImages.length === 0 && index === 0,
-      }));
-      form.setValue(
-        'images',
-        currentImages.length === 0
-          ? appendedImages
-          : [...currentImages, ...appendedImages],
-        { shouldValidate: true },
+      const keptImages = currentImages.filter(
+        (image) =>
+          image.uploaded === true ||
+          !searchCoverUrlsRef.current.has(image.url),
       );
+      const previousDefault = currentImages.find((image) => image.isDefault);
+      const nextSearchUrls = new Set(
+        newBlock.images.map((image) => image.url),
+      );
+      const defaultWasDropped =
+        previousDefault != null &&
+        previousDefault.uploaded !== true &&
+        searchCoverUrlsRef.current.has(previousDefault.url) &&
+        !nextSearchUrls.has(previousDefault.url);
+      const keptHasDefault = keptImages.some((image) => image.isDefault);
+      const searchImages = newBlock.images.map((image) => ({
+        ...image,
+        isDefault: keptHasDefault ? false : image.isDefault,
+      }));
+      let nextImages = [...keptImages, ...searchImages];
+      if (defaultWasDropped && previousDefault) {
+        const withDroppedDefault = [
+          ...nextImages,
+          { ...previousDefault, selected: true, isDefault: true },
+        ];
+        nextImages = toggleKeptCover(
+          withDroppedDefault,
+          withDroppedDefault.length - 1,
+        ).slice(0, -1);
+      }
+      form.setValue('images', nextImages, { shouldValidate: true });
+      searchCoverUrlsRef.current = nextSearchUrls;
 
       const currentBlockInfo = form.getValues('blockInfo');
       if (
@@ -216,8 +250,11 @@ export function useMediaItemForm({
 
   const onSearchCovers = async () => {
     setCoverSearchBanner(null);
-    const isTitleValid = await form.trigger('blockInfo.title');
-    if (!isTitleValid) {
+    const isSearchInputValid = await form.trigger([
+      'blockInfo.title',
+      'blockInfo.author',
+    ]);
+    if (!isSearchInputValid) {
       return;
     }
     await searchCovers(form.getValues());
@@ -226,7 +263,6 @@ export function useMediaItemForm({
   return {
     form,
     formId,
-    isAdd,
     onSubmit,
     submitError,
     isDuplicateBookDialogOpen,

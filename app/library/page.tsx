@@ -2,21 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { trpc } from 'lib/trpc/client';
-import DatabaseItemsContainer from '@/showdatabase/database-items-container';
-import PaginationInputs from '@/showdatabase/pagination-inputs';
-import DatabasePageContext, {
-  type DatabasePageContextValue,
-} from 'lib/context/database-page-context';
-import { titleRearrange } from 'lib/helpers/title-rearrange';
-import {
-  PostSavedMediaItem,
-  SuccessfulPaginationResponse,
-} from 'lib/interfaces/global-interfaces';
+import LibraryItems from '@/library/library-items';
+import LibraryHeader from '@/library/library-header';
+import LibraryPageContext, {
+  type LibraryPageContextValue,
+} from 'lib/context/library-page-context';
+import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import { MediaType } from 'lib/constants/media-types';
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DatabaseSortOption } from 'lib/constants/database-sort-options';
 
-export interface displayDatabaseItems {
+export interface LibraryList {
   type: MediaType;
   items: PostSavedMediaItem[];
   total: number;
@@ -24,13 +20,13 @@ export interface displayDatabaseItems {
   max: number;
 }
 
-export type genreInput =
+export type LibraryGenreFilter =
   | (typeof allGenres)[number]
   | ''
   | typeof NO_GENRE_FILTER;
 
-export default function ShowDatabase() {
-  const [databaseItems, setDatabaseItems] = useState<displayDatabaseItems>({
+export default function LibraryPage() {
+  const [libraryList, setLibraryList] = useState<LibraryList>({
     type: 'book',
     items: [],
     total: 0,
@@ -39,28 +35,21 @@ export default function ShowDatabase() {
   });
 
   const [type, setType] = useState<MediaType>('book');
-  const [limit, setLimit] = useState<3 | 5 | 10>(5);
+  const [limit, setLimit] = useState<12 | 24 | 48>(12);
   const [sortBy, setSortBy] = useState<DatabaseSortOption>('title');
   const [page, setPage] = useState<number>(1);
   const [titleSearch, setTitleSearch] = useState('');
-  const [genre, setGenre] = useState<genreInput>('');
+  const [genre, setGenre] = useState<LibraryGenreFilter>('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
   const latestPaginationStateRef = useRef({ type, page, limit });
-  const effectiveSort = useMemo(() => {
-    if (type === 'book') {
-      return sortBy;
-    }
-    return 'title';
-  }, [type, sortBy]);
-
   const paginatedQuery = trpc.database.getPaginated.useQuery({
     type,
-    sort: effectiveSort,
+    sort: type === 'book' ? sortBy : 'title',
     limit,
     page,
     ascDesc,
     genre,
-    title: titleRearrange(titleSearch),
+    title: titleSearch,
   });
 
   useEffect(() => {
@@ -71,21 +60,21 @@ export default function ShowDatabase() {
     if (!paginatedQuery.data) return;
     const { type: currentType, page: currentPage, limit: currentLimit } =
       latestPaginationStateRef.current;
-    const r = paginatedQuery.data as SuccessfulPaginationResponse;
-    setDatabaseItems({
+    const pagination = paginatedQuery.data;
+    setLibraryList({
       type: currentType,
-      items: r.paginatedList,
-      total: r.total,
+      items: pagination.paginatedList,
+      total: pagination.total,
       min: (currentPage - 1) * currentLimit + 1,
-      max: Math.min(currentPage * currentLimit, r.total),
+      max: Math.min(currentPage * currentLimit, pagination.total),
     });
   }, [paginatedQuery.data]);
 
-  const DatabasePageContextValue: DatabasePageContextValue = useMemo(
+  const libraryPageContextValue: LibraryPageContextValue = useMemo(
     () => ({
       page,
       setPage,
-      databaseItems,
+      libraryList,
       type,
       setType,
       limit,
@@ -97,19 +86,19 @@ export default function ShowDatabase() {
       ascDesc,
       setAscDesc,
       setTitleSearch,
-      handleGetMedia: async () => {
+      refreshLibrary: async () => {
         await paginatedQuery.refetch();
       },
     }),
-    [page, databaseItems, type, limit, sortBy, genre, ascDesc, paginatedQuery],
+    [page, libraryList, type, limit, sortBy, genre, ascDesc, paginatedQuery],
   );
 
   return (
-    <DatabasePageContext.Provider value={DatabasePageContextValue}>
-      <div className="flex flex-col items-center">
-        <PaginationInputs />
-        <DatabaseItemsContainer />
-      </div>
-    </DatabasePageContext.Provider>
+    <LibraryPageContext.Provider value={libraryPageContextValue}>
+      <main className="mx-auto flex max-w-440 flex-col gap-4.5 px-6 pt-7 pb-16">
+        <LibraryHeader />
+        <LibraryItems />
+      </main>
+    </LibraryPageContext.Provider>
   );
 }

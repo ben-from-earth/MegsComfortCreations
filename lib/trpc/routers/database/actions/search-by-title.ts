@@ -1,7 +1,7 @@
 import { and, eq, ilike } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/media-types';
-import { titleRearrange } from 'lib/helpers/title-rearrange';
+import { toDisplayTitle, toStoredTitle } from 'lib/helpers/title-articles';
 import { books, otherMedia } from '@/db/schema';
 import {
   loadBookImagesById,
@@ -9,7 +9,7 @@ import {
 } from 'lib/media-storage/media-image-records';
 
 export function resolveBookSearchFilters(title: string, author?: string) {
-  const rearrangedTitle = titleRearrange(title);
+  const rearrangedTitle = toStoredTitle(title);
   const normalizedAuthor = author?.trim() || undefined;
   return {
     rearrangedTitle,
@@ -64,6 +64,7 @@ export async function searchByTitle(
           );
           return result.map((row) => ({
             ...row,
+            title: toDisplayTitle(row.title),
             images: imagesByBookId.get(row.id) ?? [],
           }));
         })()
@@ -74,6 +75,7 @@ export async function searchByTitle(
           );
           return result.map((row) => ({
             ...row,
+            title: toDisplayTitle(row.title),
             images: imagesByOtherMediaId.get(row.id) ?? [],
           }));
         })();

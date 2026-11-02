@@ -7,6 +7,7 @@ export interface DatabaseItemChanges {
   pageCount: boolean;
   genres: boolean;
   defaultCover: boolean;
+  coverList: boolean;
   changedSpineColorUrls: string[];
 }
 
@@ -26,6 +27,18 @@ function hasSameGenres(left: string[], right: string[]) {
 
 function findDefaultCoverUrl(images: MediaItemForm['images']) {
   return images.find((image) => image.isDefault)?.url;
+}
+
+function hasSameCoverUrls(
+  left: MediaItemForm['images'],
+  right: MediaItemForm['images'],
+) {
+  const leftUrls = new Set(left.map((image) => image.url));
+  const rightUrls = new Set(right.map((image) => image.url));
+  return (
+    leftUrls.size === rightUrls.size &&
+    [...leftUrls].every((url) => rightUrls.has(url))
+  );
 }
 
 export function diffDatabaseItem(
@@ -50,6 +63,7 @@ export function diffDatabaseItem(
     defaultCover:
       findDefaultCoverUrl(current.images) !==
       findDefaultCoverUrl(original.images),
+    coverList: !hasSameCoverUrls(current.images, original.images),
     changedSpineColorUrls: current.images.flatMap((image) => {
       const originalSpineColor = originalSpineColorByUrl.get(image.url);
       return originalSpineColor !== undefined &&
@@ -68,6 +82,7 @@ export function countDatabaseItemChanges(changes: DatabaseItemChanges) {
     changes.pageCount,
     changes.genres,
     changes.defaultCover,
+    changes.coverList,
     changes.changedSpineColorUrls.length > 0,
   ].filter(Boolean).length;
 }

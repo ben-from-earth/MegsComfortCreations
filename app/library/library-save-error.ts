@@ -1,7 +1,7 @@
 export const GENRE_UPDATE_FAILED_MESSAGE =
-  'The item was saved, but updating genres failed. Close and try again.';
+  'The item was saved, but updating genres failed. Save again to retry.';
 
-export const DATABASE_EDIT_FAILED_MESSAGE =
+export const LIBRARY_SAVE_FAILED_MESSAGE =
   'This item could not be saved. Please try again.';
 
 export const IMAGE_PERSISTENCE_FAILED_MESSAGE =
@@ -13,15 +13,15 @@ export const SCHEMA_VIOLATION_MESSAGE =
 export const MEDIA_NOT_FOUND_MESSAGE =
   'This item is no longer in the database.';
 
-export type DatabaseEditFieldName = 'images';
+export type LibrarySaveFieldName = 'images';
 
-export type DatabaseEditDisplayError =
-  | { placement: 'field'; field: DatabaseEditFieldName; message: string }
+export type LibrarySaveDisplayError =
+  | { placement: 'field'; field: LibrarySaveFieldName; message: string }
   | { placement: 'form'; message: string };
 
-export function toDatabaseEditDisplayError(
+export function toLibrarySaveDisplayError(
   error: string,
-): DatabaseEditDisplayError {
+): LibrarySaveDisplayError {
   if (error === 'Image Persistence Error') {
     return {
       placement: 'field',
@@ -38,5 +38,5 @@ export function toDatabaseEditDisplayError(
     return { placement: 'form', message: SCHEMA_VIOLATION_MESSAGE };
   }
 
-  return { placement: 'form', message: DATABASE_EDIT_FAILED_MESSAGE };
+  return { placement: 'form', message: LIBRARY_SAVE_FAILED_MESSAGE };
 }

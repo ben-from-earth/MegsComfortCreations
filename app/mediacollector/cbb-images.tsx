@@ -1,6 +1,7 @@
 import { ChangeEvent, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { trpc } from 'lib/trpc/client';
+import { readFileAsBase64 } from 'lib/helpers/read-file-as-base64';
 import { MediaType } from 'lib/constants/media-types';
 import { CollectorFormData } from './collector-form/collector-form-schema';
 import {
@@ -72,24 +73,6 @@ export default function CBBImages({
     );
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result;
-        if (typeof result !== 'string') {
-          reject(new Error('Unable to read uploaded file.'));
-          return;
-        }
-        const [, dataBase64 = ''] = result.split(',');
-        resolve(dataBase64);
-      };
-      reader.onerror = () => {
-        reject(new Error('Unable to read uploaded file.'));
-      };
-      reader.readAsDataURL(file);
-    });
-
   const handleUploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -102,7 +85,7 @@ export default function CBBImages({
       const spineColor = getValues(
         `collectedData.${index}.blockInfo.spineColor`,
       );
-      const dataBase64 = await convertFileToBase64(file);
+      const dataBase64 = await readFileAsBase64(file);
       const uploadedImage = await uploadCoverImage({
         blockID,
         sortOrder: currentImages.length,

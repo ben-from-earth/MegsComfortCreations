@@ -84,6 +84,7 @@ describe('diffDatabaseItem / countDatabaseItemChanges', () => {
       pageCount: true,
       genres: true,
       defaultCover: true,
+      coverList: false,
       changedSpineColorUrls: ['https://img/blue.png', 'https://img/orange.png'],
     });
     expect(countDatabaseItemChanges(changes)).toBe(5);
@@ -107,6 +108,50 @@ describe('diffDatabaseItem / countDatabaseItemChanges', () => {
     expect(
       diffDatabaseItem(originalBlock, current).changedSpineColorUrls,
     ).toEqual([]);
+  });
+
+  test('counts an added or removed cover url as one change', () => {
+    const added: MediaItemForm = {
+      ...originalBlock,
+      images: [
+        ...originalBlock.images,
+        {
+          url: '/uploads/new.png',
+          selected: false,
+          isDefault: false,
+          spineColor: '#000000',
+          uploaded: true,
+        },
+      ],
+    };
+    const addedChanges = diffDatabaseItem(originalBlock, added);
+    expect(addedChanges.coverList).toBe(true);
+    expect(countDatabaseItemChanges(addedChanges)).toBe(1);
+
+    const removed: MediaItemForm = {
+      ...originalBlock,
+      images: [originalBlock.images[0]],
+    };
+    const removedChanges = diffDatabaseItem(originalBlock, removed);
+    expect(removedChanges.coverList).toBe(true);
+    expect(countDatabaseItemChanges(removedChanges)).toBe(1);
+  });
+
+  test('ignores cover order and a repeated url', () => {
+    const reordered: MediaItemForm = {
+      ...originalBlock,
+      images: [originalBlock.images[1], originalBlock.images[0]],
+    };
+    expect(diffDatabaseItem(originalBlock, reordered).coverList).toBe(false);
+    expect(
+      countDatabaseItemChanges(diffDatabaseItem(originalBlock, reordered)),
+    ).toBe(0);
+
+    const repeated: MediaItemForm = {
+      ...originalBlock,
+      images: [...originalBlock.images, { ...originalBlock.images[0] }],
+    };
+    expect(diffDatabaseItem(originalBlock, repeated).coverList).toBe(false);
   });
 });
 

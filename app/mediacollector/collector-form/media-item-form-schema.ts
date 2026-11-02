@@ -35,6 +35,15 @@ export const mediaItemFormSchema = z.object({
   isDatabase: z.boolean(),
 });
 
+export const addBookFormSchema = mediaItemFormSchema.extend({
+  blockInfo: mediaItemBlockInfoSchema.extend({
+    author: mediaItemBlockInfoSchema.shape.author.refine(
+      (author) => author != null && author.trim() !== '',
+      'Author is Required',
+    ),
+  }),
+});
+
 export type MediaItemForm = z.infer<typeof mediaItemFormSchema>;
 
 export function toFormImages(
@@ -99,7 +108,7 @@ export function getMediaItemFormDefaultValues(
 export function convertMediaItemToForm({
   item,
   type,
-  genres = [],
+  genres,
 }: {
   item: PostSavedMediaItem;
   type: MediaType;
@@ -114,7 +123,7 @@ export function convertMediaItemToForm({
     blockInfo: {
       title: item.title,
       spineColor: defaultImage?.spineColor ?? item.spineColor,
-      genres,
+      genres: genres ?? item.genres ?? [],
       author: item.author ?? null,
       pubYear: item.pubYear ?? null,
       pageCount: item.pageCount ?? null,

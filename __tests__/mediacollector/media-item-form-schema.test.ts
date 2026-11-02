@@ -1,4 +1,5 @@
 import {
+  addBookFormSchema,
   convertMediaItemFormToDatabaseItem,
   convertMediaItemToForm,
   getMediaItemFormDefaultValues,
@@ -104,6 +105,33 @@ describe('mediaItemFormSchema', () => {
   });
 });
 
+describe('addBookFormSchema', () => {
+  test.each([null, '   '])('rejects author %p', (author) => {
+    const form = createMediaItemForm();
+    const result = addBookFormSchema.safeParse({
+      ...form,
+      blockInfo: { ...form.blockInfo, author },
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.path.join('.') === 'blockInfo.author' &&
+            issue.message === 'Author is Required',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  test('accepts a book with an author', () => {
+    expect(addBookFormSchema.safeParse(createMediaItemForm()).success).toBe(
+      true,
+    );
+  });
+});
+
 describe('mediaItemFormSchema uploaded covers', () => {
   test('keeps an uploaded cover flag through parse', () => {
     const parsed = mediaItemFormSchema.parse(
@@ -190,9 +218,8 @@ describe('convertMediaItemToForm', () => {
   test('maps a persisted database row onto MediaItemForm', () => {
     expect(
       convertMediaItemToForm({
-        item: persistedBook,
+        item: { ...persistedBook, genres: ['Science Fiction'] },
         type: 'book',
-        genres: ['Science Fiction'],
       }),
     ).toEqual({
       type: 'book',

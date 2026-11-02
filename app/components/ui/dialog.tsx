@@ -1,6 +1,7 @@
 import { twMerge } from 'tailwind-merge';
 import React from 'react';
 import Button from '@/components/ui/button';
+import Modal from '@/components/ui/modal';
 
 export interface DialogProps {
   title: string;
@@ -40,18 +41,10 @@ export default function Dialog({
   className,
 }: DialogProps) {
   return (
-    <>
+    <Modal aria-label={title} onClose={onClose}>
       <div
-        aria-hidden="true"
-        data-testid="dialog-backdrop"
-        className="fixed inset-0 z-90 bg-black/20 backdrop-blur-sm"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
         className={twMerge(
-          'fixed top-1/2 left-1/2 z-100 flex max-h-100 w-fit max-w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col content-center items-center overflow-y-auto text-4xl tracking-wider text-black',
+          'flex max-h-100 w-fit max-w-[90vw] flex-col content-center items-center overflow-y-auto text-4xl tracking-wider text-black',
           className,
         )}
       >
@@ -60,6 +53,6 @@ export default function Dialog({
           {children}
         </div>
       </div>
-    </>
+    </Modal>
   );
 }

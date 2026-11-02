@@ -1,8 +1,18 @@
 import { adminProcedure, router } from 'lib/trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import { and, asc, desc, ilike, isNull, sql, eq } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  notExists,
+  sql,
+} from 'drizzle-orm';
 import { z } from 'zod';
-import { db as defaultDb } from '@/db/client';
+import { db as defaultDb, type Db } from '@/db/client';
 import {
   books,
   genres,
@@ -18,7 +28,11 @@ import type {
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
-import { titleRearrange } from 'lib/helpers/title-rearrange';
+import {
+  toDisplayTitle,
+  toStoredTitle,
+  toTitleSearchTerm,
+} from 'lib/helpers/title-articles';
 import {
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
@@ -27,6 +41,7 @@ import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/database-sort-options';
 import {
   appendBookCoverRecords,
+  coversToPersistForNewItem,
   listCoversToAppend,
   loadBookImagesById,
   loadOtherMediaImagesById,
@@ -71,6 +86,29 @@ function resolveDisplaySpineColor(
 ) {
   const defaultImage = images.find((image) => image.isDefault);
   return defaultImage?.spineColor ?? fallbackSpineColor;
+}
+
+async function loadBookGenresById(db: Db, bookIds: string[]) {
+  if (bookIds.length === 0) {
+    return new Map<string, string[]>();
+  }
+
+  const rows = await db
+    .select({
+      bookId: genresBooks.bookId,
+      genre: genres.genre,
+    })
+    .from(genresBooks)
+    .innerJoin(genres, eq(genresBooks.genreId, genres.id))
+    .where(inArray(genresBooks.bookId, bookIds));
+
+  const genresByBookId = new Map<string, string[]>();
+  for (const row of rows) {
+    const currentGenres = genresByBookId.get(row.bookId) ?? [];
+    currentGenres.push(row.genre);
+    genresByBookId.set(row.bookId, currentGenres);
+  }
+  return genresByBookId;
 }
 
 const IMAGE_SAVE_ROLLED_BACK_CREATION_ERROR =
@@ -167,7 +205,7 @@ export const databaseRouter = router({
       z.object({
         type: mediaType,
         title: z.string().optional(),
-        limit: z.number().int().positive(),
+        limit: z.union([z.literal(12), z.literal(24), z.literal(48)]),
         page: z.number().int().positive(),
         sort: sortKey,
         ascDesc: z.enum(['asc', 'desc']),
@@ -205,53 +243,66 @@ export const databaseRouter = router({
             return undefined;
           }
           if (genre === NO_GENRE_FILTER) {
-            return isNull(genresBooks.bookId);
+            return notExists(
+              db
+                .select({ bookId: genresBooks.bookId })
+                .from(genresBooks)
+                .where(eq(genresBooks.bookId, books.id)),
+            );
           }
-          return eq(genres.genre, genre);
+          return exists(
+            db
+              .select({ bookId: genresBooks.bookId })
+              .from(genresBooks)
+              .innerJoin(genres, eq(genresBooks.genreId, genres.id))
+              .where(
+                and(eq(genresBooks.bookId, books.id), eq(genres.genre, genre)),
+              ),
+          );
         })();
         const titleFilter =
           title && title.trim().length > 0
-            ? ilike(books.title, `%${title}%`)
+            ? ilike(books.title, `%${toTitleSearchTerm(title)}%`)
             : undefined;
         const whereFilter = and(genreFilter, titleFilter);
 
-        const rows = await db
-          .select({
-            id: books.id,
-            title: books.title,
-            author: books.author,
-            pageCount: books.pageCount,
-            pubYear: books.pubYear,
-            spineColor: books.spineColor,
-            mediaType: sql<'book'>`'book'`,
-          })
-          .from(books)
-          .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
-          .leftJoin(genres, eq(genresBooks.genreId, genres.id))
-          .where(whereFilter)
-          .orderBy(orderExpression)
-          .limit(limit)
-          .offset(offset);
+        const [rows, [{ count }]] = await Promise.all([
+          db
+            .select({
+              id: books.id,
+              title: books.title,
+              author: books.author,
+              pageCount: books.pageCount,
+              pubYear: books.pubYear,
+              spineColor: books.spineColor,
+              mediaType: sql<'book'>`'book'`,
+            })
+            .from(books)
+            .where(whereFilter)
+            .orderBy(orderExpression)
+            .limit(limit)
+            .offset(offset),
+          db
+            .select({
+              count: sql<number>`cast(count(*) as int)`,
+            })
+            .from(books)
+            .where(whereFilter),
+        ]);
+        const bookIds = rows.map((row) => row.id);
+        const [imagesByBookId, genresByBookId] = await Promise.all([
+          loadBookImagesById(db, bookIds),
+          loadBookGenresById(db, bookIds),
+        ]);
 
-        const [{ count }] = await db
-          .select({
-            count: sql<number>`cast(count(distinct ${books.id}) as int)`,
-          })
-          .from(books)
-          .leftJoin(genresBooks, eq(genresBooks.bookId, books.id))
-          .leftJoin(genres, eq(genresBooks.genreId, genres.id))
-          .where(whereFilter);
-
-        const imagesByBookId = await loadBookImagesById(
-          db,
-          rows.map((row) => row.id),
-        );
         const rowsWithResolvedImages = rows.map((row) => {
           const images = imagesByBookId.get(row.id) ?? [];
           return {
             ...row,
+            title: toDisplayTitle(row.title),
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
+            genres: genresByBookId.get(row.id) ?? [],
           };
         });
 
@@ -280,26 +331,28 @@ export const databaseRouter = router({
         ascDesc === 'asc' ? asc(otherMedia.title) : desc(otherMedia.title);
       const titleFilter =
         title && title.trim().length > 0
-          ? ilike(otherMedia.title, `%${title}%`)
+          ? ilike(otherMedia.title, `%${toTitleSearchTerm(title)}%`)
           : undefined;
       const whereFilter = and(eq(otherMedia.mediaType, type), titleFilter);
 
-      const rows = await db
-        .select({
-          id: otherMedia.id,
-          mediaType: otherMedia.mediaType,
-          title: otherMedia.title,
-          spineColor: otherMedia.spineColor,
-        })
-        .from(otherMedia)
-        .where(whereFilter)
-        .orderBy(orderExpression)
-        .limit(limit)
-        .offset(offset);
-      const [{ count }] = await db
-        .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(otherMedia)
-        .where(whereFilter);
+      const [rows, [{ count }]] = await Promise.all([
+        db
+          .select({
+            id: otherMedia.id,
+            mediaType: otherMedia.mediaType,
+            title: otherMedia.title,
+            spineColor: otherMedia.spineColor,
+          })
+          .from(otherMedia)
+          .where(whereFilter)
+          .orderBy(orderExpression)
+          .limit(limit)
+          .offset(offset),
+        db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(otherMedia)
+          .where(whereFilter),
+      ]);
 
       const imagesByOtherMediaId = await loadOtherMediaImagesById(
         db,
@@ -309,6 +362,7 @@ export const databaseRouter = router({
         const images = imagesByOtherMediaId.get(row.id) ?? [];
         return {
           ...row,
+          title: toDisplayTitle(row.title),
           images,
           spineColor: resolveDisplaySpineColor(images, row.spineColor),
         };
@@ -416,19 +470,10 @@ export const databaseRouter = router({
           }
           continue;
         }
-        const selectedImages = mediaItem.images.filter((img) => img.selected);
-        const imagesToPersist =
-          selectedImages.length > 0
-            ? selectedImages
-            : mediaItem.images.length > 0
-              ? [{ ...mediaItem.images[0], selected: true, isDefault: true }]
-              : [];
-        const payload = { ...mediaItem, images: selectedImages };
-        payload.images = imagesToPersist.map((image, index) => ({
-          ...image,
-          isDefault: index === 0,
-          selected: index === 0,
-        }));
+        const payload = {
+          ...mediaItem,
+          images: coversToPersistForNewItem(mediaItem.images),
+        };
         const validatedData = mediaItemFormSchema.safeParse(payload);
         if (!validatedData.success) {
           const tree = z.treeifyError(validatedData.error);
@@ -452,12 +497,14 @@ export const databaseRouter = router({
               const [insertedBook] = await tx
                 .insert(books)
                 .values({
-                  title: titleRearrange(data.blockInfo.title),
+                  title: toStoredTitle(data.blockInfo.title),
                   author: data.blockInfo.author ?? '',
                   pageCount: data.blockInfo.pageCount ?? null,
                   pubYear: data.blockInfo.pubYear ?? null,
-                  spineColor:
-                    data.images[0]?.spineColor ?? data.blockInfo.spineColor,
+                  spineColor: resolveDisplaySpineColor(
+                    data.images,
+                    data.blockInfo.spineColor,
+                  ),
                 })
                 .returning();
 
@@ -521,10 +568,11 @@ export const databaseRouter = router({
               createSaveSuccessResult({
                 blockID: data.blockID,
                 title: data.blockInfo.title,
-                message: `${titleRearrange(book.title)} successfully added to database.`,
+                message: `${toDisplayTitle(book.title)} successfully added to database.`,
                 type: data.type,
                 actionAttemptItem: {
                   ...book,
+                  title: toDisplayTitle(book.title),
                   images,
                   spineColor: persistedSpineColor,
                   genres: data.blockInfo.genres,
@@ -573,8 +621,11 @@ export const databaseRouter = router({
 
         const insertData = {
           mediaType: data.type,
-          title: titleRearrange(data.blockInfo.title),
-          spineColor: data.images[0]?.spineColor ?? data.blockInfo.spineColor,
+          title: toStoredTitle(data.blockInfo.title),
+          spineColor: resolveDisplaySpineColor(
+            data.images,
+            data.blockInfo.spineColor,
+          ),
         };
         let createdOtherMediaId: string | null = null;
         try {
@@ -585,7 +636,7 @@ export const databaseRouter = router({
               .returning();
             if (!insertedOtherMedia) {
               throw new Error(
-                `${titleRearrange(insertData.title)} could not be saved to the database.`,
+                `${toDisplayTitle(insertData.title)} could not be saved to the database.`,
               );
             }
             return insertedOtherMedia;
@@ -636,10 +687,11 @@ export const databaseRouter = router({
             createSaveSuccessResult({
               blockID: data.blockID,
               title: data.blockInfo.title,
-              message: `${titleRearrange(insertData.title)} successfully added to database.`,
+              message: `${toDisplayTitle(insertData.title)} successfully added to database.`,
               type: data.type,
               actionAttemptItem: {
                 ...savedOtherMedia,
+                title: toDisplayTitle(savedOtherMedia.title),
                 images,
                 spineColor: persistedSpineColor,
                 blockID: data.blockID,
@@ -690,7 +742,7 @@ export const databaseRouter = router({
         const data = validation.data;
         const whereExpression = data.id
           ? eq(books.id, data.id)
-          : eq(books.title, data.title);
+          : eq(books.title, toStoredTitle(data.title));
         const [existingBook] = await db
           .select()
           .from(books)
@@ -724,7 +776,7 @@ export const databaseRouter = router({
         const [book] = await db
           .update(books)
           .set({
-            title: data.title,
+            title: toStoredTitle(data.title),
             author: data.author ?? '',
             pageCount: data.pageCount ?? null,
             pubYear: data.pubYear ?? null,
@@ -738,9 +790,10 @@ export const databaseRouter = router({
         await replaceBookImageRecords(db, book.id, resolvedImages.images);
 
         return {
-          message: `${titleRearrange(book.title)} successfully edited.`,
+          message: `${toDisplayTitle(book.title)} successfully edited.`,
           actionAttemptItem: {
             ...book,
+            title: toDisplayTitle(book.title),
             images,
             spineColor: persistedSpineColor,
           },
@@ -761,7 +814,10 @@ export const databaseRouter = router({
       const data = validation.data;
       const whereExpression = data.id
         ? and(eq(otherMedia.id, data.id), eq(otherMedia.mediaType, type))
-        : and(eq(otherMedia.title, data.title), eq(otherMedia.mediaType, type));
+        : and(
+            eq(otherMedia.title, toStoredTitle(data.title)),
+            eq(otherMedia.mediaType, type),
+          );
       const [existingOtherMedia] = await db
         .select()
         .from(otherMedia)
@@ -796,7 +852,7 @@ export const databaseRouter = router({
         .update(otherMedia)
         .set({
           mediaType: type,
-          title: data.title,
+          title: toStoredTitle(data.title),
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)
@@ -811,9 +867,10 @@ export const databaseRouter = router({
       );
 
       return {
-        message: `${titleRearrange(savedOtherMedia.title)} successfully edited.`,
+        message: `${toDisplayTitle(savedOtherMedia.title)} successfully edited.`,
         actionAttemptItem: {
           ...savedOtherMedia,
+          title: toDisplayTitle(savedOtherMedia.title),
           images,
           spineColor: persistedSpineColor,
         },
