@@ -111,3 +111,17 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Search returned stale forward-slash paths for the removed `app/showdatabase/` page, so the agent reported it as still existing and ran a bulk PowerShell edit against it. The failed read left the previous file's text in the variable, and the write created a bogus `are-you-sure.tsx`.
 - Correction: Deleted the stray file and confirmed paths with `Test-Path` / `git status`.
 - Rule Going Forward: Confirm a file exists on disk before calling it live or editing it. Prefer the edit tool over read/write shell loops; if a script is needed, skip the write when the read fails.
+
+### 2026-11-02 - Pick per-route visuals before paint
+
+- Area: Nav paint-smear brush
+- Issue: The brush was picked in `useEffect` on `pathname`, so the newly active tab painted one frame with the previous brush, and lazy, optimizer-served PNGs popped in late.
+- Correction: Pick in `useLayoutEffect`, serve the brushes `unoptimized` with eager loading, and `preload` all of them.
+- Rule Going Forward: When client-only state must change in step with a route change, update it in `useLayoutEffect` (not `useEffect`) and preload any images it swaps between.
+
+### 2026-11-02 - Key nav visuals on the active tab, not the URL
+
+- Area: Nav paint-smear brush
+- Issue: The brush re-picked on every `pathname` change, so moving between shop pages repainted the Shop tab even though it stayed active.
+- Correction: Derive the active tab (`'shop'` for any shop page, otherwise the matching link href) and key the pick on that.
+- Rule Going Forward: Nav state tied to "the current tab" depends on the active tab, not the raw pathname; several routes can share one tab.
