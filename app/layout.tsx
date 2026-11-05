@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from '@/components/shared/nav-bar';
+import AnnouncementStrip from '@/components/shared/announcement-strip';
 
-import { Just_Another_Hand } from 'next/font/google';
-import { NextFont } from 'next/dist/compiled/@next/font';
+import { DM_Serif_Display, Just_Another_Hand, Nunito } from 'next/font/google';
 import Providers from '@/providers';
 import { TRPCProvider } from 'lib/trpc/provider';
 
@@ -15,7 +15,21 @@ export const metadata: Metadata = {
   },
 };
 
-const JAH: NextFont = Just_Another_Hand({ weight: '400', subsets: ['latin'] });
+const JAH = Just_Another_Hand({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-just-another-hand',
+});
+const dmSerifDisplay = DM_Serif_Display({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-dm-serif-display',
+});
+const nunito = Nunito({
+  weight: ['400', '600', '700', '800'],
+  subsets: ['latin'],
+  variable: '--font-nunito',
+});
 
 export default function RootLayout({
   children,
@@ -23,10 +37,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${JAH.variable} ${dmSerifDisplay.variable} ${nunito.variable}`}
+    >
       <body className={JAH.className}>
         <TRPCProvider>
           <Providers>
+            <AnnouncementStrip />
             <NavBar />
             {children}
           </Providers>

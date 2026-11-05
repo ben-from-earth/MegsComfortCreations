@@ -1,3 +1,5 @@
 export default function Home() {
-  return <p>Home</p>;
+  return (
+    <main className="min-h-screen w-full bg-[#f5eee2] font-(family-name:--font-nunito) text-[#1f1b18]" />
+  );
 }
