@@ -11,6 +11,11 @@ import {
 import './home.css';
 
 const publicDirectory = path.join(process.cwd(), 'public');
+const wordsWithHeroPhotos = new Set(
+  homeWipes.flatMap((wipe) =>
+    existsSync(path.join(publicDirectory, wipe.photoSrc)) ? [wipe.word] : [],
+  ),
+);
 
 // The narrow top edge reuses the desktop tear's jitter with its slant removed.
 // 1% of the 900px desktop panel is 9px.
@@ -47,7 +52,7 @@ export default function HeroPaintRotator() {
             className="home-hero-photo"
             style={{ animationDelay: `${wipe.delaySeconds}s` }}
           >
-            {existsSync(path.join(publicDirectory, wipe.photoSrc)) ? (
+            {wordsWithHeroPhotos.has(wipe.word) ? (
               <Image
                 src={wipe.photoSrc}
                 alt={wipe.photoAlt}
@@ -91,7 +96,10 @@ export default function HeroPaintRotator() {
                 <span
                   key={wipe.word}
                   className="home-wipe"
-                  style={{ animationDelay: `${wipe.delaySeconds}s` }}
+                  style={{
+                    animationDelay: `${wipe.delaySeconds}s`,
+                    transform: `rotate(${wipe.tiltDegrees}deg)`,
+                  }}
                 >
                   <Image
                     src={wipe.src}

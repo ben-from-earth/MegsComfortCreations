@@ -15,7 +15,7 @@ export type ShippedPlaces = {
   usStateCount: number;
 };
 
-const COUNTRIES = [
+export const shippedCountryNames = [
   'Canada',
   'Australia',
   'United Kingdom',
@@ -36,7 +36,7 @@ const COUNTRIES = [
   'Malaysia',
   'Mexico',
   'South Africa',
-] satisfies readonly string[];
+] as const;
 
 const STATES = [
   ['AL', 'Alabama'],
@@ -100,7 +100,7 @@ const US_COUNTRY_KEYS = new Set([
 ]);
 
 const countryByKey = new Map<string, string>(
-  COUNTRIES.map((name) => [normalizePlace(name), name]),
+  shippedCountryNames.map((name) => [normalizePlace(name), name]),
 );
 countryByKey.set('uk', 'United Kingdom');
 countryByKey.set('great britain', 'United Kingdom');
@@ -124,11 +124,34 @@ function addCount(counts: Map<string, number>, name: string) {
 function toShippedPlaces(counts: Map<string, number>) {
   return [...counts]
     .map(([name, orderCount]) => ({ name, orderCount }))
-    .toSorted(
-      (left, right) =>
-        right.orderCount - left.orderCount ||
-        left.name.localeCompare(right.name),
-    );
+    .toSorted(compareRibbonPlaces);
+}
+
+function compareRibbonPlaces(left: ShippedPlace, right: ShippedPlace) {
+  return (
+    right.orderCount - left.orderCount || left.name.localeCompare(right.name)
+  );
+}
+
+const stateNames = STATES.map(([, name]) => name);
+const stateMixStride = 7;
+export const shippedStateNames = stateNames.map(
+  (_, index) => stateNames[(index * stateMixStride) % stateNames.length],
+);
+
+export function placesForRibbon(
+  listedNames: readonly string[],
+  countedPlaces: readonly ShippedPlace[],
+) {
+  const orderCountByName = new Map(
+    countedPlaces.map((place) => [place.name, place.orderCount]),
+  );
+  return listedNames
+    .map((name) => ({
+      name,
+      orderCount: orderCountByName.get(name) ?? 0,
+    }))
+    .toSorted((left, right) => right.orderCount - left.orderCount);
 }
 
 export function aggregateShippedPlaces(

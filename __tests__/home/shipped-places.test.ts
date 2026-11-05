@@ -1,4 +1,7 @@
-import { aggregateShippedPlaces } from '@/components/home/shipped-places';
+import {
+  aggregateShippedPlaces,
+  placesForRibbon,
+} from '@/components/home/shipped-places';
 
 describe('aggregateShippedPlaces', () => {
   test('folds Ohio aliases into one state and leaves the United States off the country list', () => {
@@ -90,5 +93,31 @@ describe('aggregateShippedPlaces', () => {
     ]);
     expect(places.countryCount).toBe(3);
     expect(places.usStateCount).toBe(3);
+  });
+});
+
+describe('placesForRibbon', () => {
+  test('keeps every listed name and sorts counted places first', () => {
+    expect(
+      placesForRibbon(
+        ['Canada', 'Australia', 'Mexico'],
+        [
+          { name: 'Mexico', orderCount: 2 },
+          { name: 'Canada', orderCount: 1 },
+        ],
+      ),
+    ).toEqual([
+      { name: 'Mexico', orderCount: 2 },
+      { name: 'Canada', orderCount: 1 },
+      { name: 'Australia', orderCount: 0 },
+    ]);
+  });
+
+  test('keeps listed order when counts are equal', () => {
+    expect(
+      placesForRibbon(['Canada', 'Australia', 'Mexico'], []).map(
+        (place) => place.name,
+      ),
+    ).toEqual(['Canada', 'Australia', 'Mexico']);
   });
 });

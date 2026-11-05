@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from '@/components/shared/nav-bar';
-import AnnouncementStrip from '@/components/shared/announcement-strip';
-
 import { DM_Serif_Display, Just_Another_Hand, Nunito } from 'next/font/google';
 import Providers from '@/providers';
 import { TRPCProvider } from 'lib/trpc/provider';
@@ -15,7 +13,7 @@ export const metadata: Metadata = {
   },
 };
 
-const JAH = Just_Another_Hand({
+const justAnotherHand = Just_Another_Hand({
   weight: '400',
   subsets: ['latin'],
   variable: '--font-just-another-hand',
@@ -39,12 +37,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${JAH.variable} ${dmSerifDisplay.variable} ${nunito.variable}`}
+      className={`${justAnotherHand.variable} ${dmSerifDisplay.variable} ${nunito.variable}`}
     >
-      <body className={JAH.className}>
+      <body className={justAnotherHand.className}>
         <TRPCProvider>
           <Providers>
-            <AnnouncementStrip />
             <NavBar />
             {children}
           </Providers>

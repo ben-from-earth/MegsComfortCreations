@@ -1,5 +1,10 @@
 import { washiColors } from '@/components/home/home-content';
 import type { ShippedPlace } from '@/components/home/shipped-places';
+import {
+  placesForRibbon,
+  shippedCountryNames,
+  shippedStateNames,
+} from '@/components/home/shipped-places';
 import { getShippedPlaces } from '@/components/home/shipped-places-query';
 import './home.css';
 
@@ -18,18 +23,22 @@ const trackCopies = ['first', 'second'] as const;
 
 function WashiTrack({
   places,
-  reverse,
+  isReversed = false,
 }: {
   places: readonly ShippedPlace[];
-  reverse: boolean;
+  isReversed?: boolean;
 }) {
   return (
     <ul
-      className={`home-ribbon-track${reverse ? 'home-ribbon-track-reverse' : ''}`}
+      className={
+        isReversed
+          ? 'home-ribbon-track home-ribbon-track-reverse'
+          : 'home-ribbon-track'
+      }
     >
       {trackCopies.map((copy) =>
         places.map((place, index) => {
-          const tiltDegrees = (((index * 47) % 121) - 60) / 10;
+          const tiltDegrees = (((index * 47) % 101) - 50) / 10;
           const offsetY = ((index * 29) % 21) - 10;
           const color = washiColors[index % washiColors.length];
           return (
@@ -65,6 +74,11 @@ function Sparkle({ color }: { color: string }) {
 
 export default async function ShippedPlacesRibbon() {
   const shippedPlaces = await getShippedPlaces();
+  const countries = placesForRibbon(
+    shippedCountryNames,
+    shippedPlaces.countries,
+  );
+  const usStates = placesForRibbon(shippedStateNames, shippedPlaces.usStates);
 
   return (
     <section
@@ -80,27 +94,18 @@ export default async function ShippedPlacesRibbon() {
         >
           Sent with care to{' '}
           <span className="text-[#c4452a]">
-            {shippedPlaces.countryCount} countries
+            {shippedCountryNames.length} countries
           </span>{' '}
           &amp;{' '}
-          <span className="text-[#24493b]">
-            {shippedPlaces.usStateCount} US states
-          </span>
+          <span className="text-[#24493b]">all 50 states</span>
         </h2>
         <Sparkle color="#cf4025" />
         <span aria-hidden="true" className="h-px flex-1 bg-[#b9ab97]" />
       </div>
-      {shippedPlaces.countries.length > 0 ||
-      shippedPlaces.usStates.length > 0 ? (
-        <div className="home-ribbon-lanes" aria-hidden="true">
-          {shippedPlaces.countries.length > 0 ? (
-            <WashiTrack places={shippedPlaces.countries} reverse={false} />
-          ) : null}
-          {shippedPlaces.usStates.length > 0 ? (
-            <WashiTrack places={shippedPlaces.usStates} reverse />
-          ) : null}
-        </div>
-      ) : null}
+      <div className="home-ribbon-lanes" aria-hidden="true">
+        <WashiTrack places={countries} />
+        <WashiTrack places={usStates} isReversed />
+      </div>
     </section>
   );
 }

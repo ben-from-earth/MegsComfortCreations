@@ -8,7 +8,7 @@ export default function CategoryTiles() {
       aria-label="Shop categories"
       className="grid grid-cols-5 gap-3 px-3 pt-3 max-lg:grid-cols-2"
     >
-      {homeTiles.map((tile, index) => (
+      {homeTiles.map((tile) => (
         <Link
           key={tile.href}
           href={tile.href}
@@ -37,7 +37,7 @@ export default function CategoryTiles() {
             className="absolute right-5.5 bottom-5.5 left-5.5 flex min-h-14.5 items-center justify-between gap-2.5 bg-[#f6efe3] px-4 py-2 shadow-[0_4px_10px_rgba(0,0,0,0.18)]"
             style={{
               transform: `rotate(${-tile.photoTiltDegrees / 2}deg)`,
-              clipPath: homeClipPaths.tileLabels[index],
+              clipPath: homeClipPaths.tileLabelClipPaths[tile.href],
             }}
           >
             <span className="font-(family-name:--font-just-another-hand) text-[34px] leading-[0.85] tracking-[0.5px] text-[#1f1b18] uppercase">
