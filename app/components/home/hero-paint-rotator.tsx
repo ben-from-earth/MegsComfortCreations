@@ -79,10 +79,21 @@ export default function HeroPaintRotator() {
       </div>
 
       <div
-        className="absolute inset-y-0 left-0 z-2 w-225 bg-[#f6efe3] [clip-path:var(--hero-panel-clip)] max-lg:relative max-lg:inset-auto max-lg:-mt-6 max-lg:w-full max-lg:pb-14 max-lg:[clip-path:var(--hero-panel-clip-narrow)]"
+        className="home-hero-panel absolute inset-y-0 left-0 z-2 w-225 bg-[#ffedd9] max-lg:relative max-lg:inset-auto max-lg:-mt-6 max-lg:w-full max-lg:bg-[#ffedd9] max-lg:pb-14 max-lg:[clip-path:var(--hero-panel-clip-narrow)]"
         style={heroPanelStyle}
       >
-        <div className="absolute top-25 left-32.5 w-155 max-lg:static max-lg:w-auto max-lg:px-6 max-lg:pt-14">
+        <div className="pointer-events-none absolute inset-0 z-3">
+          <Image
+            src="/home/hero-paint-smears.png"
+            alt=""
+            fill
+            priority
+            unoptimized
+            sizes="900px"
+            className="object-fill"
+          />
+        </div>
+        <div className="absolute top-22 left-40 z-2 w-155 max-lg:static max-lg:w-auto max-lg:px-6 max-lg:pt-14">
           <h1 className="m-0 flex flex-col items-start">
             <span className="font-(family-name:--font-dm-serif-display) text-[96px] leading-[0.95] tracking-[-1.5px] text-[#1f1b18] max-sm:text-[64px]">
               {homeHeroCopy.headline}
@@ -107,6 +118,7 @@ export default function HeroPaintRotator() {
                     fill
                     sizes="520px"
                     priority={index === 0}
+                    unoptimized
                     className="object-cover object-[50%_42%]"
                   />
                 </span>
@@ -117,7 +129,10 @@ export default function HeroPaintRotator() {
             {homeHeroCopy.tagline}
           </p>
           <p className="mt-2 max-w-95 text-xl leading-[1.45] text-[#4a433d]">
-            {homeHeroCopy.body}
+            {homeHeroCopy.body}{' '}
+            <span className="font-(family-name:--font-just-another-hand) text-[32px] leading-none text-[#1f1b18]">
+              {homeHeroCopy.signature}
+            </span>
           </p>
           <Link
             href={homeHeroCopy.button.href}

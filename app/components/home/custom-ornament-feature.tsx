@@ -23,7 +23,7 @@ export default function CustomOrnamentFeature() {
           className="object-cover"
         />
       </div>
-      <div className="absolute top-22.5 left-172.5 w-90 max-lg:static max-lg:w-full max-lg:max-w-152.5">
+      <div className="absolute top-22.5 left-172.5 w-140 max-lg:static max-lg:w-full max-lg:max-w-152.5">
         <svg
           width="36"
           height="36"

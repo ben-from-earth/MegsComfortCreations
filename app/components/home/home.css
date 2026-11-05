@@ -3,6 +3,24 @@
    across in a curve as --r grows. Each stroke stays painted for the whole loop,
    stepping back one layer every slot, so the stack runs newest to oldest. The
    oldest stroke fades out at the back before it resets and paints on top. */
+/* Pixel-faithful torn edge from the hero mock. Disabled on small screens
+   so the derived top-edge clip-path can take over. */
+.home-hero-panel {
+  -webkit-mask-image: url('/home/hero-panel-mask.png');
+  mask-image: url('/home/hero-panel-mask.png');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@media (max-width: 1023px) {
+  .home-hero-panel {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 .home-wipe,
 .home-hero-photo {
   animation-duration: 84s;
