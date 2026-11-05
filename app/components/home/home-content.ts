@@ -119,7 +119,7 @@ export const homeTiles = [
     imageAlt:
       'Hand holding a sticker of a brown figure over the word Amaze, against a starry sky.',
     photoTiltDegrees: -2,
-    paperSrc: '/home/paper-orange.jpg',
+    paperSrc: '/home/paper-orange.png',
   },
   {
     label: 'Bookmarks',
@@ -127,7 +127,7 @@ export const homeTiles = [
     imageSrc: '/home/tile-bookmarks.jpg',
     imageAlt: 'Two pink goose bookmarks laid in an open book.',
     photoTiltDegrees: 1.5,
-    paperSrc: '/home/paper-pink.jpg',
+    paperSrc: '/home/paper-pink.png',
   },
   {
     label: 'Miniatures',
@@ -136,7 +136,7 @@ export const homeTiles = [
     imageAlt:
       'A miniature Hello Beautiful book held between two fingers in front of a bookshelf.',
     photoTiltDegrees: -1,
-    paperSrc: '/home/paper-sage.jpg',
+    paperSrc: '/home/paper-sage.png',
   },
   {
     label: '3D Printing',
@@ -145,7 +145,7 @@ export const homeTiles = [
     imageAlt:
       'A small white 3D-printed bookshelf of blank spines, standing in front of full-size books.',
     photoTiltDegrees: 2,
-    paperSrc: '/home/paper-red.jpg',
+    paperSrc: '/home/paper-red.png',
   },
   {
     label: 'Earrings',
@@ -153,7 +153,7 @@ export const homeTiles = [
     imageSrc: '/home/tile-earrings.png',
     imageAlt: 'A miniature Harry Potter book worn as an earring.',
     photoTiltDegrees: -1.5,
-    paperSrc: '/home/paper-green.jpg',
+    paperSrc: '/home/paper-green.png',
   },
 ] satisfies readonly HomeTile[];
 
