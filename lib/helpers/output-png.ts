@@ -109,6 +109,19 @@ const variation5: Variation = {
   mode: 'single',
 };
 
+function fullCoverVariation(rowHeight: number): Variation {
+  const width = Math.round((rowHeight * 3) / 2);
+  return {
+    cellWidth: width,
+    imageWidth: width,
+    pairGap: 0,
+    mode: 'single',
+  };
+}
+
+const movieVariation3 = fullCoverVariation(TEMPLATE_METRICS[3].rowHeight);
+const movieVariation5 = fullCoverVariation(TEMPLATE_METRICS[5].rowHeight);
+
 // Which variation is used based on format and media type
 const COMBOS: Record<
   Template,
@@ -116,19 +129,26 @@ const COMBOS: Record<
 > = {
   3: {
     book: variation1,
-    movie: variation1,
+    movie: movieVariation3,
     videoGame: variation1,
     album: variation2,
     default: variation1,
   },
   5: {
     book: variation3,
-    movie: variation4,
+    movie: movieVariation5,
     videoGame: variation4,
     album: variation5,
     default: variation4,
   },
-} as const;
+};
+
+export function cellVariationFor(
+  template: Template,
+  type: string | undefined,
+): Variation {
+  return COMBOS[template][type ?? ''] ?? COMBOS[template].default;
+}
 
 //Multi Page PNG ZIP
 
@@ -164,7 +184,7 @@ function layoutPage({
 
   for (let i = startIndex; i < images.length; i++) {
     const type = images[i]?.type;
-    const cfg = COMBOS[template][type] ?? COMBOS[template].default;
+    const cfg = cellVariationFor(template, type);
     const w = cfg.cellWidth;
     const h = rowHeight;
 
@@ -354,7 +374,7 @@ async function renderCell(
   rowHeight: number,
 ): Promise<OverlayOptions[]> {
   const { url, spineColor, type } = img || {};
-  const cfg = COMBOS[template][type ?? ''] ?? COMBOS[template].default;
+  const cfg = cellVariationFor(template, type);
 
   // Cell background (spine color fills full slot)
   const cellBg = await makeBlock(

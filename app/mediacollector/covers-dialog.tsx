@@ -18,6 +18,7 @@ export default function CoversDialog({
   images,
   isUploading,
   originalDefaultUrl,
+  aspectClassName,
   onCancel,
   onConfirm,
   onUploadClick,
@@ -28,6 +29,7 @@ export default function CoversDialog({
   images: MediaItemForm['images'];
   isUploading: boolean;
   originalDefaultUrl?: string;
+  aspectClassName?: string;
   onCancel: () => void;
   onConfirm: (imageIndex: number) => void;
   onUploadClick?: () => void;
@@ -89,6 +91,7 @@ export default function CoversDialog({
                   ? defaultCoverRibbonVariant(image, originalDefaultUrl)
                   : null
               }
+              aspectClassName={aspectClassName}
               onClick={() => setPickedIndex(imageIndex)}
             />
           ))}
@@ -96,6 +99,7 @@ export default function CoversDialog({
             <UploadTile
               mediaType={mediaType}
               isUploading={isUploading}
+              aspectClassName={aspectClassName}
               onClick={onUploadClick}
             />
           ) : null}

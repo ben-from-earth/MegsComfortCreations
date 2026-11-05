@@ -9,7 +9,7 @@ import {
   CoverImage,
   CoverTile,
   UploadTile,
-  coverAspectClassName,
+  collectorCoverAspectClassName,
 } from '@/mediacollector/cover-tile';
 import CoversDialog from '@/mediacollector/covers-dialog';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
@@ -106,7 +106,8 @@ export default function LibraryItemCovers({
     }
   };
 
-  const showUploadSlot = type === 'book' && !isLocked;
+  const showUploadSlot = (type === 'book' || type === 'movie') && !isLocked;
+  const tileAspectClassName = collectorCoverAspectClassName(type);
   const hasOverflow = images.length > MAX_TILES_WITHOUT_OVERFLOW;
   const selectedImageIndex = images.findIndex((image) => image.selected);
   const visibleImageIndexes = hasOverflow
@@ -149,6 +150,7 @@ export default function LibraryItemCovers({
                   image,
                   originalDefaultUrl,
                 )}
+                aspectClassName={tileAspectClassName}
                 onClick={() => handleImageSelection(imageIndex)}
                 onSetDefault={
                   !isLocked && image.selected && !image.isDefault
@@ -178,7 +180,7 @@ export default function LibraryItemCovers({
           <button
             type="button"
             onClick={() => setIsDialogOpen(true)}
-            className={`relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-0 p-0 ${coverAspectClassName(type)}`}
+            className={`relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-0 p-0 ${tileAspectClassName}`}
           >
             {overflowPreviewImage ? (
               <CoverImage
@@ -201,6 +203,8 @@ export default function LibraryItemCovers({
           <UploadTile
             mediaType={type}
             isUploading={isUploading}
+            isDisabled={isLocked}
+            aspectClassName={tileAspectClassName}
             onClick={() => fileInputRef.current?.click()}
           />
         ) : null}
@@ -218,13 +222,14 @@ export default function LibraryItemCovers({
           images={images}
           isUploading={isUploading}
           originalDefaultUrl={originalDefaultUrl}
+          aspectClassName={tileAspectClassName}
           onCancel={() => setIsDialogOpen(false)}
           onConfirm={(imageIndex) => {
             handleImageSelection(imageIndex);
             setIsDialogOpen(false);
           }}
           onUploadClick={
-            showUploadSlot
+            showUploadSlot && !isLocked
               ? () => {
                   setIsDialogOpen(false);
                   fileInputRef.current?.click();

@@ -16,7 +16,10 @@ import {
 } from '@/mediacollector/collector-form/media-item-form-schema';
 import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
-import { CoverImage } from '@/mediacollector/cover-tile';
+import {
+  CoverImage,
+  collectorCoverAspectClassName,
+} from '@/mediacollector/cover-tile';
 import {
   countDatabaseItemChanges,
   diffDatabaseItem,
@@ -138,57 +141,77 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             </span>
           </div>
 
-          <div
-            className={`flex gap-4.5 px-4.5 py-3.5 ${
-              type === 'book' ? 'items-center' : 'items-start'
-            }`}
-          >
-            {selectedImage ? (
-              <div className="flex shrink-0 overflow-hidden rounded-r-md">
-                {type !== 'album' ? (
-                  <div
-                    className="w-2.5 shrink-0"
-                    style={{ backgroundColor: blockInfo.spineColor }}
-                  />
-                ) : null}
-                <div className={`relative ${mainCoverSizeClassName}`}>
-                  <CoverImage
-                    url={selectedImage.url}
-                    alt={`${blockInfo.title} cover`}
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+          {type === 'movie' ? (
+            <div className="mb-3.5 flex flex-col gap-3 px-4.5 pt-3.5">
               <LibraryItemTextField
                 name="title"
                 label="Title"
                 editState={fieldEditState(changes.title)}
               />
-              {type === 'book' ? (
-                <>
-                  <LibraryItemTextField
-                    name="author"
-                    label="Author"
-                    editState={fieldEditState(changes.author)}
+              {selectedImage ? (
+                <div
+                  className={`relative w-full overflow-hidden rounded-md ${collectorCoverAspectClassName('movie')}`}
+                >
+                  <CoverImage
+                    url={selectedImage.url}
+                    alt={`${blockInfo.title} cover`}
                   />
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <LibraryItemTextField
-                      name="pubYear"
-                      label="Published"
-                      editState={fieldEditState(changes.pubYear)}
-                    />
-                    <LibraryItemTextField
-                      name="pageCount"
-                      label="Pages"
-                      editState={fieldEditState(changes.pageCount)}
-                    />
-                  </div>
-                </>
+                </div>
               ) : null}
             </div>
-          </div>
+          ) : (
+            <div
+              className={`flex gap-4.5 px-4.5 py-3.5 ${
+                type === 'book' ? 'items-center' : 'items-start'
+              }`}
+            >
+              {selectedImage ? (
+                <div className="flex shrink-0 overflow-hidden rounded-r-md">
+                  {type !== 'album' ? (
+                    <div
+                      className="w-2.5 shrink-0"
+                      style={{ backgroundColor: blockInfo.spineColor }}
+                    />
+                  ) : null}
+                  <div className={`relative ${mainCoverSizeClassName}`}>
+                    <CoverImage
+                      url={selectedImage.url}
+                      alt={`${blockInfo.title} cover`}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+                <LibraryItemTextField
+                  name="title"
+                  label="Title"
+                  editState={fieldEditState(changes.title)}
+                />
+                {type === 'book' ? (
+                  <>
+                    <LibraryItemTextField
+                      name="author"
+                      label="Author"
+                      editState={fieldEditState(changes.author)}
+                    />
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <LibraryItemTextField
+                        name="pubYear"
+                        label="Published"
+                        editState={fieldEditState(changes.pubYear)}
+                      />
+                      <LibraryItemTextField
+                        name="pageCount"
+                        label="Pages"
+                        editState={fieldEditState(changes.pageCount)}
+                      />
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          )}
 
           {type === 'book' ? (
             <LibraryGenreRow
@@ -206,7 +229,7 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             isCoverListChanged={changes.coverList}
           />
 
-          {type !== 'album' ? (
+          {type !== 'album' && type !== 'movie' ? (
             <LibrarySpineColorRow
               isLocked={isLocked}
               isChanged={

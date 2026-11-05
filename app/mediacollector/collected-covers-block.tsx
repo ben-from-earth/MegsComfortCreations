@@ -12,7 +12,7 @@ import CollectedItemTextField, {
 import { CollectorFormData } from './collector-form/collector-form-schema';
 import { MEDIA_TYPE_DEFINITIONS, MediaType } from 'lib/constants/media-types';
 import SpineColorRow from './spine-color-row';
-import { CoverImage } from './cover-tile';
+import { CoverImage, collectorCoverAspectClassName } from './cover-tile';
 import DatabaseEditContext from './database-edit-context';
 import {
   countDatabaseItemChanges,
@@ -141,71 +141,97 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         )}
       </div>
 
-      <div className="flex items-center gap-4.5 px-4.5 py-3.5">
-        {selectedImage ? (
-          <div className="flex shrink-0 overflow-hidden rounded-r-md">
-            {type !== 'album' ? (
-              <div
-                className="w-2.5 shrink-0"
-                style={{ backgroundColor: spineColor }}
-              />
-            ) : null}
-            <div className={`relative ${mainCoverSizeClassName}`}>
-              <CoverImage url={selectedImage.url} alt={`${title} cover`} />
-            </div>
-          </div>
-        ) : (
-          <div
-            className={`flex shrink-0 items-center justify-center rounded-md border-2 border-dashed border-[#b0533a] bg-[#f9eee9] p-2 text-center text-[13px] font-extrabold text-[#9a3b26] ${mainCoverSizeClassName}`}
-          >
-            Choose a cover below
-          </div>
-        )}
-
-        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+      {type === 'movie' ? (
+        <div className="mb-3.5 flex flex-col gap-3 px-4.5 pt-3.5">
           <CollectedItemTextField
             name="title"
             label="Title"
             index={index}
             editState={fieldEditState(changes?.title)}
           />
-          {type === 'book' ? (
-            <>
-              <CollectedItemTextField
-                name="author"
-                label="Author"
-                index={index}
-                editState={fieldEditState(changes?.author)}
-              />
-              <div className="grid grid-cols-2 gap-2.5">
-                <CollectedItemTextField
-                  name="pubYear"
-                  label="Published"
-                  index={index}
-                  editState={fieldEditState(changes?.pubYear)}
-                />
-                <CollectedItemTextField
-                  name="pageCount"
-                  label="Pages"
-                  index={index}
-                  editState={fieldEditState(changes?.pageCount)}
-                />
-              </div>
-            </>
-          ) : null}
+          {selectedImage ? (
+            <div
+              className={`relative w-full overflow-hidden rounded-md ${collectorCoverAspectClassName('movie')}`}
+            >
+              <CoverImage url={selectedImage.url} alt={`${title} cover`} />
+            </div>
+          ) : (
+            <div
+              className={`flex w-full items-center justify-center rounded-md border-2 border-dashed border-[#b0533a] bg-[#f9eee9] p-2 text-center text-[13px] font-extrabold text-[#9a3b26] ${collectorCoverAspectClassName('movie')}`}
+            >
+              Choose a cover below
+            </div>
+          )}
         </div>
-      </div>
-
-      {type === 'book' ? (
-        <GenreRow
-          genres={genres}
-          isEditable={!isLocked}
-          isChanged={changes?.genres ?? false}
-          onAdd={(genre) => handleGenreClick(genre, true)}
-          onRemove={(genre) => handleGenreClick(genre, false)}
-        />
       ) : (
-        <div className="mx-4.5 mb-3.5 h-10" />
+        <>
+          <div className="flex items-center gap-4.5 px-4.5 py-3.5">
+            {selectedImage ? (
+              <div className="flex shrink-0 overflow-hidden rounded-r-md">
+                {type !== 'album' ? (
+                  <div
+                    className="w-2.5 shrink-0"
+                    style={{ backgroundColor: spineColor }}
+                  />
+                ) : null}
+                <div className={`relative ${mainCoverSizeClassName}`}>
+                  <CoverImage url={selectedImage.url} alt={`${title} cover`} />
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`flex shrink-0 items-center justify-center rounded-md border-2 border-dashed border-[#b0533a] bg-[#f9eee9] p-2 text-center text-[13px] font-extrabold text-[#9a3b26] ${mainCoverSizeClassName}`}
+              >
+                Choose a cover below
+              </div>
+            )}
+
+            <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+              <CollectedItemTextField
+                name="title"
+                label="Title"
+                index={index}
+                editState={fieldEditState(changes?.title)}
+              />
+              {type === 'book' ? (
+                <>
+                  <CollectedItemTextField
+                    name="author"
+                    label="Author"
+                    index={index}
+                    editState={fieldEditState(changes?.author)}
+                  />
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <CollectedItemTextField
+                      name="pubYear"
+                      label="Published"
+                      index={index}
+                      editState={fieldEditState(changes?.pubYear)}
+                    />
+                    <CollectedItemTextField
+                      name="pageCount"
+                      label="Pages"
+                      index={index}
+                      editState={fieldEditState(changes?.pageCount)}
+                    />
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          {type === 'book' ? (
+            <GenreRow
+              genres={genres}
+              isEditable={!isLocked}
+              isChanged={changes?.genres ?? false}
+              onAdd={(genre) => handleGenreClick(genre, true)}
+              onRemove={(genre) => handleGenreClick(genre, false)}
+            />
+          ) : (
+            <div className="mx-4.5 mb-3.5 h-10" />
+          )}
+        </>
       )}
 
       <CBBImages
@@ -218,7 +244,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         title={title}
       />
 
-      {type !== 'album' ? (
+      {type !== 'album' && type !== 'movie' ? (
         <SpineColorRow
           index={index}
           isLocked={isLocked}

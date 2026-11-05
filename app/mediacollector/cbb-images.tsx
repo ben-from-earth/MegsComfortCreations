@@ -8,7 +8,7 @@ import {
   CoverImage,
   CoverTile,
   UploadTile,
-  coverAspectClassName,
+  collectorCoverAspectClassName,
 } from './cover-tile';
 import { defaultCoverRibbonVariant } from '@/components/shared/default-cover-ribbon';
 import CoversDialog from './covers-dialog';
@@ -120,10 +120,13 @@ export default function CBBImages({
     }
   };
 
-  const showUploadSlot = type === 'book';
+  const showUploadSlot = type === 'book' || (type === 'movie' && isDatabase);
   const needsCover = !isDatabase && !images.some((image) => image.selected);
+  const tileAspectClassName = collectorCoverAspectClassName(type);
+  const maxTilesWithoutOverflow =
+    type === 'movie' && !isDatabase ? 5 : MAX_TILES_WITHOUT_OVERFLOW;
 
-  const hasOverflow = images.length > MAX_TILES_WITHOUT_OVERFLOW;
+  const hasOverflow = images.length > maxTilesWithoutOverflow;
   const selectedImageIndex = images.findIndex((image) => image.selected);
   const visibleImageIndexes = hasOverflow
     ? selectedImageIndex > 2
@@ -165,6 +168,7 @@ export default function CBBImages({
                   ? defaultCoverRibbonVariant(image, originalDefaultUrl)
                   : null
               }
+              aspectClassName={tileAspectClassName}
               onClick={() => handleImageSelection(imageIndex)}
               onSetDefault={
                 isDatabase && !isLocked && image.selected && !image.isDefault
@@ -178,7 +182,7 @@ export default function CBBImages({
           <button
             type="button"
             onClick={() => setIsDialogOpen(true)}
-            className={`relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-0 p-0 ${coverAspectClassName(type)}`}
+            className={`relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-0 p-0 ${tileAspectClassName}`}
           >
             {overflowPreviewImage ? (
               <CoverImage
@@ -202,6 +206,7 @@ export default function CBBImages({
             mediaType={type}
             isUploading={isUploading}
             isDisabled={isLocked}
+            aspectClassName={tileAspectClassName}
             onClick={() => fileInputRef.current?.click()}
           />
         ) : null}
@@ -214,6 +219,7 @@ export default function CBBImages({
           images={images}
           isUploading={isUploading}
           originalDefaultUrl={originalDefaultUrl}
+          aspectClassName={tileAspectClassName}
           onCancel={() => setIsDialogOpen(false)}
           onConfirm={(imageIndex) => {
             handleImageSelection(imageIndex);
