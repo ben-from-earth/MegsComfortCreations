@@ -13,6 +13,13 @@ export function coverAspectClassName(mediaType: MediaType) {
   return mediaType === 'album' ? 'aspect-square' : 'aspect-[2/3]';
 }
 
+export function collectorCoverAspectClassName(mediaType: MediaType) {
+  if (mediaType === 'movie') {
+    return 'aspect-[3/2]';
+  }
+  return coverAspectClassName(mediaType);
+}
+
 export function CoverImage({ url, alt }: { url: string; alt: string }) {
   const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
 
@@ -44,6 +51,7 @@ export function CoverTile({
   coverNumber,
   isSelected,
   defaultRibbon,
+  aspectClassName,
   onClick,
   onSetDefault,
 }: {
@@ -52,9 +60,13 @@ export function CoverTile({
   coverNumber: number;
   isSelected: boolean;
   defaultRibbon: DefaultCoverRibbonVariant | null;
+  aspectClassName?: string;
   onClick: () => void;
   onSetDefault?: () => void;
 }) {
+  const resolvedAspectClassName =
+    aspectClassName ?? coverAspectClassName(mediaType);
+
   return (
     <div className="relative">
       <button
@@ -63,7 +75,7 @@ export function CoverTile({
         aria-checked={isSelected}
         aria-label={defaultCoverTileLabel(coverNumber, defaultRibbon)}
         onClick={onClick}
-        className={`relative w-full cursor-pointer rounded-md border-0 p-0 ${coverAspectClassName(mediaType)} ${
+        className={`relative w-full cursor-pointer rounded-md border-0 p-0 ${resolvedAspectClassName} ${
           isSelected ? 'shadow-[0_0_0_2px_#ffffff,0_0_0_4.5px_#2a4637]' : ''
         }`}
       >
@@ -86,19 +98,24 @@ export function UploadTile({
   mediaType,
   isUploading,
   isDisabled = false,
+  aspectClassName,
   onClick,
 }: {
   mediaType: MediaType;
   isUploading: boolean;
   isDisabled?: boolean;
+  aspectClassName?: string;
   onClick: () => void;
 }) {
+  const resolvedAspectClassName =
+    aspectClassName ?? coverAspectClassName(mediaType);
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={isUploading || isDisabled}
-      className={`flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border-[1.5px] border-dashed border-[#b3aaa0] bg-[#fcfbf9] p-0 text-[#6b645d] disabled:cursor-not-allowed disabled:opacity-60 ${coverAspectClassName(mediaType)}`}
+      className={`flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border-[1.5px] border-dashed border-[#b3aaa0] bg-[#fcfbf9] p-0 text-[#6b645d] disabled:cursor-not-allowed disabled:opacity-60 ${resolvedAspectClassName}`}
     >
       {isUploading ? (
         <span className="text-[11px] font-extrabold">Uploading…</span>
