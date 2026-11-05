@@ -6,19 +6,19 @@ export default function CategoryTiles() {
   return (
     <section
       aria-label="Shop categories"
-      className="grid grid-cols-5 gap-3 px-3 pt-3"
+      className="grid grid-cols-5 gap-3 px-3 pt-3 max-lg:grid-cols-2"
     >
       {homeTiles.map((tile, index) => (
         <Link
           key={tile.href}
           href={tile.href}
-          className="relative block h-75 overflow-hidden"
+          className="relative block h-75 overflow-hidden max-lg:last:col-span-2"
         >
           <Image
             src={tile.paperSrc}
             alt=""
             fill
-            sizes="20vw"
+            sizes="(min-width: 1024px) 20vw, 100vw"
             className="object-cover"
           />
           <div

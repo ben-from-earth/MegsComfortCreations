@@ -9,21 +9,21 @@ export default function CustomOrnamentFeature() {
   return (
     <section
       aria-label={homeCustomOrnament.eyebrow}
-      className="relative mx-3 mt-3 h-150 overflow-hidden bg-[#f6a27e]"
+      className="relative mx-3 mt-3 h-150 overflow-hidden bg-[#f6a27e] max-lg:flex max-lg:h-auto max-lg:flex-col max-lg:items-center max-lg:gap-10 max-lg:px-6 max-lg:pt-8 max-lg:pb-12"
     >
       <div
-        className="absolute top-9 left-9 z-2 h-132 w-152.5 -rotate-2 shadow-[0_14px_30px_rgba(60,30,15,0.3)]"
+        className="absolute top-9 left-9 z-2 h-132 w-152.5 -rotate-2 shadow-[0_14px_30px_rgba(60,30,15,0.3)] max-lg:relative max-lg:inset-auto max-lg:aspect-610/528 max-lg:h-auto max-lg:w-full max-lg:max-w-152.5"
         style={{ clipPath: homeClipPaths.customPhoto }}
       >
         <Image
           src={homeCustomOrnament.tornPhotoSrc}
           alt={homeCustomOrnament.tornPhotoAlt}
           fill
-          sizes="610px"
+          sizes="(min-width: 1024px) 610px, 100vw"
           className="object-cover"
         />
       </div>
-      <div className="absolute top-22.5 left-172.5 w-90">
+      <div className="absolute top-22.5 left-172.5 w-90 max-lg:static max-lg:w-full max-lg:max-w-152.5">
         <svg
           width="36"
           height="36"
@@ -42,7 +42,7 @@ export default function CustomOrnamentFeature() {
         <p className="mt-3.5 text-[13px] font-extrabold tracking-[2.6px] text-[#c4452a] uppercase">
           {homeCustomOrnament.eyebrow}
         </p>
-        <h2 className="mt-2.5 font-(family-name:--font-dm-serif-display) text-[56px] leading-none tracking-[-0.6px] text-[#1f1b18]">
+        <h2 className="mt-2.5 font-(family-name:--font-dm-serif-display) text-[56px] leading-none tracking-[-0.6px] text-[#1f1b18] max-sm:text-[40px]">
           {homeCustomOrnament.headline}
         </h2>
         <p className="mt-5 text-[17px] leading-normal text-[#3a2f28]">
@@ -68,8 +68,8 @@ export default function CustomOrnamentFeature() {
           </svg>
         </Link>
       </div>
-      <figure className="absolute top-17.5 right-14 m-0 w-80 rotate-5 bg-[#fffdf8] px-4 pt-4 shadow-[0_16px_34px_rgba(60,30,15,0.28)]">
-        <div className="relative h-75">
+      <figure className="absolute top-17.5 right-14 m-0 w-80 rotate-5 bg-[#fffdf8] px-4 pt-4 shadow-[0_16px_34px_rgba(60,30,15,0.28)] max-lg:static max-lg:w-60 max-lg:rotate-3 max-lg:px-3 max-lg:pt-3">
+        <div className="relative h-75 max-lg:h-52">
           <Image
             src={homeCustomOrnament.polaroidSrc}
             alt={homeCustomOrnament.polaroidAlt}

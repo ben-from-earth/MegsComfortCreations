@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -11,10 +12,35 @@ import './home.css';
 
 const publicDirectory = path.join(process.cwd(), 'public');
 
+// The narrow top edge reuses the desktop tear's jitter with its slant removed.
+// 1% of the 900px desktop panel is 9px.
+const desktopTearPoints = Array.from(
+  homeClipPaths.heroPanel.matchAll(/([\d.]+)% ([\d.]+)%/g),
+  (match) => ({ x: Number(match[1]), y: Number(match[2]) }),
+);
+const firstTearPoint = desktopTearPoints[0];
+const lastTearPoint = desktopTearPoints[desktopTearPoints.length - 1];
+const narrowPanelClipPath = `polygon(${desktopTearPoints
+  .map((point) => {
+    const slantX =
+      firstTearPoint.x + ((lastTearPoint.x - firstTearPoint.x) * point.y) / 100;
+    return `${point.y}% ${(12 + (point.x - slantX) * 9).toFixed(1)}px`;
+  })
+  .join(',')},100% 100%,0 100%)`;
+
+const heroPanelStyle: CSSProperties &
+  Record<'--hero-panel-clip' | '--hero-panel-clip-narrow', string> = {
+  '--hero-panel-clip': homeClipPaths.heroPanel,
+  '--hero-panel-clip-narrow': narrowPanelClipPath,
+};
+
 export default function HeroPaintRotator() {
   return (
-    <section className="relative h-160 overflow-hidden bg-[#3b2a22]">
-      <div aria-hidden="true" className="absolute inset-[0_0_0_520px]">
+    <section className="relative h-160 overflow-hidden bg-[#3b2a22] max-lg:flex max-lg:h-auto max-lg:flex-col">
+      <div
+        aria-hidden="true"
+        className="absolute inset-[0_0_0_520px] max-lg:relative max-lg:inset-auto max-lg:h-90 max-lg:w-full"
+      >
         {homeWipes.map((wipe, index) => (
           <div
             key={wipe.word}
@@ -48,18 +74,18 @@ export default function HeroPaintRotator() {
       </div>
 
       <div
-        className="absolute inset-y-0 left-0 z-2 w-225 bg-[#f6efe3]"
-        style={{ clipPath: homeClipPaths.heroPanel }}
+        className="absolute inset-y-0 left-0 z-2 w-225 bg-[#f6efe3] [clip-path:var(--hero-panel-clip)] max-lg:relative max-lg:inset-auto max-lg:-mt-6 max-lg:w-full max-lg:pb-14 max-lg:[clip-path:var(--hero-panel-clip-narrow)]"
+        style={heroPanelStyle}
       >
-        <div className="absolute top-25 left-32.5 w-155">
+        <div className="absolute top-25 left-32.5 w-155 max-lg:static max-lg:w-auto max-lg:px-6 max-lg:pt-14">
           <h1 className="m-0 flex flex-col items-start">
-            <span className="font-(family-name:--font-dm-serif-display) text-[96px] leading-[0.95] tracking-[-1.5px] text-[#1f1b18]">
+            <span className="font-(family-name:--font-dm-serif-display) text-[96px] leading-[0.95] tracking-[-1.5px] text-[#1f1b18] max-sm:text-[64px]">
               {homeHeroCopy.headline}
             </span>
             <span className="sr-only">{homeHeroCopy.hiddenTitle}</span>
             <span
               aria-hidden="true"
-              className="pointer-events-none relative mt-2.5 ml-5 block h-50 w-130"
+              className="pointer-events-none relative mt-2.5 ml-5 block h-50 w-130 origin-top-left max-[400px]:-mb-24 max-[400px]:scale-52 max-sm:-mb-20 max-sm:ml-0 max-sm:scale-60"
             >
               {homeWipes.map((wipe, index) => (
                 <span

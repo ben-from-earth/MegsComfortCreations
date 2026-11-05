@@ -76,7 +76,7 @@ export default async function ShippedPlacesRibbon() {
         <Sparkle color="#f0a83e" />
         <h2
           id="shipped-places-heading"
-          className="m-0 text-[15px] font-extrabold tracking-[3.4px] uppercase"
+          className="m-0 text-center text-[15px] font-extrabold tracking-[3.4px] uppercase"
         >
           Sent with care to{' '}
           <span className="text-[#c4452a]">
