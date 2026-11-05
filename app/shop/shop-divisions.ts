@@ -4,4 +4,5 @@ export const SHOP_DIVISIONS = [
   { slug: 'bookmarks', label: 'Bookmarks' },
   { slug: 'miniatures', label: 'Miniatures' },
   { slug: '3d-printing', label: '3D Printing' },
+  { slug: 'earrings', label: 'Earrings' },
 ] as const;

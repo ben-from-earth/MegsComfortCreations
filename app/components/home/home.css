@@ -1,0 +1,253 @@
+/* 7 wipes x 12s = 84s loop; each owns 1/7 (14.29%) of the cycle. The paint
+   front is the edge of a circle centred below-left of the stage, so it sweeps
+   across in a curve as --r grows. Each stroke stays painted for the whole loop,
+   stepping back one layer every slot, so the stack runs newest to oldest. The
+   oldest stroke fades out at the back before it resets and paints on top. */
+/* Pixel-faithful torn edge from the hero mock. Disabled on small screens
+   so the derived top-edge clip-path can take over. */
+.home-hero-panel {
+  -webkit-mask-image: url('/home/hero-panel-mask.png');
+  mask-image: url('/home/hero-panel-mask.png');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@media (max-width: 1023px) {
+  .home-hero-panel {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+.home-wipe,
+.home-hero-photo {
+  animation-duration: 84s;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-timing-function: linear;
+}
+
+.home-wipe {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 1;
+  --r: 140px;
+  -webkit-mask-image: radial-gradient(
+    circle at -170px 300px,
+    #000 calc(var(--r) - 34px),
+    transparent var(--r)
+  );
+  mask-image: radial-gradient(
+    circle at -170px 300px,
+    #000 calc(var(--r) - 34px),
+    transparent var(--r)
+  );
+  animation-name: home-wipe;
+}
+
+.home-hero-photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 1;
+  animation-name: home-photo-fade;
+}
+
+@keyframes home-wipe {
+  0% {
+    --r: 140px;
+    opacity: 1;
+    z-index: 7;
+    animation-timing-function: cubic-bezier(0.45, 0.1, 0.25, 1);
+  }
+  1.9%,
+  14.28% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 7;
+  }
+  14.29%,
+  28.56% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 6;
+  }
+  28.57%,
+  42.85% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 5;
+  }
+  42.86%,
+  57.13% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 4;
+  }
+  57.14%,
+  71.42% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 3;
+  }
+  71.43%,
+  85.71% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 2;
+  }
+  85.72%,
+  98.1% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 1;
+  }
+  99.9% {
+    --r: 820px;
+    opacity: 0;
+    z-index: 1;
+  }
+  100% {
+    --r: 140px;
+    opacity: 0;
+    z-index: 1;
+  }
+}
+
+@keyframes home-photo-fade {
+  0% {
+    opacity: 0;
+    z-index: 2;
+    animation-timing-function: ease-in-out;
+  }
+  1.9% {
+    opacity: 1;
+    z-index: 2;
+  }
+  14.28% {
+    opacity: 1;
+    z-index: 2;
+  }
+  14.3% {
+    opacity: 1;
+    z-index: 1;
+  }
+  16.2% {
+    opacity: 1;
+    z-index: 1;
+  }
+  16.3% {
+    opacity: 0;
+    z-index: 1;
+  }
+  100% {
+    opacity: 0;
+    z-index: 1;
+  }
+}
+
+.home-ribbon-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: 36px;
+  padding: 16px 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 7%,
+    #000 93%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 7%,
+    #000 93%,
+    transparent
+  );
+}
+
+.home-ribbon-track {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+  margin: 0;
+  padding: 0 24px;
+  list-style: none;
+  animation: home-ribbon-drift 160s linear infinite;
+}
+
+.home-ribbon-track-reverse {
+  padding-left: 120px;
+  animation-duration: 180s;
+  animation-direction: reverse;
+}
+
+.home-washi {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 58px;
+  padding: 0 30px;
+  opacity: 0.92;
+  box-shadow: 0 2px 4px rgba(60, 40, 20, 0.12);
+  clip-path: polygon(
+    0px 0%,
+    6px 8.33%,
+    0px 16.67%,
+    6px 25%,
+    0px 33.33%,
+    6px 41.67%,
+    0px 50%,
+    6px 58.33%,
+    0px 66.67%,
+    6px 75%,
+    0px 83.33%,
+    6px 91.67%,
+    0px 100%,
+    100% 100%,
+    calc(100% - 6px) 91.67%,
+    100% 83.33%,
+    calc(100% - 6px) 75%,
+    100% 66.67%,
+    calc(100% - 6px) 58.33%,
+    100% 50%,
+    calc(100% - 6px) 41.67%,
+    100% 33.33%,
+    calc(100% - 6px) 25%,
+    100% 16.67%,
+    calc(100% - 6px) 8.33%,
+    100% 0%
+  );
+}
+
+@keyframes home-ribbon-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-ribbon-track {
+    animation: none;
+  }
+  .home-wipe,
+  .home-hero-photo {
+    animation: none;
+  }
+  .home-wipe {
+    --r: 820px;
+  }
+  .home-wipe:first-child,
+  .home-hero-photo:first-child {
+    opacity: 1;
+  }
+}
