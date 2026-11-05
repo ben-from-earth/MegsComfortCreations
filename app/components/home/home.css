@@ -1,0 +1,129 @@
+/* 7 wipes x 12s = 84s loop; each owns 1/7 (14.29%) of the cycle. The paint
+   front is the edge of a circle centred below-left of the stage, so it sweeps
+   across in a curve as --r grows. The previous stroke stays underneath for the
+   next slot, then fades while the one after is painted. */
+.home-wipe,
+.home-hero-photo {
+  animation-duration: 84s;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-timing-function: linear;
+}
+
+.home-wipe {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 1;
+  --r: 140px;
+  -webkit-mask-image: radial-gradient(
+    circle at -170px 300px,
+    #000 calc(var(--r) - 34px),
+    transparent var(--r)
+  );
+  mask-image: radial-gradient(
+    circle at -170px 300px,
+    #000 calc(var(--r) - 34px),
+    transparent var(--r)
+  );
+  animation-name: home-wipe;
+}
+
+.home-hero-photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 1;
+  animation-name: home-photo-fade;
+}
+
+@keyframes home-wipe {
+  0% {
+    --r: 140px;
+    opacity: 1;
+    z-index: 3;
+    animation-timing-function: cubic-bezier(0.45, 0.1, 0.25, 1);
+  }
+  1.9% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 3;
+  }
+  14.28% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 3;
+  }
+  14.29% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 2;
+  }
+  28.56% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 2;
+  }
+  28.57% {
+    --r: 820px;
+    opacity: 1;
+    z-index: 1;
+  }
+  30.4% {
+    --r: 820px;
+    opacity: 0;
+    z-index: 1;
+  }
+  30.5%,
+  100% {
+    --r: 140px;
+    opacity: 0;
+    z-index: 1;
+  }
+}
+
+@keyframes home-photo-fade {
+  0% {
+    opacity: 0;
+    z-index: 2;
+    animation-timing-function: ease-in-out;
+  }
+  1.9% {
+    opacity: 1;
+    z-index: 2;
+  }
+  14.28% {
+    opacity: 1;
+    z-index: 2;
+  }
+  14.3% {
+    opacity: 1;
+    z-index: 1;
+  }
+  16.2% {
+    opacity: 1;
+    z-index: 1;
+  }
+  16.3% {
+    opacity: 0;
+    z-index: 1;
+  }
+  100% {
+    opacity: 0;
+    z-index: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-wipe,
+  .home-hero-photo {
+    animation: none;
+  }
+  .home-wipe {
+    --r: 820px;
+  }
+  .home-wipe:first-child,
+  .home-hero-photo:first-child {
+    opacity: 1;
+  }
+}
