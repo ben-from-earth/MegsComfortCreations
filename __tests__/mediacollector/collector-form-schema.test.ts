@@ -16,6 +16,7 @@ const validCollectorForm = {
     videoGame: [],
     album: [],
   },
+  movieFormat: 'dvd',
   collectedData: [],
   pngExportBlockIds: [],
   pngFormat: '3',
@@ -39,6 +40,15 @@ describe('collectorFormSchema header and PNG fields', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  test('rejects a movie format outside DVD, VHS, and Blu-Ray', () => {
+    expect(
+      collectorFormSchema.safeParse({
+        ...validCollectorForm,
+        movieFormat: 'laserdisc',
+      }).success,
+    ).toBe(false);
   });
 
   test('requires book club repeat to be at least 1', () => {

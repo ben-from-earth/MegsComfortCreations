@@ -21,6 +21,7 @@ const defaultValues: CollectorFormData = {
     videoGame: [],
     album: [],
   },
+  movieFormat: 'dvd',
   collectedData: [],
   pngExportBlockIds: [],
   pngFormat: null,

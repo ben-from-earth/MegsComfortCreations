@@ -322,7 +322,10 @@ function MediaCollectorContent({
     });
 
     try {
-      const collectStream = await collectMediaStream(collectionList);
+      const collectStream = await collectMediaStream({
+        ...collectionList,
+        movieFormat: getValues('movieFormat'),
+      });
       for await (const event of collectStream) {
         if (event.type === 'progress') {
           setLoadingState({
