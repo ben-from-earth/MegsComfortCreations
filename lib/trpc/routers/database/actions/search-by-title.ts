@@ -1,4 +1,4 @@
-import { and, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, or, sql, type Column } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/media-types';
 import { type MovieFormat } from 'lib/constants/movie-formats';
@@ -9,25 +9,24 @@ import {
   toStoredMovieTitle,
 } from 'lib/helpers/movie-title';
 import { toDisplayTitle, toStoredTitle } from 'lib/helpers/title-articles';
-import { books, otherMedia } from '@/db/schema';
+import { albums, books, movies, videoGames } from '@/db/schema';
+import type { MediaImageItem, PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import {
+  loadAlbumImagesById,
   loadBookImagesById,
-  loadOtherMediaImagesById,
+  loadMovieImagesById,
+  loadVideoGameImagesById,
 } from 'lib/media-storage/media-image-records';
 
-function otherMediaTitleCondition(type: MediaType, title: string) {
-  if (type !== 'movie') {
-    return ilike(otherMedia.title, toStoredTitle(title));
-  }
-
+function movieTitleCondition(titleColumn: Column, title: string) {
   const storedTitle = toStoredMovieTitle(title);
   if (splitMovieTitle(title).year) {
-    return ilike(otherMedia.title, storedTitle);
+    return ilike(titleColumn, storedTitle);
   }
 
   return or(
-    ilike(otherMedia.title, storedTitle),
-    sql`${otherMedia.title} ~* ${movieTitleWithAnyYearPattern(storedTitle)}`,
+    ilike(titleColumn, storedTitle),
+    sql`${titleColumn} ~* ${movieTitleWithAnyYearPattern(storedTitle)}`,
   );
 }
 
@@ -40,74 +39,133 @@ export function resolveBookSearchFilters(title: string, author?: string) {
   };
 }
 
+async function loadImages<T extends { id: string }>(
+  db: Db,
+  rows: T[],
+  load: (db: Db, ids: string[]) => Promise<Map<string, MediaImageItem[]>>,
+) {
+  return load(
+    db,
+    rows.map((row) => row.id),
+  );
+}
+
 export async function searchByTitle(
   db: Db,
   type: MediaType,
   title: string,
   author?: string,
   movieFormat?: MovieFormat,
-) {
+  spotifyAlbumUri?: string,
+): Promise<{ foundMediaList: PostSavedMediaItem[]; total: number }> {
   const { rearrangedTitle, author: normalizedAuthor } = resolveBookSearchFilters(
     title,
     author,
   );
-  const result =
-    type === 'book'
-      ? await (normalizedAuthor
-          ? db
-              .select()
-              .from(books)
-              .where(
-                and(
-                  ilike(books.title, rearrangedTitle),
-                  ilike(books.author, normalizedAuthor),
-                ),
-              )
-          : db
-              .select()
-              .from(books)
-              .where(ilike(books.title, rearrangedTitle)))
-      : await db
-          .select()
-          .from(otherMedia)
-          .where(
-            and(
-              eq(otherMedia.mediaType, type),
-              otherMediaTitleCondition(type, title),
-              type === 'movie'
-                ? eq(otherMedia.movieFormat, movieFormat ?? 'dvd')
-                : undefined,
-            ),
-          );
-  const normalizedResult =
-    type === 'book'
-      ? await (async () => {
-          const imagesByBookId = await loadBookImagesById(
-            db,
-            result.map((row) => row.id),
-          );
-          return result.map((row) => ({
-            ...row,
-            title: toDisplayTitle(row.title),
-            images: imagesByBookId.get(row.id) ?? [],
-          }));
-        })()
-      : await (async () => {
-          const imagesByOtherMediaId = await loadOtherMediaImagesById(
-            db,
-            result.map((row) => row.id),
-          );
-          return result.map((row) => ({
-            ...row,
-            title:
-              type === 'movie'
-                ? toDisplayMovieTitle(row.title)
-                : toDisplayTitle(row.title),
-            images: imagesByOtherMediaId.get(row.id) ?? [],
-          }));
-        })();
-  return {
-    foundMediaList: normalizedResult,
-    total: normalizedResult.length,
-  };
+  const spotifyUri = spotifyAlbumUri?.trim() || undefined;
+
+  if (type === 'book') {
+    const rows = await db
+      .select()
+      .from(books)
+      .where(
+        normalizedAuthor
+          ? and(
+              ilike(books.title, rearrangedTitle),
+              ilike(books.author, normalizedAuthor),
+            )
+          : ilike(books.title, rearrangedTitle),
+      );
+    const imagesById = await loadImages(db, rows, loadBookImagesById);
+    const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
+      mediaType: 'book',
+      id: row.id,
+      title: toDisplayTitle(row.title),
+      spineColor: row.spineColor,
+      images: imagesById.get(row.id) ?? [],
+      author: row.author,
+      pageCount: row.pageCount,
+      pubYear: row.pubYear,
+    }));
+    return { foundMediaList, total: foundMediaList.length };
+  }
+
+  if (type === 'movie') {
+    const rows = await db
+      .select()
+      .from(movies)
+      .where(
+        and(
+          movieTitleCondition(movies.title, title),
+          eq(movies.movieFormat, movieFormat ?? 'dvd'),
+        ),
+      );
+    const imagesById = await loadImages(db, rows, loadMovieImagesById);
+    const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
+      mediaType: 'movie',
+      id: row.id,
+      title: toDisplayMovieTitle(row.title),
+      spineColor: row.spineColor,
+      images: imagesById.get(row.id) ?? [],
+      movieFormat: row.movieFormat,
+    }));
+    return { foundMediaList, total: foundMediaList.length };
+  }
+
+  if (type === 'videoGame') {
+    const rows = await db
+      .select()
+      .from(videoGames)
+      .where(ilike(videoGames.title, rearrangedTitle));
+    const imagesById = await loadImages(db, rows, loadVideoGameImagesById);
+    const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
+      mediaType: 'videoGame',
+      id: row.id,
+      title: toDisplayTitle(row.title),
+      spineColor: row.spineColor,
+      images: imagesById.get(row.id) ?? [],
+    }));
+    return { foundMediaList, total: foundMediaList.length };
+  }
+
+  if (spotifyUri) {
+    const rows = await db
+      .select()
+      .from(albums)
+      .where(eq(albums.spotifyAlbumUri, spotifyUri));
+    const imagesById = await loadImages(db, rows, loadAlbumImagesById);
+    const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
+      mediaType: 'album',
+      id: row.id,
+      title: toDisplayTitle(row.title),
+      spineColor: row.spineColor,
+      images: imagesById.get(row.id) ?? [],
+      artist: row.artist,
+      releaseDate: row.releaseDate,
+      spotifyAlbumUri: row.spotifyAlbumUri,
+    }));
+    return { foundMediaList, total: foundMediaList.length };
+  }
+
+  const rows = await db
+    .select()
+    .from(albums)
+    .where(
+      and(
+        ilike(albums.title, rearrangedTitle),
+        normalizedAuthor ? ilike(albums.artist, normalizedAuthor) : undefined,
+      ),
+    );
+  const imagesById = await loadImages(db, rows, loadAlbumImagesById);
+  const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
+    mediaType: 'album',
+    id: row.id,
+    title: toDisplayTitle(row.title),
+    spineColor: row.spineColor,
+    images: imagesById.get(row.id) ?? [],
+    artist: row.artist,
+    releaseDate: row.releaseDate,
+    spotifyAlbumUri: row.spotifyAlbumUri,
+  }));
+  return { foundMediaList, total: foundMediaList.length };
 }

@@ -76,12 +76,19 @@ async function addSpinePalettes(blocks: MediaItemForm[]) {
     block.images = block.images.map((image) => {
       const palette = palettesByUrl.get(image.url) ?? [];
       const spineColor =
-        !block.isDatabase && image.spineColor === UNSET_SPINE_COLOR
+        block.type !== 'album' &&
+        !block.isDatabase &&
+        image.spineColor === UNSET_SPINE_COLOR
           ? (palette[0] ?? image.spineColor)
           : image.spineColor;
-      return { ...image, palette, spineColor };
+      return {
+        ...image,
+        palette,
+        spineColor,
+        ...(block.type === 'album' ? { codeColor: image.codeColor ?? null } : {}),
+      };
     });
-    if (!block.isDatabase) {
+    if (!block.isDatabase && block.type !== 'album') {
       block.blockInfo.spineColor =
         block.images.find((image) => image.selected)?.spineColor ??
         block.blockInfo.spineColor;
@@ -105,12 +112,12 @@ async function collectSearchItem(
   if (mediaSearchData.total > 0) {
     const foundBlocks = await Promise.all(
       mediaSearchData.foundMediaList.map(async (foundMedia) => {
-        if (type === 'book' && !('author' in foundMedia)) {
+        if (foundMedia.mediaType !== type) {
           return null;
         }
 
         const databaseGenres =
-          type === 'book'
+          foundMedia.mediaType === 'book'
             ? (
                 await db
                   .select({ genre: genres.genre })
@@ -120,27 +127,8 @@ async function collectSearchItem(
               ).map((row) => row.genre)
             : [];
 
-        const storedMovieFormat =
-          'movieFormat' in foundMedia ? foundMedia.movieFormat : null;
-
         return convertMediaItemToForm({
-          item: {
-            id: foundMedia.id,
-            title: foundMedia.title,
-            spineColor: foundMedia.spineColor,
-            images: foundMedia.images,
-            ...('author' in foundMedia
-              ? {
-                  author: foundMedia.author,
-                  pageCount: foundMedia.pageCount,
-                  pubYear: foundMedia.pubYear,
-                }
-              : {}),
-            ...(type === 'movie'
-              ? { movieFormat: storedMovieFormat ?? format ?? 'dvd' }
-              : {}),
-          },
-          type,
+          item: foundMedia,
           genres: databaseGenres,
         });
       }),
@@ -167,6 +155,29 @@ async function collectSearchItem(
           spineColor: '#ffffff',
         })),
         blockInfo: { ...bookInfo, spineColor: '#ffffff', genres: [] },
+        blockID: crypto.randomUUID(),
+        isDatabase: false,
+      });
+    } else if (type === 'album') {
+      const images = await imagesPromise;
+      const artist = author?.trim() ? author.trim() : null;
+      blocks.push({
+        type,
+        images: images.map((url, index) => ({
+          url,
+          selected: index === 0,
+          isDefault: index === 0,
+          spineColor: '#ffffff',
+          codeColor: null,
+        })),
+        blockInfo: {
+          title,
+          artist,
+          releaseDate: null,
+          spotifyAlbumUri: null,
+          spineColor: '#ffffff',
+          genres: [],
+        },
         blockID: crypto.randomUUID(),
         isDatabase: false,
       });

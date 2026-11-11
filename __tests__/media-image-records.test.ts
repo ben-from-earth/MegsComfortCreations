@@ -41,6 +41,32 @@ describe('resolveAndPersistImageList', () => {
       },
     ]);
   });
+
+  test('keeps a cover code color on the persisted image', async () => {
+    const mockedPersistExternalImageToS3 = persistExternalImageToS3 as jest.Mock;
+    mockedPersistExternalImageToS3.mockImplementation(async ({ sourceUrl }) => ({
+      publicPath: sourceUrl,
+      mimeType: 'image/png',
+      sizeBytes: 100,
+      sourceUrl,
+    }));
+
+    const response = await resolveAndPersistImageList(
+      { mediaType: 'album', mediaId: 'album-1' },
+      [
+        {
+          url: 'https://example.com/cover.png',
+          spineColor: '#ffffff',
+          codeColor: '#112233',
+        },
+      ],
+    );
+
+    expect(response.images[0]).toMatchObject({
+      spineColor: '#ffffff',
+      codeColor: '#112233',
+    });
+  });
 });
 
 describe('coversToPersistForNewItem', () => {

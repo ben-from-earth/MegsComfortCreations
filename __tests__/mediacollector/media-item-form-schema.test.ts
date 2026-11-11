@@ -5,6 +5,7 @@ import {
   getMediaItemFormDefaultValues,
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
+  savedMediaItemFromForm,
   toFormImages,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
@@ -85,6 +86,23 @@ describe('mediaItemFormSchema', () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  test('allows an album block with no covers', () => {
+    const result = mediaItemFormSchema.safeParse(
+      createMediaItemForm({
+        type: 'album',
+        images: [],
+        blockInfo: {
+          title: 'Rumours',
+          artist: 'Fleetwood Mac',
+          spineColor: '#ffffff',
+          genres: [],
+        },
+      }),
+    );
+
+    expect(result.success).toBe(true);
   });
 
   test('rejects a collected block with empty images', () => {
@@ -175,8 +193,30 @@ describe('toFormImages', () => {
         selected: true,
         isDefault: true,
         spineColor: '#111111',
+        codeColor: null,
       },
     ]);
+  });
+
+  test('keeps an empty album cover list empty', () => {
+    expect(toFormImages([], '#ffffff', { allowEmpty: true })).toEqual([]);
+  });
+
+  test('copies a cover code color', () => {
+    expect(
+      toFormImages(
+        [
+          {
+            url: 'https://img/cover.png',
+            isDefault: true,
+            selected: true,
+            spineColor: '#ffffff',
+            codeColor: '#112233',
+          },
+        ],
+        '#ffffff',
+      )[0]?.codeColor,
+    ).toBe('#112233');
   });
 
   test('keeps the cover palette from collection', () => {
@@ -219,7 +259,6 @@ describe('convertMediaItemToForm', () => {
     expect(
       convertMediaItemToForm({
         item: { ...persistedBook, genres: ['Science Fiction'] },
-        type: 'book',
       }),
     ).toEqual({
       type: 'book',
@@ -229,6 +268,7 @@ describe('convertMediaItemToForm', () => {
           selected: true,
           isDefault: true,
           spineColor: '#123456',
+          codeColor: null,
         },
       ],
       blockInfo: {
@@ -244,46 +284,35 @@ describe('convertMediaItemToForm', () => {
     });
   });
 
-  test('copies a movie format onto the block and treats a missing one as DVD', () => {
+  test('copies a movie format onto the block', () => {
     const bluRay = convertMediaItemToForm({
       item: {
+        mediaType: 'movie',
         id: 'movie-blu-ray',
         title: 'Arrival',
         spineColor: '#ffffff',
         images: [],
         movieFormat: 'bluRay',
       },
-      type: 'movie',
     });
 
     expect(bluRay.blockInfo.movieFormat).toBe('bluRay');
     expect(convertMediaItemFormToDatabaseItem(bluRay).movieFormat).toBe(
       'bluRay',
     );
-
-    expect(
-      convertMediaItemToForm({
-        item: {
-          id: 'movie-1',
-          title: 'Arrival',
-          spineColor: '#ffffff',
-          images: [],
-        },
-        type: 'movie',
-      }).blockInfo.movieFormat,
-    ).toBe('dvd');
   });
 
   test('fills a placeholder image when the persisted row has none', () => {
     expect(
       convertMediaItemToForm({
         item: {
+          mediaType: 'movie',
           id: 'movie-1',
           title: 'Arrival',
           spineColor: '#ffffff',
           images: [],
+          movieFormat: 'dvd',
         },
-        type: 'movie',
       }).images,
     ).toEqual([
       {
@@ -291,8 +320,112 @@ describe('convertMediaItemToForm', () => {
         selected: true,
         isDefault: true,
         spineColor: '#ffffff',
+        codeColor: null,
       },
     ]);
+  });
+
+  test('copies album identity and a null code color', () => {
+    expect(
+      convertMediaItemToForm({
+        item: {
+          mediaType: 'album',
+          id: 'album-1',
+          title: 'Rumours',
+          spineColor: '#ffffff',
+          artist: 'Fleetwood Mac',
+          releaseDate: '1977-02-04',
+          spotifyAlbumUri: 'spotify:album:rumours',
+          images: [
+            {
+              url: 'https://img/rumours.png',
+              isDefault: true,
+              spineColor: '#ffffff',
+              codeColor: null,
+            },
+          ],
+        },
+      }),
+    ).toMatchObject({
+      type: 'album',
+      images: [
+        {
+          url: 'https://img/rumours.png',
+          codeColor: null,
+          spineColor: '#ffffff',
+        },
+      ],
+      blockInfo: {
+        artist: 'Fleetwood Mac',
+        releaseDate: '1977-02-04',
+        spotifyAlbumUri: 'spotify:album:rumours',
+        codeStatus: 'generated',
+        codeGeneratedFor: {
+          title: 'Rumours',
+          artist: 'Fleetwood Mac',
+        },
+      },
+    });
+  });
+});
+
+describe('savedMediaItemFromForm', () => {
+  test('keeps book and album fields on their own items', () => {
+    expect(
+      savedMediaItemFromForm(
+        createMediaItemForm({
+          blockID: 'book-1',
+          type: 'book',
+          blockInfo: {
+            title: 'Dune',
+            spineColor: '#111111',
+            genres: ['Science Fiction'],
+            author: 'Frank Herbert',
+            pageCount: 412,
+            pubYear: 1965,
+          },
+        }),
+      ),
+    ).toEqual({
+      mediaType: 'book',
+      id: 'book-1',
+      title: 'Dune',
+      spineColor: '#111111',
+      images: [
+        {
+          url: 'https://img/default.png',
+          selected: true,
+          isDefault: true,
+          spineColor: '#111111',
+        },
+      ],
+      genres: ['Science Fiction'],
+      author: 'Frank Herbert',
+      pageCount: 412,
+      pubYear: 1965,
+    });
+
+    expect(
+      savedMediaItemFromForm(
+        createMediaItemForm({
+          blockID: 'album-1',
+          type: 'album',
+          blockInfo: {
+            title: 'Rumours',
+            spineColor: '#ffffff',
+            genres: [],
+            artist: 'Fleetwood Mac',
+            releaseDate: '1977-02-04',
+            spotifyAlbumUri: 'spotify:album:rumours',
+          },
+        }),
+      ),
+    ).toMatchObject({
+      mediaType: 'album',
+      artist: 'Fleetwood Mac',
+      releaseDate: '1977-02-04',
+      spotifyAlbumUri: 'spotify:album:rumours',
+    });
   });
 });
 

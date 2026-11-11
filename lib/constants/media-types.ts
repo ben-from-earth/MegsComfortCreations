@@ -1,6 +1,4 @@
-export const OTHER_MEDIA_TYPES = ['movie', 'videoGame', 'album'] as const;
-
-export const MEDIA_TYPES = ['book', ...OTHER_MEDIA_TYPES] as const;
+export const MEDIA_TYPES = ['book', 'movie', 'videoGame', 'album'] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 export const MEDIA_TYPE_DEFINITIONS = [

@@ -1,5 +1,5 @@
 import { Db } from '@/db/client';
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { mediaImageItems } from '@/db/schema';
 import { MediaType } from 'lib/constants/media-types';
 import { normalizeImagePath } from './image-path-utils';
@@ -24,11 +24,13 @@ export type SourceImageItem =
       url: string;
       isDefault?: boolean;
       spineColor?: string;
+      codeColor?: string | null;
     };
 
 export type PersistedMediaImageRecord = PersistedImageFile & {
   isDefault: boolean;
   spineColor: string;
+  codeColor: string | null;
 };
 
 function normalizeSourceImage(
@@ -44,6 +46,7 @@ function normalizeSourceImage(
       src?: unknown;
       isDefault?: boolean;
       spineColor?: string;
+      codeColor?: unknown;
     };
     const url =
       typeof imageRecord.url === 'string'
@@ -56,6 +59,8 @@ function normalizeSourceImage(
         url,
         isDefault: imageRecord.isDefault ?? false,
         spineColor: imageRecord.spineColor ?? fallbackSpineColor,
+        codeColor:
+          typeof imageRecord.codeColor === 'string' ? imageRecord.codeColor : null,
       };
     }
   }
@@ -157,11 +162,14 @@ export async function resolveAndPersistImageList(
           typeof rawSourceImage === 'object' && rawSourceImage.spineColor
             ? rawSourceImage.spineColor
             : fallbackSpineColor;
+        const codeColor =
+          typeof rawSourceImage === 'object' ? (rawSourceImage.codeColor ?? null) : null;
         return {
           image: {
             ...persistedImage,
             isDefault: index === resolvedDefaultIndex,
             spineColor,
+            codeColor,
           },
         };
       } catch (error) {
@@ -273,31 +281,91 @@ export async function replaceBookImageRecords(
   );
 }
 
-export async function replaceOtherMediaImageRecords(
+function imageRecordValues(
+  imageFile: PersistedMediaImageRecord,
+  sortOrder: number,
+  codeColor: string | null,
+) {
+  return {
+    path: imageFile.publicPath,
+    sourceUrl: imageFile.sourceUrl,
+    mimeType: imageFile.mimeType,
+    sizeBytes: imageFile.sizeBytes,
+    sortOrder,
+    isDefault: imageFile.isDefault,
+    spineColor: imageFile.spineColor,
+    codeColor,
+  };
+}
+
+export async function replaceMediaImageRecords(
   db: Db,
-  otherMediaId: string,
+  mediaReference: ParentMediaReference,
   imageFiles: PersistedMediaImageRecord[],
 ) {
-  await db
-    .delete(mediaImageItems)
-    .where(eq(mediaImageItems.otherMediaId, otherMediaId));
+  const mediaId = mediaReference.mediaId;
+  switch (mediaReference.mediaType) {
+    case 'book':
+      await db.delete(mediaImageItems).where(eq(mediaImageItems.bookId, mediaId));
+      break;
+    case 'movie':
+      await db
+        .delete(mediaImageItems)
+        .where(eq(mediaImageItems.movieId, mediaId));
+      break;
+    case 'videoGame':
+      await db
+        .delete(mediaImageItems)
+        .where(eq(mediaImageItems.videoGameId, mediaId));
+      break;
+    case 'album':
+      await db
+        .delete(mediaImageItems)
+        .where(eq(mediaImageItems.albumId, mediaId));
+      break;
+  }
 
   if (imageFiles.length === 0) {
     return;
   }
 
-  await db.insert(mediaImageItems).values(
-    imageFiles.map((imageFile, sortOrder) => ({
-      otherMediaId,
-      path: imageFile.publicPath,
-      sourceUrl: imageFile.sourceUrl,
-      mimeType: imageFile.mimeType,
-      sizeBytes: imageFile.sizeBytes,
-      sortOrder,
-      isDefault: imageFile.isDefault,
-      spineColor: imageFile.spineColor,
-    })),
-  );
+  const codeColorFor = (imageFile: PersistedMediaImageRecord) =>
+    mediaReference.mediaType === 'album' ? imageFile.codeColor : null;
+
+  switch (mediaReference.mediaType) {
+    case 'book':
+      await db.insert(mediaImageItems).values(
+        imageFiles.map((imageFile, sortOrder) => ({
+          bookId: mediaId,
+          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
+        })),
+      );
+      return;
+    case 'movie':
+      await db.insert(mediaImageItems).values(
+        imageFiles.map((imageFile, sortOrder) => ({
+          movieId: mediaId,
+          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
+        })),
+      );
+      return;
+    case 'videoGame':
+      await db.insert(mediaImageItems).values(
+        imageFiles.map((imageFile, sortOrder) => ({
+          videoGameId: mediaId,
+          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
+        })),
+      );
+      return;
+    case 'album':
+      await db.insert(mediaImageItems).values(
+        imageFiles.map((imageFile, sortOrder) => ({
+          albumId: mediaId,
+          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
+        })),
+      );
+      return;
+  }
 }
 
 export async function loadBookImagesById(db: Db, bookIds: string[]) {
@@ -305,80 +373,62 @@ export async function loadBookImagesById(db: Db, bookIds: string[]) {
     return new Map<string, MediaImageItem[]>();
   }
 
-  const rows = await db
-    .select({
-      bookId: mediaImageItems.bookId,
-      path: mediaImageItems.path,
-      sortOrder: mediaImageItems.sortOrder,
-      isDefault: mediaImageItems.isDefault,
-      spineColor: mediaImageItems.spineColor,
-    })
-    .from(mediaImageItems)
-    .where(
-      and(
-        inArray(mediaImageItems.bookId, bookIds),
-        isNull(mediaImageItems.otherMediaId),
-      ),
-    )
-    .orderBy(asc(mediaImageItems.sortOrder));
-
-  const imagesByBookId = new Map<string, MediaImageItem[]>();
-  for (const row of rows) {
-    const bookId = row.bookId;
-    if (!bookId) {
-      continue;
-    }
-    const currentList = imagesByBookId.get(bookId) ?? [];
-    currentList.push({
-      url: row.path,
-      isDefault: row.isDefault,
-      spineColor: row.spineColor,
-      selected: false,
-    });
-    imagesByBookId.set(bookId, currentList);
-  }
-  return imagesByBookId;
+  return loadImagesByParentColumn(db, mediaImageItems.bookId, bookIds);
 }
 
-export async function loadOtherMediaImagesById(
+async function loadImagesByParentColumn(
   db: Db,
-  otherMediaIds: string[],
+  parentIdColumn:
+    | typeof mediaImageItems.bookId
+    | typeof mediaImageItems.movieId
+    | typeof mediaImageItems.videoGameId
+    | typeof mediaImageItems.albumId,
+  parentIds: string[],
 ) {
-  if (otherMediaIds.length === 0) {
+  if (parentIds.length === 0) {
     return new Map<string, MediaImageItem[]>();
   }
 
   const rows = await db
     .select({
-      otherMediaId: mediaImageItems.otherMediaId,
+      parentId: parentIdColumn,
       path: mediaImageItems.path,
       sortOrder: mediaImageItems.sortOrder,
       isDefault: mediaImageItems.isDefault,
       spineColor: mediaImageItems.spineColor,
+      codeColor: mediaImageItems.codeColor,
     })
     .from(mediaImageItems)
-    .where(
-      and(
-        inArray(mediaImageItems.otherMediaId, otherMediaIds),
-        isNull(mediaImageItems.bookId),
-      ),
-    )
+    .where(inArray(parentIdColumn, parentIds))
     .orderBy(asc(mediaImageItems.sortOrder));
 
-  const imagesByOtherMediaId = new Map<string, MediaImageItem[]>();
+  const imagesByParentId = new Map<string, MediaImageItem[]>();
   for (const row of rows) {
-    const otherMediaId = row.otherMediaId;
-    if (!otherMediaId) {
+    const parentId = row.parentId;
+    if (!parentId) {
       continue;
     }
-    const currentList = imagesByOtherMediaId.get(otherMediaId) ?? [];
+    const currentList = imagesByParentId.get(parentId) ?? [];
     currentList.push({
       url: row.path,
       isDefault: row.isDefault,
       spineColor: row.spineColor,
+      codeColor: row.codeColor,
       selected: false,
     });
-    imagesByOtherMediaId.set(otherMediaId, currentList);
+    imagesByParentId.set(parentId, currentList);
   }
-  return imagesByOtherMediaId;
+  return imagesByParentId;
+}
+
+export function loadMovieImagesById(db: Db, movieIds: string[]) {
+  return loadImagesByParentColumn(db, mediaImageItems.movieId, movieIds);
+}
+
+export function loadVideoGameImagesById(db: Db, videoGameIds: string[]) {
+  return loadImagesByParentColumn(db, mediaImageItems.videoGameId, videoGameIds);
+}
+
+export function loadAlbumImagesById(db: Db, albumIds: string[]) {
+  return loadImagesByParentColumn(db, mediaImageItems.albumId, albumIds);
 }

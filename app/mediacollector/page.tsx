@@ -286,7 +286,9 @@ function MediaCollectorContent({
   ) => {
     const formBlocks = blocks.map((block) => ({
       ...block,
-      images: toFormImages(block.images, block.blockInfo.spineColor),
+      images: toFormImages(block.images, block.blockInfo.spineColor, {
+        allowEmpty: block.type === 'album',
+      }),
     }));
     replace(formBlocks);
     setValue('pngExportBlockIds', pngExportBlockIds);

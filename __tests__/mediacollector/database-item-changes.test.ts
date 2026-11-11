@@ -86,6 +86,10 @@ describe('diffDatabaseItem / countDatabaseItemChanges', () => {
       defaultCover: true,
       coverList: false,
       changedSpineColorUrls: ['https://img/blue.png', 'https://img/orange.png'],
+      artist: false,
+      releaseDate: false,
+      spotifyAlbumUri: false,
+      changedCodeColorUrls: [],
     });
     expect(countDatabaseItemChanges(changes)).toBe(5);
   });
@@ -152,6 +156,108 @@ describe('diffDatabaseItem / countDatabaseItemChanges', () => {
       images: [...originalBlock.images, { ...originalBlock.images[0] }],
     };
     expect(diffDatabaseItem(originalBlock, repeated).coverList).toBe(false);
+  });
+});
+
+describe('album database item changes', () => {
+  const originalAlbum: MediaItemForm = {
+    type: 'album',
+    blockID: 'ALBUM-1',
+    isDatabase: true,
+    blockInfo: {
+      title: 'Rumours',
+      artist: 'Fleetwood Mac',
+      releaseDate: '1977-02-04',
+      spotifyAlbumUri: 'spotify:album:rumours',
+      genres: [],
+      spineColor: '#ffffff',
+    },
+    images: [
+      {
+        url: 'https://img/rumours.png',
+        selected: true,
+        isDefault: true,
+        spineColor: '#ffffff',
+        codeColor: '#112233',
+      },
+      {
+        url: 'https://img/alt.png',
+        selected: false,
+        isDefault: false,
+        spineColor: '#ffffff',
+        codeColor: null,
+      },
+    ],
+  };
+
+  test('counts artist, release date, uri, and one cover code color', () => {
+    const current: MediaItemForm = {
+      ...originalAlbum,
+      blockInfo: {
+        ...originalAlbum.blockInfo,
+        artist: 'Fleetwood',
+        releaseDate: '1977-02-05',
+        spotifyAlbumUri: 'spotify:album:other',
+        genres: ['Rock'],
+      },
+      images: [
+        { ...originalAlbum.images[0], codeColor: '#aabbcc' },
+        originalAlbum.images[1],
+      ],
+    };
+
+    const changes = diffDatabaseItem(originalAlbum, current);
+
+    expect(changes.artist).toBe(true);
+    expect(changes.releaseDate).toBe(true);
+    expect(changes.spotifyAlbumUri).toBe(true);
+    expect(changes.genres).toBe(false);
+    expect(changes.changedCodeColorUrls).toEqual(['https://img/rumours.png']);
+    expect(countDatabaseItemChanges(changes)).toBe(4);
+  });
+
+  test('treats code colors case-insensitively', () => {
+    const current: MediaItemForm = {
+      ...originalAlbum,
+      images: [
+        { ...originalAlbum.images[0], codeColor: '#112233' },
+        originalAlbum.images[1],
+      ],
+    };
+    current.images[0] = {
+      ...current.images[0],
+      codeColor: '#112233'.toUpperCase(),
+    };
+
+    expect(diffDatabaseItem(originalAlbum, current).changedCodeColorUrls).toEqual(
+      [],
+    );
+  });
+
+  test('restores artist, release date, uri, and code colors', () => {
+    const current: MediaItemForm = {
+      ...originalAlbum,
+      blockInfo: {
+        ...originalAlbum.blockInfo,
+        artist: 'Someone Else',
+        releaseDate: null,
+        spotifyAlbumUri: null,
+      },
+      images: [
+        { ...originalAlbum.images[0], codeColor: '#000000' },
+        { ...originalAlbum.images[1], selected: true },
+      ],
+    };
+
+    const restored = restoreDatabaseItem(originalAlbum, current);
+
+    expect(
+      countDatabaseItemChanges(diffDatabaseItem(originalAlbum, restored)),
+    ).toBe(0);
+    expect(restored.blockInfo.artist).toBe('Fleetwood Mac');
+    expect(restored.blockInfo.releaseDate).toBe('1977-02-04');
+    expect(restored.blockInfo.spotifyAlbumUri).toBe('spotify:album:rumours');
+    expect(restored.images[0]?.codeColor).toBe('#112233');
   });
 });
 

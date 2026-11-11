@@ -3,12 +3,16 @@ import type { MediaItemForm } from './collector-form/media-item-form-schema';
 export interface DatabaseItemChanges {
   title: boolean;
   author: boolean;
+  artist: boolean;
   pubYear: boolean;
   pageCount: boolean;
+  releaseDate: boolean;
+  spotifyAlbumUri: boolean;
   genres: boolean;
   defaultCover: boolean;
   coverList: boolean;
   changedSpineColorUrls: string[];
+  changedCodeColorUrls: string[];
 }
 
 export interface DatabaseItemEdit {
@@ -29,6 +33,10 @@ function findDefaultCoverUrl(images: MediaItemForm['images']) {
   return images.find((image) => image.isDefault)?.url;
 }
 
+function normalizeOptionalColor(color: string | null | undefined) {
+  return color?.toLowerCase() ?? null;
+}
+
 function hasSameCoverUrls(
   left: MediaItemForm['images'],
   right: MediaItemForm['images'],
@@ -45,29 +53,48 @@ export function diffDatabaseItem(
   original: MediaItemForm,
   current: MediaItemForm,
 ): DatabaseItemChanges {
-  const originalSpineColorByUrl = new Map(
-    original.images.map((image) => [image.url, image.spineColor.toLowerCase()]),
+  const originalImageByUrl = new Map(
+    original.images.map((image) => [image.url, image]),
   );
 
   return {
     title: current.blockInfo.title !== original.blockInfo.title,
     author:
       (current.blockInfo.author ?? '') !== (original.blockInfo.author ?? ''),
+    artist:
+      (current.blockInfo.artist ?? '') !== (original.blockInfo.artist ?? ''),
     pubYear:
       (current.blockInfo.pubYear ?? null) !==
       (original.blockInfo.pubYear ?? null),
     pageCount:
       (current.blockInfo.pageCount ?? null) !==
       (original.blockInfo.pageCount ?? null),
-    genres: !hasSameGenres(current.blockInfo.genres, original.blockInfo.genres),
+    releaseDate:
+      (current.blockInfo.releaseDate ?? null) !==
+      (original.blockInfo.releaseDate ?? null),
+    spotifyAlbumUri:
+      (current.blockInfo.spotifyAlbumUri ?? null) !==
+      (original.blockInfo.spotifyAlbumUri ?? null),
+    genres:
+      original.type === 'book' &&
+      current.type === 'book' &&
+      !hasSameGenres(current.blockInfo.genres, original.blockInfo.genres),
     defaultCover:
       findDefaultCoverUrl(current.images) !==
       findDefaultCoverUrl(original.images),
     coverList: !hasSameCoverUrls(current.images, original.images),
     changedSpineColorUrls: current.images.flatMap((image) => {
-      const originalSpineColor = originalSpineColorByUrl.get(image.url);
-      return originalSpineColor !== undefined &&
-        originalSpineColor !== image.spineColor.toLowerCase()
+      const originalImage = originalImageByUrl.get(image.url);
+      return originalImage !== undefined &&
+        originalImage.spineColor.toLowerCase() !== image.spineColor.toLowerCase()
+        ? [image.url]
+        : [];
+    }),
+    changedCodeColorUrls: current.images.flatMap((image) => {
+      const originalImage = originalImageByUrl.get(image.url);
+      return originalImage !== undefined &&
+        normalizeOptionalColor(originalImage.codeColor) !==
+          normalizeOptionalColor(image.codeColor)
         ? [image.url]
         : [];
     }),
@@ -81,9 +108,13 @@ export function countDatabaseItemChanges(changes: DatabaseItemChanges) {
     changes.pubYear,
     changes.pageCount,
     changes.genres,
+    changes.artist,
+    changes.releaseDate,
+    changes.spotifyAlbumUri,
     changes.defaultCover,
     changes.coverList,
     changes.changedSpineColorUrls.length > 0,
+    changes.changedCodeColorUrls.length > 0,
   ].filter(Boolean).length;
 }
 

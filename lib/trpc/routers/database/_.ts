@@ -14,17 +14,20 @@ import {
 import { z } from 'zod';
 import { db as defaultDb, type Db } from '@/db/client';
 import {
+  albums,
   books,
   genres,
   genresBooks,
   googleApiQueryUsage,
-  otherMedia,
+  movies,
+  videoGames,
 } from '@/db/schema';
 import type {
   DatabaseSaveEditErrorResponse,
   DatabaseSaveFailureResult,
   DatabaseSaveServerResponse,
   DatabaseSaveSuccessResult,
+  MediaImageItem,
   PostSavedMediaItem,
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
@@ -53,10 +56,12 @@ import {
   appendBookCoverRecords,
   coversToPersistForNewItem,
   listCoversToAppend,
+  loadAlbumImagesById,
   loadBookImagesById,
-  loadOtherMediaImagesById,
+  loadMovieImagesById,
+  loadVideoGameImagesById,
   replaceBookImageRecords,
-  replaceOtherMediaImageRecords,
+  replaceMediaImageRecords,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
 
@@ -67,6 +72,7 @@ const mediaImageItemSchema = z.object({
   selected: z.boolean().optional(),
   isDefault: z.boolean(),
   spineColor: z.string().min(1),
+  codeColor: z.string().nullable().optional(),
 });
 
 const bookEditSchema = z.object({
@@ -78,7 +84,7 @@ const bookEditSchema = z.object({
   spineColor: z.string().min(1),
   images: z.array(mediaImageItemSchema).min(1),
 });
-const otherMediaEditSchema = z.object({
+const titleMediaEditSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1),
   spineColor: z.string().min(1),
@@ -86,28 +92,164 @@ const otherMediaEditSchema = z.object({
   movieFormat: z.enum(MOVIE_FORMATS).optional(),
 });
 
+const albumEditSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1),
+  artist: z.string().nullable(),
+  releaseDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  spotifyAlbumUri: z.string().min(1).optional(),
+  spineColor: z.string().min(1),
+  images: z.array(mediaImageItemSchema).min(1),
+});
+
 type BookEditItem = z.infer<typeof bookEditSchema>;
-type OtherMediaEditItem = z.infer<typeof otherMediaEditSchema>;
-type EditableMediaItem = BookEditItem | OtherMediaEditItem;
+type TitleMediaEditItem = z.infer<typeof titleMediaEditSchema>;
+type AlbumEditItem = z.infer<typeof albumEditSchema>;
+type EditableMediaItem = BookEditItem | TitleMediaEditItem | AlbumEditItem;
 
-function toOtherMediaStoredTitle(type: MediaType, title: string) {
-  return type === 'movie' ? toStoredMovieTitle(title) : toStoredTitle(title);
-}
+const ALBUM_ROW_SPINE_COLOR = '#ffffff';
 
-function toOtherMediaDisplayTitle(type: MediaType, title: string) {
-  return type === 'movie' ? toDisplayMovieTitle(title) : toDisplayTitle(title);
-}
-
-function otherMediaLibraryTitleFilter(title: string) {
+function movieLibraryTitleFilter(title: string) {
   const { baseTitle, year } = splitMovieTitle(title);
   const containsTitle = ilike(
-    otherMedia.title,
+    movies.title,
     `%${toTitleSearchTerm(baseTitle)}%`,
   );
   if (!year) {
     return containsTitle;
   }
-  return and(containsTitle, ilike(otherMedia.title, `% (${year})`));
+  return and(containsTitle, ilike(movies.title, `% (${year})`));
+}
+
+function databaseErrorHint(error: unknown) {
+  const parts: string[] = [];
+  const visit = (value: unknown, depth: number) => {
+    if (depth > 4 || value === null || value === undefined) {
+      return;
+    }
+    if (value instanceof Error) {
+      parts.push(value.message);
+      visit(value.cause, depth + 1);
+    }
+    if (typeof value === 'object' && value !== null && 'constraint' in value) {
+      const constraint = value.constraint;
+      if (typeof constraint === 'string') {
+        parts.push(constraint);
+      }
+    }
+  };
+  visit(error, 0);
+  return parts.join(' ');
+}
+
+function mediaTypeLabel(type: MediaType) {
+  return MEDIA_TYPE_DEFINITIONS.find(
+    (definition) => definition.mediaType === type,
+  )?.label;
+}
+
+function savedImageList(
+  images: Awaited<ReturnType<typeof resolveAndPersistImageList>>['images'],
+) {
+  return images.map((image) => ({
+    url: image.publicPath,
+    isDefault: image.isDefault,
+    spineColor: image.spineColor,
+    codeColor: image.codeColor,
+    selected: false,
+  }));
+}
+
+function toPostSavedMediaItem(
+  row:
+    | typeof movies.$inferSelect
+    | typeof videoGames.$inferSelect
+    | typeof albums.$inferSelect,
+  presentation: {
+    title: string;
+    images: MediaImageItem[];
+    spineColor: string;
+  },
+): PostSavedMediaItem {
+  if ('movieFormat' in row) {
+    return {
+      mediaType: 'movie',
+      id: row.id,
+      title: presentation.title,
+      spineColor: presentation.spineColor,
+      images: presentation.images,
+      movieFormat: row.movieFormat,
+    };
+  }
+
+  if ('artist' in row) {
+    return {
+      mediaType: 'album',
+      id: row.id,
+      title: presentation.title,
+      spineColor: presentation.spineColor,
+      images: presentation.images,
+      artist: row.artist,
+      releaseDate: row.releaseDate,
+      spotifyAlbumUri: row.spotifyAlbumUri,
+    };
+  }
+
+  return {
+    mediaType: 'videoGame',
+    id: row.id,
+    title: presentation.title,
+    spineColor: presentation.spineColor,
+    images: presentation.images,
+  };
+}
+
+async function persistCreatedImages(
+  db: Db,
+  mediaType: Exclude<MediaType, 'book'>,
+  mediaId: string,
+  sourceImages: Array<{
+    url: string;
+    isDefault: boolean;
+    spineColor: string;
+    codeColor?: string | null;
+  }>,
+  defaultSpineColor: string,
+) {
+  const resolvedImages = await resolveAndPersistImageList(
+    { mediaType, mediaId },
+    sourceImages,
+    { defaultSpineColor, defaultImageIndex: 0 },
+  );
+  if (resolvedImages.failures.length > 0) {
+    return null;
+  }
+  await replaceMediaImageRecords(
+    db,
+    { mediaType, mediaId },
+    resolvedImages.images,
+  );
+  return savedImageList(resolvedImages.images);
+}
+
+async function deleteSavedMedia(
+  db: Db,
+  type: Exclude<MediaType, 'book'>,
+  id: string,
+) {
+  if (type === 'movie') {
+    await db.delete(movies).where(eq(movies.id, id));
+    return;
+  }
+  if (type === 'videoGame') {
+    await db.delete(videoGames).where(eq(videoGames.id, id));
+    return;
+  }
+  await db.delete(albums).where(eq(albums.id, id));
 }
 
 function resolveDisplaySpineColor(
@@ -357,50 +499,139 @@ export const databaseRouter = router({
         });
       }
 
-      const orderExpression =
-        ascDesc === 'asc' ? asc(otherMedia.title) : desc(otherMedia.title);
-      const titleFilter =
-        title && title.trim().length > 0
-          ? type === 'movie'
-            ? otherMediaLibraryTitleFilter(title)
-            : ilike(otherMedia.title, `%${toTitleSearchTerm(title)}%`)
-          : undefined;
-      const whereFilter = and(eq(otherMedia.mediaType, type), titleFilter);
+      const hasTitle = title !== undefined && title.trim().length > 0;
+      const titleContains = hasTitle
+        ? `%${toTitleSearchTerm(title)}%`
+        : undefined;
 
+      if (type === 'movie') {
+        const titleFilter = hasTitle ? movieLibraryTitleFilter(title) : undefined;
+        const orderExpression =
+          ascDesc === 'asc' ? asc(movies.title) : desc(movies.title);
+        const [rows, [{ count }]] = await Promise.all([
+          db
+            .select({
+              id: movies.id,
+              title: movies.title,
+              spineColor: movies.spineColor,
+              movieFormat: movies.movieFormat,
+              mediaType: sql<'movie'>`'movie'`,
+            })
+            .from(movies)
+            .where(titleFilter)
+            .orderBy(orderExpression)
+            .limit(limit)
+            .offset(offset),
+          db
+            .select({ count: sql<number>`cast(count(*) as int)` })
+            .from(movies)
+            .where(titleFilter),
+        ]);
+        const imagesById = await loadMovieImagesById(
+          db,
+          rows.map((row) => row.id),
+        );
+        const rowsWithResolvedImages = rows.map((row) => {
+          const images = imagesById.get(row.id) ?? [];
+          return {
+            ...row,
+            title: toDisplayMovieTitle(row.title),
+            images,
+            spineColor: resolveDisplaySpineColor(images, row.spineColor),
+          };
+        });
+        const res: SuccessfulPaginationResponse = {
+          message: 'Successful database gather',
+          paginatedList: rowsWithResolvedImages,
+          total: count,
+        };
+        return res;
+      }
+
+      if (type === 'videoGame') {
+        const titleFilter = titleContains
+          ? ilike(videoGames.title, titleContains)
+          : undefined;
+        const orderExpression =
+          ascDesc === 'asc' ? asc(videoGames.title) : desc(videoGames.title);
+        const [rows, [{ count }]] = await Promise.all([
+          db
+            .select({
+              id: videoGames.id,
+              title: videoGames.title,
+              spineColor: videoGames.spineColor,
+              mediaType: sql<'videoGame'>`'videoGame'`,
+            })
+            .from(videoGames)
+            .where(titleFilter)
+            .orderBy(orderExpression)
+            .limit(limit)
+            .offset(offset),
+          db
+            .select({ count: sql<number>`cast(count(*) as int)` })
+            .from(videoGames)
+            .where(titleFilter),
+        ]);
+        const imagesById = await loadVideoGameImagesById(
+          db,
+          rows.map((row) => row.id),
+        );
+        const rowsWithResolvedImages = rows.map((row) => {
+          const images = imagesById.get(row.id) ?? [];
+          return {
+            ...row,
+            title: toDisplayTitle(row.title),
+            images,
+            spineColor: resolveDisplaySpineColor(images, row.spineColor),
+          };
+        });
+        const res: SuccessfulPaginationResponse = {
+          message: 'Successful database gather',
+          paginatedList: rowsWithResolvedImages,
+          total: count,
+        };
+        return res;
+      }
+
+      const titleFilter = titleContains
+        ? ilike(albums.title, titleContains)
+        : undefined;
+      const orderExpression =
+        ascDesc === 'asc' ? asc(albums.title) : desc(albums.title);
       const [rows, [{ count }]] = await Promise.all([
         db
           .select({
-            id: otherMedia.id,
-            mediaType: otherMedia.mediaType,
-            title: otherMedia.title,
-            spineColor: otherMedia.spineColor,
-            movieFormat: otherMedia.movieFormat,
+            id: albums.id,
+            title: albums.title,
+            artist: albums.artist,
+            releaseDate: albums.releaseDate,
+            spotifyAlbumUri: albums.spotifyAlbumUri,
+            spineColor: albums.spineColor,
+            mediaType: sql<'album'>`'album'`,
           })
-          .from(otherMedia)
-          .where(whereFilter)
+          .from(albums)
+          .where(titleFilter)
           .orderBy(orderExpression)
           .limit(limit)
           .offset(offset),
         db
           .select({ count: sql<number>`cast(count(*) as int)` })
-          .from(otherMedia)
-          .where(whereFilter),
+          .from(albums)
+          .where(titleFilter),
       ]);
-
-      const imagesByOtherMediaId = await loadOtherMediaImagesById(
+      const imagesById = await loadAlbumImagesById(
         db,
         rows.map((row) => row.id),
       );
       const rowsWithResolvedImages = rows.map((row) => {
-        const images = imagesByOtherMediaId.get(row.id) ?? [];
+        const images = imagesById.get(row.id) ?? [];
         return {
           ...row,
-          title: toOtherMediaDisplayTitle(type, row.title),
+          title: toDisplayTitle(row.title),
           images,
           spineColor: resolveDisplaySpineColor(images, row.spineColor),
         };
       });
-
       const res: SuccessfulPaginationResponse = {
         message: 'Successful database gather',
         paginatedList: rowsWithResolvedImages,
@@ -420,10 +651,20 @@ export const databaseRouter = router({
               .delete(books)
               .where(eq(books.id, id))
               .returning({ id: books.id })
-          : await db
-              .delete(otherMedia)
-              .where(and(eq(otherMedia.mediaType, type), eq(otherMedia.id, id)))
-              .returning({ id: otherMedia.id });
+          : type === 'movie'
+            ? await db
+                .delete(movies)
+                .where(eq(movies.id, id))
+                .returning({ id: movies.id })
+            : type === 'videoGame'
+              ? await db
+                  .delete(videoGames)
+                  .where(eq(videoGames.id, id))
+                  .returning({ id: videoGames.id })
+              : await db
+                  .delete(albums)
+                  .where(eq(albums.id, id))
+                  .returning({ id: albums.id });
 
       if (deleted.length === 0) {
         return {
@@ -604,8 +845,12 @@ export const databaseRouter = router({
                 message: `${toDisplayTitle(book.title)} successfully added to database.`,
                 type: data.type,
                 actionAttemptItem: {
-                  ...book,
+                  mediaType: 'book',
+                  id: book.id,
                   title: toDisplayTitle(book.title),
+                  author: book.author,
+                  pageCount: book.pageCount,
+                  pubYear: book.pubYear,
                   images,
                   spineColor: persistedSpineColor,
                   genres: data.blockInfo.genres,
@@ -652,50 +897,110 @@ export const databaseRouter = router({
           continue;
         }
 
-        const insertData = {
-          mediaType: data.type,
-          title: toOtherMediaStoredTitle(data.type, data.blockInfo.title),
-          spineColor: resolveDisplaySpineColor(
-            data.images,
-            data.blockInfo.spineColor,
-          ),
-          movieFormat:
-            data.type === 'movie'
-              ? (data.blockInfo.movieFormat ?? 'dvd')
-              : null,
-        };
-        let createdOtherMediaId: string | null = null;
-        try {
-          const savedOtherMedia = await db.transaction(async (tx) => {
-            const [insertedOtherMedia] = await tx
-              .insert(otherMedia)
-              .values(insertData)
-              .returning();
-            if (!insertedOtherMedia) {
-              throw new Error(
-                `${toOtherMediaDisplayTitle(data.type, insertData.title)} could not be saved to the database.`,
-              );
-            }
-            return insertedOtherMedia;
-          });
-          createdOtherMediaId = savedOtherMedia.id;
-
-          const resolvedImages = await resolveAndPersistImageList(
-            { mediaType: data.type, mediaId: savedOtherMedia.id },
-            data.images.map((image) => ({
-              url: image.url,
-              isDefault: image.isDefault,
-              spineColor: image.spineColor,
-            })),
-            {
-              defaultSpineColor: data.blockInfo.spineColor,
-              defaultImageIndex: 0,
-            },
+        if (data.type === 'album' && data.images.length === 0) {
+          results.push(
+            createSaveFailureResult({
+              blockID: data.blockID,
+              title: data.blockInfo.title,
+              error: 'Schema Violation',
+              message: 'Cover image is Required',
+              errors: ['Cover image is Required'],
+            }),
           );
-          if (resolvedImages.failures.length > 0) {
-            await db
-              .delete(otherMedia)
-              .where(eq(otherMedia.id, savedOtherMedia.id));
+          continue;
+        }
+
+        const displayTitle =
+          data.type === 'movie'
+            ? toDisplayMovieTitle(toStoredMovieTitle(data.blockInfo.title))
+            : toDisplayTitle(toStoredTitle(data.blockInfo.title));
+        let createdMediaId: string | null = null;
+        try {
+          const savedMedia =
+            data.type === 'movie'
+              ? await db.transaction(async (tx) => {
+                  const [insertedMovie] = await tx
+                    .insert(movies)
+                    .values({
+                      title: toStoredMovieTitle(data.blockInfo.title),
+                      spineColor: resolveDisplaySpineColor(
+                        data.images,
+                        data.blockInfo.spineColor,
+                      ),
+                      movieFormat: data.blockInfo.movieFormat ?? 'dvd',
+                    })
+                    .returning();
+                  if (!insertedMovie) {
+                    throw new Error(
+                      `${displayTitle} could not be saved to the database.`,
+                    );
+                  }
+                  return insertedMovie;
+                })
+              : data.type === 'videoGame'
+                ? await db.transaction(async (tx) => {
+                    const [insertedVideoGame] = await tx
+                      .insert(videoGames)
+                      .values({
+                        title: toStoredTitle(data.blockInfo.title),
+                        spineColor: resolveDisplaySpineColor(
+                          data.images,
+                          data.blockInfo.spineColor,
+                        ),
+                      })
+                      .returning();
+                    if (!insertedVideoGame) {
+                      throw new Error(
+                        `${displayTitle} could not be saved to the database.`,
+                      );
+                    }
+                    return insertedVideoGame;
+                  })
+                : await db.transaction(async (tx) => {
+                    const [insertedAlbum] = await tx
+                      .insert(albums)
+                      .values({
+                        title: toStoredTitle(data.blockInfo.title),
+                        artist: data.blockInfo.artist?.trim() ?? '',
+                        releaseDate: data.blockInfo.releaseDate ?? null,
+                        spotifyAlbumUri:
+                          data.blockInfo.spotifyAlbumUri?.trim() || null,
+                        spineColor: ALBUM_ROW_SPINE_COLOR,
+                      })
+                      .returning();
+                    if (!insertedAlbum) {
+                      throw new Error(
+                        `${displayTitle} could not be saved to the database.`,
+                      );
+                    }
+                    return insertedAlbum;
+                  });
+          createdMediaId = savedMedia.id;
+
+          const sourceImages =
+            data.type === 'album'
+              ? data.images.map((image) => ({
+                  url: image.url,
+                  isDefault: image.isDefault,
+                  spineColor: ALBUM_ROW_SPINE_COLOR,
+                  codeColor: image.codeColor ?? null,
+                }))
+              : data.images.map((image) => ({
+                  url: image.url,
+                  isDefault: image.isDefault,
+                  spineColor: image.spineColor,
+                }));
+          const images = await persistCreatedImages(
+            db,
+            data.type,
+            savedMedia.id,
+            sourceImages,
+            data.type === 'album'
+              ? ALBUM_ROW_SPINE_COLOR
+              : data.blockInfo.spineColor,
+          );
+          if (!images) {
+            await deleteSavedMedia(db, data.type, savedMedia.id);
             results.push(
               createSaveImagePersistenceFailure(
                 data.blockInfo.title,
@@ -704,80 +1009,92 @@ export const databaseRouter = router({
             );
             continue;
           }
-          await replaceOtherMediaImageRecords(
-            db,
-            savedOtherMedia.id,
-            resolvedImages.images,
-          );
-          const images = resolvedImages.images.map((image) => ({
-            url: image.publicPath,
-            isDefault: image.isDefault,
-            spineColor: image.spineColor,
-            selected: false,
-          }));
-          const persistedSpineColor = resolveDisplaySpineColor(
-            images,
-            insertData.spineColor,
-          );
+          const persistedSpineColor =
+            data.type === 'album'
+              ? ALBUM_ROW_SPINE_COLOR
+              : resolveDisplaySpineColor(images, data.blockInfo.spineColor);
 
           results.push(
             createSaveSuccessResult({
               blockID: data.blockID,
               title: data.blockInfo.title,
-              message: `${toOtherMediaDisplayTitle(data.type, insertData.title)} successfully added to database.`,
+              message: `${displayTitle} successfully added to database.`,
               type: data.type,
-              actionAttemptItem: {
-                ...savedOtherMedia,
-                title: toOtherMediaDisplayTitle(data.type, savedOtherMedia.title),
+              actionAttemptItem: toPostSavedMediaItem(savedMedia, {
+                title: displayTitle,
                 images,
                 spineColor: persistedSpineColor,
-                blockID: data.blockID,
-              },
+              }),
             }),
           );
         } catch (error) {
-          if (createdOtherMediaId) {
-            await db
-              .delete(otherMedia)
-              .where(eq(otherMedia.id, createdOtherMediaId));
+          if (createdMediaId) {
+            await deleteSavedMedia(db, data.type, createdMediaId);
           }
-          const duplicateHint = `${error instanceof Error ? error.message : ''} ${
-            error instanceof Error && error.cause instanceof Error
-              ? error.cause.message
-              : ''
-          }`;
-          const isDuplicateTitle =
-            duplicateHint.includes('other_media_movie_title_format_unique') ||
-            duplicateHint.includes('other_media_type_title_unique') ||
-            duplicateHint.includes('other_media_media_type_title_unique');
-          if (isDuplicateTitle) {
-            const mediaLabel = MEDIA_TYPE_DEFINITIONS.find(
-              (definition) => definition.mediaType === data.type,
+          const duplicateHint = databaseErrorHint(error);
+          const label = mediaTypeLabel(data.type);
+          const isDuplicateMovie =
+            data.type === 'movie' &&
+            duplicateHint.includes('movies_title_format_unique');
+          const isDuplicateVideoGame =
+            data.type === 'videoGame' &&
+            duplicateHint.includes('video_games_title_unique');
+          const isDuplicateAlbum =
+            data.type === 'album' &&
+            duplicateHint.includes('albums_title_artist_unique');
+          if (label && (isDuplicateMovie || isDuplicateVideoGame || isDuplicateAlbum)) {
+            const formatLabel = MOVIE_FORMAT_OPTIONS.find(
+              (option) =>
+                option.value === (data.blockInfo.movieFormat ?? 'dvd'),
             )?.label;
-            if (mediaLabel) {
-              const storedTitle = toOtherMediaDisplayTitle(
-                data.type,
-                insertData.title,
-              );
-              const formatLabel = MOVIE_FORMAT_OPTIONS.find(
-                (option) =>
-                  option.value === (data.blockInfo.movieFormat ?? 'dvd'),
-              )?.label;
-              const formatSuffix =
-                data.type === 'movie' &&
-                duplicateHint.includes(
-                  'other_media_movie_title_format_unique',
-                ) &&
-                formatLabel
-                  ? ` (${formatLabel})`
-                  : '';
+            const formatSuffix =
+              isDuplicateMovie && formatLabel ? ` (${formatLabel})` : '';
+            const artistSuffix =
+              isDuplicateAlbum && data.blockInfo.artist?.trim()
+                ? ` by ${data.blockInfo.artist.trim()}`
+                : '';
+            results.push(
+              createSaveFailureResult({
+                blockID: data.blockID,
+                title: data.blockInfo.title,
+                error: `Duplicate ${label}`,
+                message: `${label} "${displayTitle}"${artistSuffix}${formatSuffix} is already stored.`,
+                errors: [`Duplicate ${label}`],
+              }),
+            );
+            continue;
+          }
+          if (
+            data.type === 'album' &&
+            duplicateHint.includes('albums_spotify_album_uri_unique')
+          ) {
+            const uri = data.blockInfo.spotifyAlbumUri?.trim();
+            const [existingAlbum] = uri
+              ? await db
+                  .select()
+                  .from(albums)
+                  .where(eq(albums.spotifyAlbumUri, uri))
+                  .limit(1)
+              : [];
+            if (existingAlbum) {
+              const imagesById = await loadAlbumImagesById(db, [
+                existingAlbum.id,
+              ]);
+              const images = imagesById.get(existingAlbum.id) ?? [];
               results.push(
-                createSaveFailureResult({
+                createSaveSuccessResult({
                   blockID: data.blockID,
                   title: data.blockInfo.title,
-                  error: `Duplicate ${mediaLabel}`,
-                  message: `${mediaLabel} "${storedTitle}"${formatSuffix} is already stored.`,
-                  errors: [`Duplicate ${mediaLabel}`],
+                  message: `${toDisplayTitle(existingAlbum.title)} is already stored.`,
+                  type: 'album',
+                  actionAttemptItem: toPostSavedMediaItem(existingAlbum, {
+                    title: toDisplayTitle(existingAlbum.title),
+                    images,
+                    spineColor: resolveDisplaySpineColor(
+                      images,
+                      existingAlbum.spineColor,
+                    ),
+                  }),
                 }),
               );
               continue;
@@ -871,8 +1188,12 @@ export const databaseRouter = router({
         return {
           message: `${toDisplayTitle(book.title)} successfully edited.`,
           actionAttemptItem: {
-            ...book,
+            mediaType: 'book',
+            id: book.id,
             title: toDisplayTitle(book.title),
+            author: book.author,
+            pageCount: book.pageCount,
+            pubYear: book.pubYear,
             images,
             spineColor: persistedSpineColor,
           },
@@ -880,7 +1201,79 @@ export const databaseRouter = router({
         };
       }
 
-      const validation = otherMediaEditSchema.safeParse(item);
+      if (type === 'album') {
+        const validation = albumEditSchema.safeParse(item);
+        if (!validation.success) {
+          return {
+            error: 'Schema Violation',
+            message: 'Schema violation(s) during edit request',
+            errors: validation.error.issues.map((issue) => issue.message),
+            actionAttemptItem: item,
+            type,
+          };
+        }
+        const data = validation.data;
+        const whereExpression = data.id
+          ? eq(albums.id, data.id)
+          : and(
+              eq(albums.title, toStoredTitle(data.title)),
+              eq(albums.artist, data.artist ?? ''),
+            );
+        const [existingAlbum] = await db
+          .select()
+          .from(albums)
+          .where(whereExpression)
+          .limit(1);
+        if (!existingAlbum) {
+          return createMediaNotFoundEditResponse(data, type);
+        }
+        const resolvedImages = await resolveAndPersistImageList(
+          { mediaType: 'album', mediaId: existingAlbum.id },
+          data.images.map((image) => ({
+            url: image.url,
+            isDefault: image.isDefault,
+            spineColor: ALBUM_ROW_SPINE_COLOR,
+            codeColor: image.codeColor ?? null,
+          })),
+          { defaultSpineColor: ALBUM_ROW_SPINE_COLOR },
+        );
+        if (resolvedImages.failures.length > 0) {
+          return createImagePersistenceErrorResponse(data.title, false);
+        }
+        const images = savedImageList(resolvedImages.images);
+        const [savedAlbum] = await db
+          .update(albums)
+          .set({
+            title: toStoredTitle(data.title),
+            artist: data.artist ?? '',
+            releaseDate: data.releaseDate ?? null,
+            ...(data.spotifyAlbumUri
+              ? { spotifyAlbumUri: data.spotifyAlbumUri }
+              : {}),
+          })
+          .where(whereExpression)
+          .returning();
+        if (!savedAlbum) {
+          return createMediaNotFoundEditResponse(data, type);
+        }
+        await replaceMediaImageRecords(
+          db,
+          { mediaType: 'album', mediaId: savedAlbum.id },
+          resolvedImages.images,
+        );
+
+        return {
+          message: `${toDisplayTitle(savedAlbum.title)} successfully edited.`,
+          actionAttemptItem: toPostSavedMediaItem(savedAlbum, {
+            title: toDisplayTitle(savedAlbum.title),
+            images,
+            spineColor: savedAlbum.spineColor,
+          }),
+          type,
+        };
+      }
+
+      const validation = titleMediaEditSchema.safeParse(item);
       if (!validation.success) {
         return {
           error: 'Schema Violation',
@@ -891,25 +1284,87 @@ export const databaseRouter = router({
         };
       }
       const data = validation.data;
+      const storedTitle =
+        type === 'movie'
+          ? toStoredMovieTitle(data.title)
+          : toStoredTitle(data.title);
+      const displayTitle =
+        type === 'movie'
+          ? toDisplayMovieTitle(storedTitle)
+          : toDisplayTitle(storedTitle);
+      if (type === 'movie') {
+        const whereExpression = data.id
+          ? eq(movies.id, data.id)
+          : and(
+              eq(movies.title, storedTitle),
+              eq(movies.movieFormat, data.movieFormat ?? 'dvd'),
+            );
+        const [existingMovie] = await db
+          .select()
+          .from(movies)
+          .where(whereExpression)
+          .limit(1);
+        if (!existingMovie) {
+          return createMediaNotFoundEditResponse(data, type);
+        }
+        const resolvedImages = await resolveAndPersistImageList(
+          { mediaType: 'movie', mediaId: existingMovie.id },
+          data.images.map((image) => ({
+            url: image.url,
+            isDefault: image.isDefault,
+            spineColor: image.spineColor,
+          })),
+          { defaultSpineColor: data.spineColor },
+        );
+        if (resolvedImages.failures.length > 0) {
+          return createImagePersistenceErrorResponse(data.title, false);
+        }
+        const images = savedImageList(resolvedImages.images);
+        const persistedSpineColor = resolveDisplaySpineColor(
+          images,
+          data.spineColor,
+        );
+        const [savedMovie] = await db
+          .update(movies)
+          .set({
+            title: storedTitle,
+            spineColor: persistedSpineColor,
+          })
+          .where(whereExpression)
+          .returning();
+        if (!savedMovie) {
+          return createMediaNotFoundEditResponse(data, type);
+        }
+        await replaceMediaImageRecords(
+          db,
+          { mediaType: 'movie', mediaId: savedMovie.id },
+          resolvedImages.images,
+        );
+
+        return {
+          message: `${displayTitle} successfully edited.`,
+          actionAttemptItem: toPostSavedMediaItem(savedMovie, {
+            title: displayTitle,
+            images,
+            spineColor: persistedSpineColor,
+          }),
+          type,
+        };
+      }
+
       const whereExpression = data.id
-        ? and(eq(otherMedia.id, data.id), eq(otherMedia.mediaType, type))
-        : and(
-            eq(otherMedia.title, toOtherMediaStoredTitle(type, data.title)),
-            eq(otherMedia.mediaType, type),
-            type === 'movie'
-              ? eq(otherMedia.movieFormat, data.movieFormat ?? 'dvd')
-              : undefined,
-          );
-      const [existingOtherMedia] = await db
+        ? eq(videoGames.id, data.id)
+        : eq(videoGames.title, storedTitle);
+      const [existingVideoGame] = await db
         .select()
-        .from(otherMedia)
+        .from(videoGames)
         .where(whereExpression)
         .limit(1);
-      if (!existingOtherMedia) {
+      if (!existingVideoGame) {
         return createMediaNotFoundEditResponse(data, type);
       }
       const resolvedImages = await resolveAndPersistImageList(
-        { mediaType: type, mediaId: existingOtherMedia.id },
+        { mediaType: 'videoGame', mediaId: existingVideoGame.id },
         data.images.map((image) => ({
           url: image.url,
           isDefault: image.isDefault,
@@ -920,42 +1375,35 @@ export const databaseRouter = router({
       if (resolvedImages.failures.length > 0) {
         return createImagePersistenceErrorResponse(data.title, false);
       }
-      const images = resolvedImages.images.map((image) => ({
-        url: image.publicPath,
-        isDefault: image.isDefault,
-        spineColor: image.spineColor,
-        selected: false,
-      }));
+      const images = savedImageList(resolvedImages.images);
       const persistedSpineColor = resolveDisplaySpineColor(
         images,
         data.spineColor,
       );
-      const [savedOtherMedia] = await db
-        .update(otherMedia)
+      const [savedVideoGame] = await db
+        .update(videoGames)
         .set({
-          mediaType: type,
-          title: toOtherMediaStoredTitle(type, data.title),
+          title: storedTitle,
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)
         .returning();
-      if (!savedOtherMedia) {
+      if (!savedVideoGame) {
         return createMediaNotFoundEditResponse(data, type);
       }
-      await replaceOtherMediaImageRecords(
+      await replaceMediaImageRecords(
         db,
-        savedOtherMedia.id,
+        { mediaType: 'videoGame', mediaId: savedVideoGame.id },
         resolvedImages.images,
       );
 
       return {
-        message: `${toOtherMediaDisplayTitle(type, savedOtherMedia.title)} successfully edited.`,
-        actionAttemptItem: {
-          ...savedOtherMedia,
-          title: toOtherMediaDisplayTitle(type, savedOtherMedia.title),
+        message: `${displayTitle} successfully edited.`,
+        actionAttemptItem: toPostSavedMediaItem(savedVideoGame, {
+          title: displayTitle,
           images,
           spineColor: persistedSpineColor,
-        },
+        }),
         type,
       };
     }),

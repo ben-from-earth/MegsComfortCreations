@@ -8,7 +8,7 @@ import { trpc } from 'lib/trpc/client';
 import { useLibraryPageContext } from 'lib/context/library-page-context';
 import LibraryPendingSavesContext from 'lib/context/library-pending-saves-context';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
-import { MEDIA_TYPE_DEFINITIONS, MEDIA_TYPES } from 'lib/constants/media-types';
+import { MEDIA_TYPE_DEFINITIONS } from 'lib/constants/media-types';
 import { Form } from '@/components/ui/form';
 import {
   convertMediaItemToForm,
@@ -329,18 +329,10 @@ export interface LibraryItemProps {
 }
 
 const LibraryItem = memo(function LibraryItem({ item }: LibraryItemProps) {
-  const {
-    libraryList: { type: displayedListType },
-  } = useLibraryPageContext();
-  const itemType =
-    MEDIA_TYPES.find((mediaType) => mediaType === item.mediaType) ??
-    displayedListType;
-
   return (
     <LibraryCard
       item={convertMediaItemToForm({
         item,
-        type: itemType,
       })}
     />
   );
