@@ -18,6 +18,7 @@ import {
   movieFormatLabel,
   typeChipClassNames,
 } from '@/mediacollector/collected-covers-block';
+import AlbumReleaseField from '@/mediacollector/album-release-field';
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import {
   CoverImage,
@@ -42,6 +43,7 @@ const footerButtonClassName =
 function LibraryCard({ item }: { item: MediaItemForm }) {
   const { refreshLibrary } = useLibraryPageContext();
   const [isLocked, setIsLocked] = useState(true);
+  const [isReleasePickerOpen, setIsReleasePickerOpen] = useState(false);
   const [baseline, setBaseline] = useState(item);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -106,7 +108,9 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
         <article
-          className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+          className={`relative flex flex-col rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+            isReleasePickerOpen ? 'z-20 overflow-visible' : 'overflow-hidden'
+          } ${
             changeCount > 0
               ? 'border-[#c9973f] ring-1 ring-[#c9973f]'
               : 'border-[#e6e0d8]'
@@ -172,7 +176,7 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
           ) : (
             <div
               className={`flex gap-4.5 px-4.5 py-3.5 ${
-                type === 'book' ? 'items-center' : 'items-start'
+                type === 'videoGame' ? 'items-start' : 'items-center'
               }`}
             >
               {selectedImage ? (
@@ -217,6 +221,24 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
                         editState={fieldEditState(changes.pageCount)}
                       />
                     </div>
+                  </>
+                ) : type === 'album' ? (
+                  <>
+                    <LibraryItemTextField
+                      name="artist"
+                      label="Artist"
+                      editState={fieldEditState(changes.artist)}
+                    />
+                    <AlbumReleaseField
+                      value={blockInfo.releaseDate ?? null}
+                      readOnly={isLocked}
+                      changed={changes.releaseDate}
+                      isOpen={isReleasePickerOpen}
+                      onOpenChange={setIsReleasePickerOpen}
+                      onChange={(releaseDate) =>
+                        form.setValue('blockInfo.releaseDate', releaseDate)
+                      }
+                    />
                   </>
                 ) : null}
               </div>

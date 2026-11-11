@@ -10,7 +10,12 @@ import { useFormContext } from 'react-hook-form';
 
 const NUMBER_FIELD_NAMES = ['pubYear', 'pageCount'] as const;
 
-export type MediaTextFieldName = 'title' | 'author' | 'pubYear' | 'pageCount';
+export type MediaTextFieldName =
+  | 'title'
+  | 'author'
+  | 'pubYear'
+  | 'pageCount'
+  | 'artist';
 
 export type CollectedFieldEditState = 'readOnly' | 'changed';
 

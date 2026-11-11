@@ -1,4 +1,4 @@
-import { memo, use } from 'react';
+import { memo, use, useState } from 'react';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import LockIcon from '@mui/icons-material/LockOutlined';
 import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
@@ -6,6 +6,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { GenreRow } from '@/components/shared/genre-row';
 import CBBImages from '@/mediacollector/cbb-images';
+import AlbumReleaseField from '@/mediacollector/album-release-field';
 import CollectedItemTextField, {
   type CollectedFieldEditState,
 } from '@/mediacollector/collected-item-text-field';
@@ -60,6 +61,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const { originalsByBlockId, unlockedBlockIds, setBlockUnlocked } =
     use(DatabaseEditContext);
   const { control, getValues, setValue } = useFormContext<CollectorFormData>();
+  const [isReleasePickerOpen, setIsReleasePickerOpen] = useState(false);
   const block = useWatch({ control, name: `collectedData.${index}` });
   const images = block?.images ?? [];
   const title = block?.blockInfo.title ?? '';
@@ -111,7 +113,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+      className={`relative flex flex-col rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+        isReleasePickerOpen ? 'z-20 overflow-visible' : 'overflow-hidden'
+      } ${
         hasError || needsCover
           ? 'border-[#b0533a] ring-1 ring-[#b0533a]'
           : changeCount > 0
@@ -231,6 +235,28 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                       editState={fieldEditState(changes?.pageCount)}
                     />
                   </div>
+                </>
+              ) : type === 'album' ? (
+                <>
+                  <CollectedItemTextField
+                    name="artist"
+                    label="Artist"
+                    index={index}
+                    editState={fieldEditState(changes?.artist)}
+                  />
+                  <AlbumReleaseField
+                    value={block?.blockInfo.releaseDate ?? null}
+                    readOnly={isLocked}
+                    changed={changes?.releaseDate ?? false}
+                    isOpen={isReleasePickerOpen}
+                    onOpenChange={setIsReleasePickerOpen}
+                    onChange={(releaseDate) =>
+                      setValue(
+                        `collectedData.${index}.blockInfo.releaseDate`,
+                        releaseDate,
+                      )
+                    }
+                  />
                 </>
               ) : null}
             </div>
