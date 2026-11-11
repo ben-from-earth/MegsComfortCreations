@@ -42,7 +42,13 @@ describe('collectorFormSchema header and PNG fields', () => {
     expect(result.success).toBe(false);
   });
 
-  test('rejects a movie format outside DVD, VHS, and Blu-Ray', () => {
+  test('rejects a movie format outside DVD and VHS', () => {
+    expect(
+      collectorFormSchema.safeParse({
+        ...validCollectorForm,
+        movieFormat: 'bluRay',
+      }).success,
+    ).toBe(false);
     expect(
       collectorFormSchema.safeParse({
         ...validCollectorForm,

@@ -19,6 +19,7 @@ describe('cellVariationFor', () => {
       pairGap: 18,
       mode: 'album',
     };
+    expect(cellVariationFor(3, 'album')).toBe(cellVariationFor(5, 'album'));
     expect(cellVariationFor(3, 'album')).toEqual(albumCell);
     expect(cellVariationFor(5, 'album')).toEqual(albumCell);
   });

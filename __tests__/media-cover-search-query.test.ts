@@ -18,18 +18,10 @@ describe('mediaCoverSearchQuery', () => {
     ).toBe('The Princess Bride movie full dvd cover');
   });
 
-  test('searches VHS and Blu-Ray covers by format', () => {
+  test('searches VHS covers by format', () => {
     expect(
       mediaCoverSearchQuery('The Princess Bride', undefined, 'movie', 'vhs'),
     ).toBe('The Princess Bride movie full vhs cover');
-    expect(
-      mediaCoverSearchQuery(
-        'The Princess Bride',
-        undefined,
-        'movie',
-        'bluRay',
-      ),
-    ).toBe('The Princess Bride movie full blu-ray cover');
   });
 
   test('keeps the author on book and video game cover searches', () => {

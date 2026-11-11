@@ -285,21 +285,19 @@ describe('convertMediaItemToForm', () => {
   });
 
   test('copies a movie format onto the block', () => {
-    const bluRay = convertMediaItemToForm({
+    const vhs = convertMediaItemToForm({
       item: {
         mediaType: 'movie',
-        id: 'movie-blu-ray',
+        id: 'movie-vhs',
         title: 'Arrival',
         spineColor: '#ffffff',
         images: [],
-        movieFormat: 'bluRay',
+        movieFormat: 'vhs',
       },
     });
 
-    expect(bluRay.blockInfo.movieFormat).toBe('bluRay');
-    expect(convertMediaItemFormToDatabaseItem(bluRay).movieFormat).toBe(
-      'bluRay',
-    );
+    expect(vhs.blockInfo.movieFormat).toBe('vhs');
+    expect(convertMediaItemFormToDatabaseItem(vhs).movieFormat).toBe('vhs');
   });
 
   test('fills a placeholder image when the persisted row has none', () => {

@@ -64,6 +64,13 @@
       "when": 1774000000000,
       "tag": "0008_split_other_media",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774100000000,
+      "tag": "0009_drop_bluray_movie_format",
+      "breakpoints": true
     }
   ]
 }
