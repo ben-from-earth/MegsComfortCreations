@@ -2,7 +2,7 @@ import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/media-types';
 import {
-  movieYearlessTitlePattern,
+  movieTitleWithAnyYearPattern,
   splitMovieTitle,
   toDisplayMovieTitle,
   toStoredMovieTitle,
@@ -26,7 +26,7 @@ function otherMediaTitleCondition(type: MediaType, title: string) {
 
   return or(
     ilike(otherMedia.title, storedTitle),
-    sql`${otherMedia.title} ~* ${movieYearlessTitlePattern(storedTitle)}`,
+    sql`${otherMedia.title} ~* ${movieTitleWithAnyYearPattern(storedTitle)}`,
   );
 }
 

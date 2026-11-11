@@ -233,21 +233,23 @@ export function useLibraryItemForm({
       searchCoverUrlsRef.current = nextSearchUrls;
 
       const currentBlockInfo = form.getValues('blockInfo');
+      const publishedYear = currentBlockInfo.pubYear;
+      const searchedYear = newBlock.blockInfo.pubYear;
       if (
-        (currentBlockInfo.pubYear === null ||
-          currentBlockInfo.pubYear === undefined) &&
-        newBlock.blockInfo.pubYear !== null &&
-        newBlock.blockInfo.pubYear !== undefined
+        (publishedYear === null || publishedYear === undefined) &&
+        searchedYear !== null &&
+        searchedYear !== undefined
       ) {
-        form.setValue('blockInfo.pubYear', newBlock.blockInfo.pubYear);
+        form.setValue('blockInfo.pubYear', searchedYear);
       }
+      const pageCount = currentBlockInfo.pageCount;
+      const searchedPageCount = newBlock.blockInfo.pageCount;
       if (
-        (currentBlockInfo.pageCount === null ||
-          currentBlockInfo.pageCount === undefined) &&
-        newBlock.blockInfo.pageCount !== null &&
-        newBlock.blockInfo.pageCount !== undefined
+        (pageCount === null || pageCount === undefined) &&
+        searchedPageCount !== null &&
+        searchedPageCount !== undefined
       ) {
-        form.setValue('blockInfo.pageCount', newBlock.blockInfo.pageCount);
+        form.setValue('blockInfo.pageCount', searchedPageCount);
       }
     } catch {
       setCoverSearchBanner(COVER_SEARCH_FAILED_MESSAGE);

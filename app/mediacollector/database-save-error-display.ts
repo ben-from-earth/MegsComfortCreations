@@ -38,11 +38,7 @@ export function toUserFriendlyDatabaseSaveReason(
     return 'Some required details for this item were missing or invalid.';
   }
 
-  if (
-    item.error === 'Duplicate Movie' ||
-    item.error === 'Duplicate Video Game' ||
-    item.error === 'Duplicate Album'
-  ) {
+  if (item.error.startsWith('Duplicate ') && item.error !== 'Duplicate Book') {
     return item.message;
   }
 

@@ -6,7 +6,7 @@ import {
 const YEAR_SUFFIX = /^\((\d{4})\)$/;
 const REGEX_METACHARACTERS = /[\\.^$*+?()[\]{}|]/g;
 
-export type SplitMovieTitle = {
+type SplitMovieTitle = {
   baseTitle: string;
   year: string | null;
 };
@@ -19,7 +19,7 @@ export function splitMovieTitle(title: string): SplitMovieTitle {
 
   const suffix = trimmed.slice(-6);
   const match = YEAR_SUFFIX.exec(suffix);
-  if (!match?.[1]) {
+  if (!match) {
     return { baseTitle: trimmed, year: null };
   }
 
@@ -45,21 +45,7 @@ export function toDisplayMovieTitle(title: string): string {
   return withYear(toDisplayTitle(baseTitle), year);
 }
 
-export function movieYearlessTitlePattern(storedBaseTitle: string): string {
+export function movieTitleWithAnyYearPattern(storedBaseTitle: string): string {
   const escapedBase = storedBaseTitle.replace(REGEX_METACHARACTERS, '\\$&');
   return `^${escapedBase} \\([0-9]{4}\\)$`;
-}
-
-export function movieTitlesMatch(storedTitle: string, query: string): boolean {
-  const stored = splitMovieTitle(storedTitle);
-  const queried = splitMovieTitle(query);
-  const storedBase = toStoredTitle(stored.baseTitle).toLowerCase();
-  const queryBase = toStoredTitle(queried.baseTitle).toLowerCase();
-  if (storedBase !== queryBase) {
-    return false;
-  }
-  if (queried.year === null) {
-    return true;
-  }
-  return stored.year === queried.year;
 }
