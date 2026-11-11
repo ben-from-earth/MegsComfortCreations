@@ -119,17 +119,17 @@ function fullCoverVariation(rowHeight: number): Variation {
   };
 }
 
-const movieVariation3 = fullCoverVariation(TEMPLATE_METRICS[3].rowHeight);
 const movieVariation5 = fullCoverVariation(TEMPLATE_METRICS[5].rowHeight);
 
-// Which variation is used based on format and media type
+// Which variation is used based on format and media type.
+// Movies always use the 5 mm full cover, on either bleed setting.
 const COMBOS: Record<
   Template,
   Record<string, Variation> & { default: Variation }
 > = {
   3: {
     book: variation1,
-    movie: movieVariation3,
+    movie: movieVariation5,
     videoGame: variation1,
     album: variation2,
     default: variation1,
@@ -147,6 +147,9 @@ export function cellVariationFor(
   template: Template,
   type: string | undefined,
 ): Variation {
+  if (type === 'movie') {
+    return movieVariation5;
+  }
   return COMBOS[template][type ?? ''] ?? COMBOS[template].default;
 }
 
@@ -181,12 +184,16 @@ function layoutPage({
   let countUsed = 0;
   // Track the start index of the current row so we can right-align the last cell
   let rowStartIdx = 0;
+  let rowHasMovie = false;
+  const movieMetrics = TEMPLATE_METRICS[5];
 
   for (let i = startIndex; i < images.length; i++) {
     const type = images[i]?.type;
+    const isMovie = type === 'movie';
     const cfg = cellVariationFor(template, type);
     const w = cfg.cellWidth;
-    const h = rowHeight;
+    const h = isMovie ? movieMetrics.rowHeight : rowHeight;
+    const gapX = isMovie ? movieMetrics.xGap : xGap;
 
     if (x > marginX && x + w > canvasW - marginX) {
       // Right-align the last cell of the previous row
@@ -195,8 +202,12 @@ function layoutPage({
         const last = slots[lastIdx];
         slots[lastIdx] = { ...last, x: canvasW - marginX - last.w };
       }
+      const advance = rowHasMovie
+        ? movieMetrics.rowHeight + movieMetrics.yGap
+        : rowHeight + yGap;
       x = marginX;
-      y += h + yGap;
+      y += advance;
+      rowHasMovie = false;
       if (y + h > canvasH - marginY) break; // full
       // New row starts at current slots length
       rowStartIdx = slots.length;
@@ -204,7 +215,8 @@ function layoutPage({
 
     if (y + h <= canvasH - marginY) {
       slots.push({ x, y, w, h });
-      x += w + xGap;
+      x += w + gapX;
+      if (isMovie) rowHasMovie = true;
       countUsed++;
     } else {
       break;
@@ -256,7 +268,7 @@ async function renderPage({
 
   const overlaysNested = await Promise.all(
     slots.map((slot, k) =>
-      renderCell(slot, images[startIndex + k], template, metrics.rowHeight),
+      renderCell(slot, images[startIndex + k], template),
     ),
   );
   const overlays = overlaysNested.flat();
@@ -371,7 +383,6 @@ async function renderCell(
   slot: Slot,
   img: ImageData | undefined,
   template: Template,
-  rowHeight: number,
 ): Promise<OverlayOptions[]> {
   const { url, spineColor, type } = img || {};
   const cfg = cellVariationFor(template, type);
@@ -385,7 +396,7 @@ async function renderCell(
 
   if (cfg.mode === 'single') {
     const imageWidth = cfg.imageWidth;
-    const imageHeight = rowHeight;
+    const imageHeight = slot.h;
     const leftX = slot.x;
     const topY = slot.y;
 
@@ -399,7 +410,7 @@ async function renderCell(
   // Pair: left rotated 180°, right normal
   const gap = cfg.pairGap;
   const imageWidth = cfg.imageWidth;
-  const imageHeight = rowHeight;
+  const imageHeight = slot.h;
   const leftX = slot.x;
   const topY = slot.y;
 

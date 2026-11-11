@@ -1,19 +1,15 @@
 import { cellVariationFor } from 'lib/helpers/output-png';
 
 describe('cellVariationFor', () => {
-  test('places a movie as one full 3:2 cover', () => {
-    expect(cellVariationFor(3, 'movie')).toEqual({
-      cellWidth: 392,
-      imageWidth: 392,
-      pairGap: 0,
-      mode: 'single',
-    });
-    expect(cellVariationFor(5, 'movie')).toEqual({
+  test('places a movie as the 5 mm full cover on either template', () => {
+    const movieCell = {
       cellWidth: 486,
       imageWidth: 486,
       pairGap: 0,
       mode: 'single',
-    });
+    };
+    expect(cellVariationFor(3, 'movie')).toEqual(movieCell);
+    expect(cellVariationFor(5, 'movie')).toEqual(movieCell);
   });
 
   test('keeps books as a spine pair and albums as a single cover', () => {
