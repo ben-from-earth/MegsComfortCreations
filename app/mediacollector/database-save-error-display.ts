@@ -38,6 +38,10 @@ export function toUserFriendlyDatabaseSaveReason(
     return 'Some required details for this item were missing or invalid.';
   }
 
+  if (item.error.startsWith('Duplicate ') && item.error !== 'Duplicate Book') {
+    return item.message;
+  }
+
   if (item.error === 'Database Insertion Error') {
     const hasMissingGenre = item.errors.some(
       (error) => error.includes('Genre "') && error.includes('does not exist'),

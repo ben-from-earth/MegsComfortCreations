@@ -25,6 +25,12 @@ const eslintConfig = [
   },
 
   {
+    rules: {
+      eqeqeq: ['error', 'always'],
+    },
+  },
+
+  {
     files: ['app/mediacollector/cbb-images.tsx'],
     rules: {
       '@next/next/no-img-element': 'off',

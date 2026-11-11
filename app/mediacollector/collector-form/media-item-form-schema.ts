@@ -38,7 +38,7 @@ export const mediaItemFormSchema = z.object({
 export const addBookFormSchema = mediaItemFormSchema.extend({
   blockInfo: mediaItemBlockInfoSchema.extend({
     author: mediaItemBlockInfoSchema.shape.author.refine(
-      (author) => author != null && author.trim() !== '',
+      (author) => typeof author === 'string' && author.trim() !== '',
       'Author is Required',
     ),
   }),

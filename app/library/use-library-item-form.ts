@@ -31,7 +31,7 @@ export function useLibraryItemForm({
   onEditSuccess?: (saved: MediaItemForm) => void;
 }) {
   const formId = useId();
-  const isAdd = item == null;
+  const isAdd = item === undefined;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isDuplicateBookDialogOpen, setIsDuplicateBookDialogOpen] =
     useState(false);
@@ -56,11 +56,11 @@ export function useLibraryItemForm({
   const itemBlockID = item?.blockID;
 
   useEffect(() => {
-    if (itemBlockID == null) {
+    if (itemBlockID === undefined) {
       return;
     }
     const nextItem = itemRef.current;
-    if (nextItem == null) {
+    if (nextItem === undefined) {
       return;
     }
     searchCoverUrlsRef.current = new Set();
@@ -101,13 +101,17 @@ export function useLibraryItemForm({
         return;
       }
 
+      if (results.length === 0) {
+        applySaveDisplayError(undefined);
+        return;
+      }
       const result = results[0];
-      if (result == null || !result.success) {
-        if (result?.error === 'Duplicate Book') {
+      if (!result.success) {
+        if (result.error === 'Duplicate Book') {
           setIsDuplicateBookDialogOpen(true);
           return;
         }
-        applySaveDisplayError(result?.error);
+        applySaveDisplayError(result.error);
         return;
       }
 
@@ -127,7 +131,7 @@ export function useLibraryItemForm({
       return;
     }
 
-    if (result.error != null) {
+    if ('error' in result && result.error !== undefined) {
       applySaveDisplayError(result.error);
       return;
     }
@@ -188,11 +192,11 @@ export function useLibraryItemForm({
         return;
       }
 
-      const newBlock = blocks[0];
-      if (newBlock == null) {
+      if (blocks.length === 0) {
         setCoverSearchBanner(COVER_SEARCH_FAILED_MESSAGE);
         return;
       }
+      const newBlock = blocks[0];
 
       const currentImages = form.getValues('images');
       const keptImages = currentImages.filter(
@@ -205,7 +209,7 @@ export function useLibraryItemForm({
         newBlock.images.map((image) => image.url),
       );
       const defaultWasDropped =
-        previousDefault != null &&
+        previousDefault !== undefined &&
         previousDefault.uploaded !== true &&
         searchCoverUrlsRef.current.has(previousDefault.url) &&
         !nextSearchUrls.has(previousDefault.url);
@@ -229,17 +233,23 @@ export function useLibraryItemForm({
       searchCoverUrlsRef.current = nextSearchUrls;
 
       const currentBlockInfo = form.getValues('blockInfo');
+      const publishedYear = currentBlockInfo.pubYear;
+      const searchedYear = newBlock.blockInfo.pubYear;
       if (
-        currentBlockInfo.pubYear == null &&
-        newBlock.blockInfo.pubYear != null
+        (publishedYear === null || publishedYear === undefined) &&
+        searchedYear !== null &&
+        searchedYear !== undefined
       ) {
-        form.setValue('blockInfo.pubYear', newBlock.blockInfo.pubYear);
+        form.setValue('blockInfo.pubYear', searchedYear);
       }
+      const pageCount = currentBlockInfo.pageCount;
+      const searchedPageCount = newBlock.blockInfo.pageCount;
       if (
-        currentBlockInfo.pageCount == null &&
-        newBlock.blockInfo.pageCount != null
+        (pageCount === null || pageCount === undefined) &&
+        searchedPageCount !== null &&
+        searchedPageCount !== undefined
       ) {
-        form.setValue('blockInfo.pageCount', newBlock.blockInfo.pageCount);
+        form.setValue('blockInfo.pageCount', searchedPageCount);
       }
     } catch {
       setCoverSearchBanner(COVER_SEARCH_FAILED_MESSAGE);

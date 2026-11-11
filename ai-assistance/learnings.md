@@ -125,3 +125,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: The brush re-picked on every `pathname` change, so moving between shop pages repainted the Shop tab even though it stayed active.
 - Correction: Derive the active tab (`'shop'` for any shop page, otherwise the matching link href) and key the pick on that.
 - Rule Going Forward: Nav state tied to "the current tab" depends on the active tab, not the raw pathname; several routes can share one tab.
+
+### 2026-11-11 - Tests follow the functions the app calls
+
+- Area: Movie title search
+- Issue: `movieTitlesMatch` existed only so a test could assert year matching. Collector search makes that decision in SQL and never called the helper. A second test restated the library filter by calling two helpers itself.
+- Correction: Deleted the helper and that test. The remaining tests call `splitMovieTitle`, `toStoredMovieTitle`, `toDisplayMovieTitle`, and `movieTitleWithAnyYearPattern`, which save and search use.
+- Rule Going Forward: Do not add a function whose only caller is a test. Test the functions the application calls. If a rule lives in a query, do not invent a twin for the test file.

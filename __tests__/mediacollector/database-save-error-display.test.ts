@@ -109,6 +109,18 @@ describe('toUserFriendlyDatabaseSaveReason', () => {
   ] as const)('maps $error', (failure, message) => {
     expect(toUserFriendlyDatabaseSaveReason(failure)).toBe(message);
   });
+
+  test('returns the stored duplicate message for a movie title that already exists', () => {
+    expect(
+      toUserFriendlyDatabaseSaveReason(
+        saveFailure({
+          error: 'Duplicate Movie',
+          message: 'Movie "Dune (2021)" is already stored.',
+          errors: ['Duplicate Movie'],
+        }),
+      ),
+    ).toBe('Movie "Dune (2021)" is already stored.');
+  });
 });
 
 describe('buildDatabaseSaveFailureDisplayLines', () => {

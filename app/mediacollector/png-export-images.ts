@@ -24,7 +24,7 @@ export function buildPNGExportImages(
     collectedData.map((block) => [block.blockID, block]),
   );
   const blocksForExport =
-    pngExportBlockIds == null
+    pngExportBlockIds === undefined
       ? collectedData
       : pngExportBlockIds.flatMap((blockID) => {
           const block = collectedBlocksById.get(blockID);

@@ -18,9 +18,11 @@ export function getPageWindow(
   const sortedPages = [...includedPages].sort((left, right) => left - right);
   const window: PageWindowItem[] = [];
   for (const [index, pageNumber] of sortedPages.entries()) {
-    const previousPage = sortedPages[index - 1];
-    if (previousPage != null && pageNumber - previousPage > 1) {
-      window.push('ellipsis');
+    if (index > 0) {
+      const previousPage = sortedPages[index - 1];
+      if (pageNumber - previousPage > 1) {
+        window.push('ellipsis');
+      }
     }
     window.push(pageNumber);
   }

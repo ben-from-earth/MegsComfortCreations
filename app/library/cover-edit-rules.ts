@@ -7,10 +7,11 @@ export function removeLibraryCover<T extends LibraryCoverFlags>(
   images: T[],
   index: number,
 ): T[] {
-  const removed = images[index];
-  if (images.length <= 1 || removed == null) {
+  if (images.length <= 1 || index < 0 || index >= images.length) {
     return images;
   }
+
+  const removed = images[index];
 
   const remaining = images.filter((_, imageIndex) => imageIndex !== index);
   return remaining.map((image, imageIndex) => ({
@@ -34,7 +35,7 @@ export function toggleKeptCover<T extends LibraryCoverFlags>(
   images: T[],
   index: number,
 ): T[] {
-  if (images[index] == null) {
+  if (index < 0 || index >= images.length) {
     return images;
   }
 

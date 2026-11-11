@@ -115,7 +115,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
   const author = form.watch('blockInfo.author');
   const images = form.watch('images');
   const focusedImage =
-    focusedIndex == null ? undefined : images[focusedIndex];
+    focusedIndex === null ? undefined : images[focusedIndex];
   const keptCount = images.filter((image) => image.selected).length;
   const isSubmitting = form.formState.isSubmitting;
 
@@ -352,7 +352,7 @@ export default function AddBookDialog({ onClose }: { onClose: () => void }) {
                   isLocked={false}
                   isChanged={false}
                   caption={
-                    focusedImage && focusedIndex != null
+                    focusedImage && focusedIndex !== null
                       ? `Cover ${focusedIndex + 1} · ${focusedImage.spineColor}`
                       : 'Search for covers first'
                   }

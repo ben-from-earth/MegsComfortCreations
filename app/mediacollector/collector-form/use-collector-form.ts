@@ -59,7 +59,7 @@ export function useCollectorForm() {
         type: block.type,
         item: convertMediaItemFormToDatabaseItem(block),
       });
-      if (result.error != null) {
+      if ('error' in result && result.error !== undefined) {
         return failure(result.error, result.message, result.errors);
       }
     } catch (error) {

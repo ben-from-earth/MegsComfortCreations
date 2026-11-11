@@ -216,7 +216,7 @@ function MediaCollectorContent({
       : null;
   const schemaErrorBlockIds = isSubmitted
     ? fields
-        .filter((_, index) => errors.collectedData?.[index] != null)
+        .filter((_, index) => errors.collectedData?.[index] !== undefined)
         .map((field) => field.blockID)
     : [];
 
