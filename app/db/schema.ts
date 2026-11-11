@@ -7,9 +7,11 @@ import {
   timestamp,
   boolean,
   index,
+  uniqueIndex,
+  check,
 } from 'drizzle-orm/pg-core';
-import { uniqueIndex } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
+import { MOVIE_FORMATS } from 'lib/constants/movie-formats';
 import { OTHER_MEDIA_TYPES } from 'lib/constants/media-types';
 
 // ---------- users ----------
@@ -69,6 +71,8 @@ export const books = pgTable(
 
 export const otherMediaTypeEnum = pgEnum('other_media_type', OTHER_MEDIA_TYPES);
 
+export const movieFormatEnum = pgEnum('movie_format', MOVIE_FORMATS);
+
 // ---------- other_media ----------
 export const otherMedia = pgTable(
   'other_media',
@@ -77,12 +81,19 @@ export const otherMedia = pgTable(
     mediaType: otherMediaTypeEnum('media_type').notNull(),
     title: text('title').notNull(),
     spineColor: text('spine_color').notNull(),
+    movieFormat: movieFormatEnum('movie_format'),
   },
   (table) => [
-    uniqueIndex('other_media_media_type_title_unique').on(
-      table.mediaType,
-      table.title,
+    check(
+      'other_media_movie_format_check',
+      sql`(${table.mediaType} = 'movie' AND ${table.movieFormat} IS NOT NULL) OR (${table.mediaType} <> 'movie' AND ${table.movieFormat} IS NULL)`,
     ),
+    uniqueIndex('other_media_type_title_unique')
+      .on(table.mediaType, table.title)
+      .where(sql`${table.movieFormat} IS NULL`),
+    uniqueIndex('other_media_movie_title_format_unique')
+      .on(table.mediaType, table.title, table.movieFormat)
+      .where(sql`${table.movieFormat} IS NOT NULL`),
     index('other_media_media_type_idx').on(table.mediaType),
     index('other_media_title_idx').on(table.title),
   ],
