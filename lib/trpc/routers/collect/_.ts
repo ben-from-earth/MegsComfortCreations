@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { db as defaultDb, type Db } from '@/db/client';
 import { genres, genresBooks } from '@/db/schema';
 import { MEDIA_TYPES, type MediaType } from 'lib/constants/media-types';
+import { MOVIE_FORMATS, type MovieFormat } from 'lib/constants/movie-formats';
 
 import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
@@ -93,11 +94,13 @@ async function collectSearchItem(
   type: MediaType,
   title: string,
   author?: string,
+  movieFormat?: MovieFormat,
 ): Promise<{ blocks: MediaItemForm[]; googleApiQueryIncrement: number }> {
   const blocks: MediaItemForm[] = [];
   let googleApiQueryIncrement = 0;
+  const format = type === 'movie' ? (movieFormat ?? 'dvd') : undefined;
 
-  const mediaSearchData = await searchByTitle(db, type, title, author);
+  const mediaSearchData = await searchByTitle(db, type, title, author, format);
 
   if (mediaSearchData.total > 0) {
     const foundBlocks = await Promise.all(
@@ -117,6 +120,9 @@ async function collectSearchItem(
               ).map((row) => row.genre)
             : [];
 
+        const storedMovieFormat =
+          'movieFormat' in foundMedia ? foundMedia.movieFormat : null;
+
         return convertMediaItemToForm({
           item: {
             id: foundMedia.id,
@@ -130,6 +136,9 @@ async function collectSearchItem(
                   pubYear: foundMedia.pubYear,
                 }
               : {}),
+            ...(type === 'movie'
+              ? { movieFormat: storedMovieFormat ?? format ?? 'dvd' }
+              : {}),
           },
           type,
           genres: databaseGenres,
@@ -142,7 +151,7 @@ async function collectSearchItem(
       ),
     );
   } else {
-    const imagesPromise = getMediaCovers(title, author, type);
+    const imagesPromise = getMediaCovers(title, author, type, format);
     googleApiQueryIncrement += 1;
     if (type === 'book') {
       const [images, bookInfo] = await Promise.all([
@@ -171,7 +180,12 @@ async function collectSearchItem(
           isDefault: index === 0,
           spineColor: '#ffffff',
         })),
-        blockInfo: { title, spineColor: '#ffffff', genres: [] },
+        blockInfo: {
+          title,
+          spineColor: '#ffffff',
+          genres: [],
+          ...(type === 'movie' ? { movieFormat: format ?? 'dvd' } : {}),
+        },
         blockID: crypto.randomUUID(),
         isDatabase: false,
       });
@@ -235,6 +249,7 @@ const collectMediaInputSchema = z.object({
       author: z.string().optional(),
     }),
   ),
+  movieFormat: z.enum(MOVIE_FORMATS).optional(),
 });
 
 type CollectMediaInput = z.infer<typeof collectMediaInputSchema>;
@@ -248,11 +263,13 @@ type CollectMediaStreamEvent =
     };
 
 function listCollectSearches(input: CollectMediaInput) {
+  const movieFormat = input.movieFormat ?? 'dvd';
   return MEDIA_TYPES.flatMap((type) =>
     input[type].map((item) => ({
       type,
       title: item.title,
       author: item.author,
+      movieFormat: type === 'movie' ? movieFormat : undefined,
     })),
   );
 }
@@ -280,6 +297,7 @@ async function* collectMediaEvents(
       search.type,
       search.title,
       search.author,
+      search.movieFormat,
     );
     blocks.push(...collected.blocks);
     googleApiQueryIncrement += collected.googleApiQueryIncrement;
