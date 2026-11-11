@@ -1,4 +1,5 @@
 import z from 'zod';
+import { MOVIE_FORMATS } from 'lib/constants/movie-formats';
 import { mediaItemFormSchema } from './media-item-form-schema';
 export { mediaItemFormSchema } from './media-item-form-schema';
 export type { MediaItemForm } from './media-item-form-schema';
@@ -36,6 +37,7 @@ export const collectorFormSchema = z.object({
       z.object({ title: z.string(), author: z.string().optional() }),
     ),
   }),
+  movieFormat: z.enum(MOVIE_FORMATS),
   collectedData: z.array(mediaItemFormSchema),
   pngExportBlockIds: z.array(z.string()),
   pngFormat: z

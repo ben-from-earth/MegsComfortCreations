@@ -5,11 +5,17 @@ import { z } from 'zod';
 import { db as defaultDb, type Db } from '@/db/client';
 import { genres, genresBooks } from '@/db/schema';
 import { MEDIA_TYPES, type MediaType } from 'lib/constants/media-types';
+import { MOVIE_FORMATS, type MovieFormat } from 'lib/constants/movie-formats';
 
 import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
+import {
+  getSpotifyAlbum,
+  type SpotifyAlbumResult,
+} from './actions/get-spotify-album';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
+import type { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
 import {
   convertMediaItemToForm,
   type MediaItemForm,
@@ -18,6 +24,7 @@ import type { CollectorSearchProgress } from '@/mediacollector/collector-search-
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 import { fetchImageBufferAxios } from 'lib/helpers/output-png';
 import { extractSpinePalette } from 'lib/helpers/spine-palette';
+import { albumCodePair } from 'lib/helpers/album-code-status';
 import sharp from 'sharp';
 
 const SPINE_PALETTE_SAMPLE_SIZE = 64;
@@ -75,12 +82,21 @@ async function addSpinePalettes(blocks: MediaItemForm[]) {
     block.images = block.images.map((image) => {
       const palette = palettesByUrl.get(image.url) ?? [];
       const spineColor =
-        !block.isDatabase && image.spineColor === UNSET_SPINE_COLOR
+        block.type !== 'album' &&
+        !block.isDatabase &&
+        image.spineColor === UNSET_SPINE_COLOR
           ? (palette[0] ?? image.spineColor)
           : image.spineColor;
-      return { ...image, palette, spineColor };
+      return {
+        ...image,
+        palette,
+        spineColor,
+        ...(block.type === 'album'
+          ? { codeColor: image.codeColor ?? null }
+          : {}),
+      };
     });
-    if (!block.isDatabase) {
+    if (!block.isDatabase && block.type !== 'album') {
       block.blockInfo.spineColor =
         block.images.find((image) => image.selected)?.spineColor ??
         block.blockInfo.spineColor;
@@ -88,61 +104,108 @@ async function addSpinePalettes(blocks: MediaItemForm[]) {
   }
 }
 
+async function blocksFromFoundMedia(
+  db: Db,
+  type: MediaType,
+  foundMediaList: PostSavedMediaItem[],
+) {
+  const foundBlocks = await Promise.all(
+    foundMediaList.map(async (foundMedia) => {
+      if (foundMedia.mediaType !== type) {
+        return null;
+      }
+
+      const databaseGenres =
+        foundMedia.mediaType === 'book'
+          ? (
+              await db
+                .select({ genre: genres.genre })
+                .from(genres)
+                .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
+                .where(eq(genresBooks.bookId, foundMedia.id))
+            ).map((row) => row.genre)
+          : [];
+
+      return convertMediaItemToForm({
+        item: foundMedia,
+        genres: databaseGenres,
+      });
+    }),
+  );
+  return foundBlocks.filter((block): block is MediaItemForm => block !== null);
+}
+
 async function collectSearchItem(
   db: Db,
   type: MediaType,
   title: string,
   author?: string,
+  movieFormat?: MovieFormat,
 ): Promise<{ blocks: MediaItemForm[]; googleApiQueryIncrement: number }> {
   const blocks: MediaItemForm[] = [];
   let googleApiQueryIncrement = 0;
+  const format = type === 'movie' ? (movieFormat ?? 'dvd') : undefined;
 
-  const mediaSearchData = await searchByTitle(db, type, title, author);
+  const mediaSearchData = await searchByTitle(db, type, title, author, format);
 
   if (mediaSearchData.total > 0) {
-    const foundBlocks = await Promise.all(
-      mediaSearchData.foundMediaList.map(async (foundMedia) => {
-        if (type === 'book' && !('author' in foundMedia)) {
-          return null;
-        }
-
-        const databaseGenres =
-          type === 'book'
-            ? (
-                await db
-                  .select({ genre: genres.genre })
-                  .from(genres)
-                  .innerJoin(genresBooks, eq(genresBooks.genreId, genres.id))
-                  .where(eq(genresBooks.bookId, foundMedia.id))
-              ).map((row) => row.genre)
-            : [];
-
-        return convertMediaItemToForm({
-          item: {
-            id: foundMedia.id,
-            title: foundMedia.title,
-            spineColor: foundMedia.spineColor,
-            images: foundMedia.images,
-            ...('author' in foundMedia
-              ? {
-                  author: foundMedia.author,
-                  pageCount: foundMedia.pageCount,
-                  pubYear: foundMedia.pubYear,
-                }
-              : {}),
-          },
-          type,
-          genres: databaseGenres,
-        });
-      }),
-    );
     blocks.push(
-      ...foundBlocks.filter(
-        (block): block is MediaItemForm => block !== null,
-      ),
+      ...(await blocksFromFoundMedia(db, type, mediaSearchData.foundMediaList)),
     );
+  } else if (type === 'album') {
+    const artist = author?.trim() ? author.trim() : null;
+    const lookup: SpotifyAlbumResult = artist
+      ? await getSpotifyAlbum(title, artist)
+      : { found: false };
+    if (lookup.found) {
+      const storedAlbum = await searchByTitle(
+        db,
+        'album',
+        title,
+        artist ?? undefined,
+        undefined,
+        lookup.uri,
+      );
+      if (storedAlbum.total > 0) {
+        blocks.push(
+          ...(await blocksFromFoundMedia(
+            db,
+            'album',
+            storedAlbum.foundMediaList,
+          )),
+        );
+        return { blocks, googleApiQueryIncrement };
+      }
+    }
+    const coverUrl = lookup.found ? lookup.coverUrl : null;
+    blocks.push({
+      type,
+      images: coverUrl
+        ? [
+            {
+              url: coverUrl,
+              selected: true,
+              isDefault: true,
+              spineColor: '#ffffff',
+              codeColor: null,
+            },
+          ]
+        : [],
+      blockInfo: {
+        title,
+        artist,
+        releaseDate: lookup.found ? lookup.releaseDate : null,
+        spotifyAlbumUri: lookup.found ? lookup.uri : null,
+        codeGeneratedFor:
+          lookup.found && artist ? albumCodePair(title, artist) : null,
+        spineColor: '#ffffff',
+        genres: [],
+      },
+      blockID: crypto.randomUUID(),
+      isDatabase: false,
+    });
   } else {
-    const imagesPromise = getMediaCovers(title, author, type);
+    const imagesPromise = getMediaCovers(title, author, type, format);
     googleApiQueryIncrement += 1;
     if (type === 'book') {
       const [images, bookInfo] = await Promise.all([
@@ -171,7 +234,12 @@ async function collectSearchItem(
           isDefault: index === 0,
           spineColor: '#ffffff',
         })),
-        blockInfo: { title, spineColor: '#ffffff', genres: [] },
+        blockInfo: {
+          title,
+          spineColor: '#ffffff',
+          genres: [],
+          ...(type === 'movie' ? { movieFormat: format ?? 'dvd' } : {}),
+        },
         blockID: crypto.randomUUID(),
         isDatabase: false,
       });
@@ -235,6 +303,7 @@ const collectMediaInputSchema = z.object({
       author: z.string().optional(),
     }),
   ),
+  movieFormat: z.enum(MOVIE_FORMATS).optional(),
 });
 
 type CollectMediaInput = z.infer<typeof collectMediaInputSchema>;
@@ -248,11 +317,13 @@ type CollectMediaStreamEvent =
     };
 
 function listCollectSearches(input: CollectMediaInput) {
+  const movieFormat = input.movieFormat ?? 'dvd';
   return MEDIA_TYPES.flatMap((type) =>
     input[type].map((item) => ({
       type,
       title: item.title,
       author: item.author,
+      movieFormat: type === 'movie' ? movieFormat : undefined,
     })),
   );
 }
@@ -280,6 +351,7 @@ async function* collectMediaEvents(
       search.type,
       search.title,
       search.author,
+      search.movieFormat,
     );
     blocks.push(...collected.blocks);
     googleApiQueryIncrement += collected.googleApiQueryIncrement;
@@ -380,4 +452,19 @@ export const collectRouter = router({
     .mutation(async function* ({ input, ctx }) {
       yield* collectMediaEvents(ctx.db ?? defaultDb, input);
     }),
+  findSpotifyAlbum: adminProcedure
+    .input(
+      z.object({
+        title: z.string().trim().min(1),
+        artist: z.string().trim().min(1),
+        releaseDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .nullable()
+          .optional(),
+      }),
+    )
+    .mutation(({ input }) =>
+      getSpotifyAlbum(input.title, input.artist, input.releaseDate),
+    ),
 });

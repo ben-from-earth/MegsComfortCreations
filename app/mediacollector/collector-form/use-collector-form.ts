@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { collectorFormSchema } from './collector-form-schema';
 import type { CollectorFormData } from './collector-form-schema';
-import { convertMediaItemFormToDatabaseItem } from './media-item-form-schema';
+import { convertMediaItemFormToDatabaseItem, savedMediaItemFromForm } from './media-item-form-schema';
 import type { DatabaseItemEdit } from '../database-item-changes';
 import type {
   DatabaseSaveResultItem,
@@ -21,6 +21,7 @@ const defaultValues: CollectorFormData = {
     videoGame: [],
     album: [],
   },
+  movieFormat: 'dvd',
   collectedData: [],
   pngExportBlockIds: [],
   pngFormat: null,
@@ -101,12 +102,7 @@ export function useCollectorForm() {
       title,
       message: `${title} successfully edited.`,
       type: block.type,
-      actionAttemptItem: {
-        id: block.blockID,
-        title,
-        spineColor: block.blockInfo.spineColor,
-        images: block.images,
-      },
+      actionAttemptItem: savedMediaItemFromForm(block),
     };
   };
 

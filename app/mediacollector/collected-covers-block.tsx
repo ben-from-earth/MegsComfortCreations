@@ -6,11 +6,24 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { GenreRow } from '@/components/shared/genre-row';
 import CBBImages from '@/mediacollector/cbb-images';
+import { albumCodeStatus } from 'lib/helpers/album-code-status';
+import AlbumCodeColorRow from '@/mediacollector/album-code-color-row';
+import AlbumCodeRow, {
+  applyAlbumCodeLookup,
+  type AlbumCodeLookup,
+} from '@/mediacollector/album-code-row';
+import AlbumReleaseField, {
+  releasePickerOpenCardClassName,
+} from '@/mediacollector/album-release-field';
 import CollectedItemTextField, {
   type CollectedFieldEditState,
 } from '@/mediacollector/collected-item-text-field';
 import { CollectorFormData } from './collector-form/collector-form-schema';
 import { MEDIA_TYPE_DEFINITIONS, MediaType } from 'lib/constants/media-types';
+import {
+  MOVIE_FORMAT_OPTIONS,
+  type MovieFormat,
+} from 'lib/constants/movie-formats';
 import SpineColorRow from './spine-color-row';
 import { CoverImage, collectorCoverAspectClassName } from './cover-tile';
 import DatabaseEditContext from './database-edit-context';
@@ -30,6 +43,10 @@ export const typeChipClassNames: Record<MediaType, string> = {
   album: 'bg-[#e4ebea] text-[#2f5452]',
   videoGame: 'bg-[#e3e9df] text-[#3f5637]',
 };
+
+export const movieFormatLabel = (movieFormat: MovieFormat | undefined) =>
+  MOVIE_FORMAT_OPTIONS.find((option) => option.value === (movieFormat ?? 'dvd'))
+    ?.label ?? 'DVD';
 
 export interface CollectedCoversBlockProps {
   index: number;
@@ -69,16 +86,44 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const originalDefaultUrl = original?.images.find(
     (image) => image.isDefault,
   )?.url;
-  const selectedImage = images.find((image) => image.selected);
+  const selectedImageIndex = images.findIndex((image) => image.selected);
+  const selectedImage =
+    selectedImageIndex === -1 ? undefined : images[selectedImageIndex];
   const needsCover = !isDatabase && !selectedImage;
   const typeLabel =
     MEDIA_TYPE_DEFINITIONS.find(({ mediaType }) => mediaType === type)?.label ??
     type;
-  const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
+  const mainCoverSizeClassName =
+    type === 'album' ? 'h-37.5 w-37.5' : 'h-45 w-30';
 
+  const needsCode =
+    type === 'album' &&
+    albumCodeStatus({
+      title,
+      artist: block?.blockInfo.artist,
+      codeColor: selectedImage?.codeColor,
+      spotifyAlbumUri: block?.blockInfo.spotifyAlbumUri,
+      codeStatus: block?.blockInfo.codeStatus,
+      codeGeneratedFor: block?.blockInfo.codeGeneratedFor,
+    }) !== 'generated';
   const newItemBadge = needsCover
     ? { text: 'New · pick a cover', className: 'bg-[#f7e3dc] text-[#9a3b26]' }
-    : { text: 'New · ready', className: 'bg-[#f0e7d8] text-[#6b5532]' };
+    : {
+        text: needsCode ? 'New · needs code' : 'New · ready',
+        className: 'bg-[#f0e7d8] text-[#6b5532]',
+      };
+  const applyCodeColor = (hex: string) =>
+    setValue(
+      `collectedData.${index}.images`,
+      getValues(`collectedData.${index}.images`).map((image) =>
+        image.selected ? { ...image, codeColor: hex } : image,
+      ),
+    );
+  const handleCodeLookup = (lookup: AlbumCodeLookup) =>
+    setValue(
+      `collectedData.${index}`,
+      applyAlbumCodeLookup(getValues(`collectedData.${index}`), lookup),
+    );
   const handleGenreClick = (genreText: string, checked: boolean) => {
     const currentGenres =
       getValues(`collectedData.${index}.blockInfo.genres`) ?? [];
@@ -102,7 +147,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${releasePickerOpenCardClassName} ${
         hasError || needsCover
           ? 'border-[#b0533a] ring-1 ring-[#b0533a]'
           : changeCount > 0
@@ -111,9 +156,16 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       }`}
     >
       <div className="flex items-center justify-between gap-2 px-4.5 pt-3.5">
-        <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
-          {typeLabel} · #{index + 1}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
+            {typeLabel} · #{index + 1}
+          </span>
+          {type === 'movie' ? (
+            <span className={`${pillClassName} ${typeChipClassNames.book}`}>
+              {movieFormatLabel(block?.blockInfo.movieFormat)}
+            </span>
+          ) : null}
+        </div>
         {isDatabase ? (
           <span
             className={`${pillClassName} inline-flex items-center gap-1 ${
@@ -165,9 +217,17 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-4.5 px-4.5 py-3.5">
+          <div
+            className={`flex gap-4.5 px-4.5 py-3.5 ${
+              type === 'album' ? 'items-start' : 'items-center'
+            }`}
+          >
             {selectedImage ? (
-              <div className="flex shrink-0 overflow-hidden rounded-r-md">
+              <div
+                className={`flex shrink-0 overflow-hidden ${
+                  type === 'album' ? 'rounded-md' : 'rounded-r-md'
+                }`}
+              >
                 {type !== 'album' ? (
                   <div
                     className="w-2.5 shrink-0"
@@ -216,6 +276,26 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                     />
                   </div>
                 </>
+              ) : type === 'album' ? (
+                <>
+                  <CollectedItemTextField
+                    name="artist"
+                    label="Artist"
+                    index={index}
+                    editState={fieldEditState(changes?.artist)}
+                  />
+                  <AlbumReleaseField
+                    value={block?.blockInfo.releaseDate ?? null}
+                    readOnly={isLocked}
+                    changed={changes?.releaseDate ?? false}
+                    onChange={(releaseDate) =>
+                      setValue(
+                        `collectedData.${index}.blockInfo.releaseDate`,
+                        releaseDate,
+                      )
+                    }
+                  />
+                </>
               ) : null}
             </div>
           </div>
@@ -227,6 +307,18 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
               isChanged={changes?.genres ?? false}
               onAdd={(genre) => handleGenreClick(genre, true)}
               onRemove={(genre) => handleGenreClick(genre, false)}
+            />
+          ) : type === 'album' ? (
+            <AlbumCodeRow
+              title={title}
+              artist={block?.blockInfo.artist}
+              releaseDate={block?.blockInfo.releaseDate}
+              spotifyAlbumUri={block?.blockInfo.spotifyAlbumUri}
+              codeStatus={block?.blockInfo.codeStatus}
+              codeGeneratedFor={block?.blockInfo.codeGeneratedFor}
+              codeColor={selectedImage?.codeColor}
+              isLocked={isLocked}
+              onLookup={handleCodeLookup}
             />
           ) : (
             <div className="mx-4.5 mb-3.5 h-10" />
@@ -253,6 +345,21 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
             (changes?.changedSpineColorUrls.includes(selectedImage.url) ??
               false)
           }
+        />
+      ) : type === 'album' ? (
+        <AlbumCodeColorRow
+          spotifyAlbumUri={block?.blockInfo.spotifyAlbumUri}
+          codeColor={selectedImage?.codeColor}
+          palette={selectedImage?.palette ?? []}
+          coverNumber={
+            selectedImageIndex === -1 ? null : selectedImageIndex + 1
+          }
+          isLocked={isLocked}
+          isChanged={
+            selectedImage !== undefined &&
+            (changes?.changedCodeColorUrls.includes(selectedImage.url) ?? false)
+          }
+          onApply={applyCodeColor}
         />
       ) : null}
 

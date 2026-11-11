@@ -1,4 +1,5 @@
 import type { MediaType } from 'lib/constants/media-types';
+import type { MovieFormat } from 'lib/constants/movie-formats';
 
 interface MediaExtras {
   blockID?: string;
@@ -10,19 +11,45 @@ export interface MediaImageItem {
   selected?: boolean;
   isDefault: boolean;
   spineColor: string;
+  codeColor?: string | null;
 }
 
-export interface PostSavedMediaItem {
+interface SavedMediaBase {
   id: string;
   title: string;
   spineColor: string;
   images: MediaImageItem[];
-  mediaType?: string;
-  author?: string;
-  pageCount?: number | null;
-  pubYear?: number | null;
   genres?: string[];
 }
+
+export interface SavedBook extends SavedMediaBase {
+  mediaType: 'book';
+  author: string;
+  pageCount: number | null;
+  pubYear: number | null;
+}
+
+export interface SavedMovie extends SavedMediaBase {
+  mediaType: 'movie';
+  movieFormat: MovieFormat;
+}
+
+export interface SavedVideoGame extends SavedMediaBase {
+  mediaType: 'videoGame';
+}
+
+export interface SavedAlbum extends SavedMediaBase {
+  mediaType: 'album';
+  artist: string;
+  releaseDate: string | null;
+  spotifyAlbumUri: string | null;
+}
+
+export type PostSavedMediaItem =
+  | SavedBook
+  | SavedMovie
+  | SavedVideoGame
+  | SavedAlbum;
 
 export interface SuccessfulPaginationResponse {
   message: string;

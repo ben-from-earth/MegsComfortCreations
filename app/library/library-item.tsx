@@ -8,13 +8,23 @@ import { trpc } from 'lib/trpc/client';
 import { useLibraryPageContext } from 'lib/context/library-page-context';
 import LibraryPendingSavesContext from 'lib/context/library-pending-saves-context';
 import { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
-import { MEDIA_TYPE_DEFINITIONS, MEDIA_TYPES } from 'lib/constants/media-types';
+import { MEDIA_TYPE_DEFINITIONS } from 'lib/constants/media-types';
 import { Form } from '@/components/ui/form';
 import {
   convertMediaItemToForm,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
-import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
+import {
+  movieFormatLabel,
+  typeChipClassNames,
+} from '@/mediacollector/collected-covers-block';
+import AlbumCodeColorRow from '@/mediacollector/album-code-color-row';
+import AlbumCodeRow, {
+  applyAlbumCodeLookup,
+} from '@/mediacollector/album-code-row';
+import AlbumReleaseField, {
+  releasePickerOpenCardClassName,
+} from '@/mediacollector/album-release-field';
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import {
   CoverImage,
@@ -77,7 +87,9 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
   ): CollectedFieldEditState | undefined =>
     isLocked ? 'readOnly' : isChanged ? 'changed' : undefined;
 
-  const selectedImage = images.find((image) => image.selected);
+  const selectedImageIndex = images.findIndex((image) => image.selected);
+  const selectedImage =
+    selectedImageIndex === -1 ? undefined : images[selectedImageIndex];
   const originalDefaultUrl = baseline.images.find(
     (image) => image.isDefault,
   )?.url;
@@ -103,16 +115,23 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
         <article
-          className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
+          className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${releasePickerOpenCardClassName} ${
             changeCount > 0
               ? 'border-[#c9973f] ring-1 ring-[#c9973f]'
               : 'border-[#e6e0d8]'
           }`}
         >
           <div className="flex items-center justify-between gap-2 px-4.5 pt-3.5">
-            <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
-              {typeLabel}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
+                {typeLabel}
+              </span>
+              {type === 'movie' ? (
+                <span className={`${pillClassName} ${typeChipClassNames.book}`}>
+                  {movieFormatLabel(blockInfo.movieFormat)}
+                </span>
+              ) : null}
+            </div>
             <span
               role="img"
               aria-label={
@@ -162,7 +181,7 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
           ) : (
             <div
               className={`flex gap-4.5 px-4.5 py-3.5 ${
-                type === 'book' ? 'items-center' : 'items-start'
+                type === 'videoGame' ? 'items-start' : 'items-center'
               }`}
             >
               {selectedImage ? (
@@ -208,6 +227,22 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
                       />
                     </div>
                   </>
+                ) : type === 'album' ? (
+                  <>
+                    <LibraryItemTextField
+                      name="artist"
+                      label="Artist"
+                      editState={fieldEditState(changes.artist)}
+                    />
+                    <AlbumReleaseField
+                      value={blockInfo.releaseDate ?? null}
+                      readOnly={isLocked}
+                      changed={changes.releaseDate}
+                      onChange={(releaseDate) =>
+                        form.setValue('blockInfo.releaseDate', releaseDate)
+                      }
+                    />
+                  </>
                 ) : null}
               </div>
             </div>
@@ -217,6 +252,22 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             <LibraryGenreRow
               isEditable={!isLocked}
               isChanged={changes.genres}
+            />
+          ) : type === 'album' ? (
+            <AlbumCodeRow
+              title={blockInfo.title}
+              artist={blockInfo.artist}
+              releaseDate={blockInfo.releaseDate}
+              spotifyAlbumUri={blockInfo.spotifyAlbumUri}
+              codeStatus={blockInfo.codeStatus}
+              codeGeneratedFor={blockInfo.codeGeneratedFor}
+              codeColor={selectedImage?.codeColor}
+              isLocked={isLocked}
+              onLookup={(lookup) => {
+                const next = applyAlbumCodeLookup(form.getValues(), lookup);
+                form.setValue('images', next.images);
+                form.setValue('blockInfo', next.blockInfo);
+              }}
             />
           ) : null}
 
@@ -235,6 +286,30 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
               isChanged={
                 selectedImage !== undefined &&
                 changes.changedSpineColorUrls.includes(selectedImage.url)
+              }
+            />
+          ) : type === 'album' ? (
+            <AlbumCodeColorRow
+              spotifyAlbumUri={blockInfo.spotifyAlbumUri}
+              codeColor={selectedImage?.codeColor}
+              palette={selectedImage?.palette ?? []}
+              coverNumber={
+                selectedImageIndex === -1 ? null : selectedImageIndex + 1
+              }
+              isLocked={isLocked}
+              isChanged={
+                selectedImage !== undefined &&
+                changes.changedCodeColorUrls.includes(selectedImage.url)
+              }
+              onApply={(hex) =>
+                form.setValue(
+                  'images',
+                  form
+                    .getValues('images')
+                    .map((image) =>
+                      image.selected ? { ...image, codeColor: hex } : image,
+                    ),
+                )
               }
             />
           ) : null}
@@ -319,18 +394,10 @@ export interface LibraryItemProps {
 }
 
 const LibraryItem = memo(function LibraryItem({ item }: LibraryItemProps) {
-  const {
-    libraryList: { type: displayedListType },
-  } = useLibraryPageContext();
-  const itemType =
-    MEDIA_TYPES.find((mediaType) => mediaType === item.mediaType) ??
-    displayedListType;
-
   return (
     <LibraryCard
       item={convertMediaItemToForm({
         item,
-        type: itemType,
       })}
     />
   );

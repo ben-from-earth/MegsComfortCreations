@@ -286,7 +286,9 @@ function MediaCollectorContent({
   ) => {
     const formBlocks = blocks.map((block) => ({
       ...block,
-      images: toFormImages(block.images, block.blockInfo.spineColor),
+      images: toFormImages(block.images, block.blockInfo.spineColor, {
+        allowEmpty: block.type === 'album',
+      }),
     }));
     replace(formBlocks);
     setValue('pngExportBlockIds', pngExportBlockIds);
@@ -322,7 +324,10 @@ function MediaCollectorContent({
     });
 
     try {
-      const collectStream = await collectMediaStream(collectionList);
+      const collectStream = await collectMediaStream({
+        ...collectionList,
+        movieFormat: getValues('movieFormat'),
+      });
       for await (const event of collectStream) {
         if (event.type === 'progress') {
           setLoadingState({

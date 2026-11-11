@@ -52,9 +52,7 @@ export default function CoversDialog({
         }
       }}
     >
-      <div
-        className="flex max-h-[90vh] w-190 max-w-full flex-col overflow-hidden rounded-[20px] bg-white text-[#2b2826] shadow-[0_24px_60px_rgba(30,30,25,0.3)]"
-      >
+      <div className="flex max-h-[90vh] w-190 max-w-full flex-col overflow-hidden rounded-[20px] bg-white text-[#2b2826] shadow-[0_24px_60px_rgba(30,30,25,0.3)]">
         <div className="flex items-start justify-between gap-4 px-6 pt-5.5 pb-3.5">
           <div className="flex flex-col gap-1">
             <h2 id={headingId} className="m-0 text-[22px] font-extrabold">
@@ -92,6 +90,7 @@ export default function CoversDialog({
                   : null
               }
               aspectClassName={aspectClassName}
+              codeColor={image.codeColor}
               onClick={() => setPickedIndex(imageIndex)}
             />
           ))}

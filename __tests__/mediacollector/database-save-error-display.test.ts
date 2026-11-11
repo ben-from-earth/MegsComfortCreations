@@ -185,8 +185,12 @@ describe('markSuccessfulBlocksAsInDatabase', () => {
           message: 'Dune successfully added to database.',
           type: 'book',
           actionAttemptItem: {
+            mediaType: 'book',
             id: 'book-1',
             title: 'Dune',
+            author: 'Frank Herbert',
+            pageCount: null,
+            pubYear: null,
             spineColor: '#111111',
             images: [],
           },
