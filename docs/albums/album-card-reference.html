@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<!--
+  REFERENCE MOCK: Collector cards by media type, with the new ALBUM card (top row).
+  Static HTML rendered from the design canvas; read alongside album-card-spec.md.
+  Top row = album card in 3 states: new from search (no code color, not generated), database editing
+  (code generated, cover 2 color changed), database locked. Bottom row = book / movie / video game, unchanged.
+  Interactive states (generating, stale, no match, date picker open) are described in the spec.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home page reference</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>html,body{margin:0} button{font-family:inherit} input{font-family:inherit} .spin{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(360deg)}} @media (prefers-reduced-motion: reduce){.spin{animation:none}}</style>
+
+</head>
+<body>
+
+
+<div style="width:1440px;box-sizing:border-box;padding:40px;background:#e5ebe0;font-family:Nunito,system-ui,sans-serif;color:#2b2826">
+  <h1 style="margin:0;font-size:24px;font-weight:800">Collected cards by media type</h1>
+  <p style="margin:6px 0 28px;font-size:14px;font-weight:600;color:#6b645d">Albums get their own fields, a Spotify code generator in place of genres (built from the title + artist), and a code color per cover in place of spine color.</p>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start">
+    
+<div>
+  <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px"><span style="font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2b2826">Album · new from search</span><span style="font-size:13px;font-weight:600;color:#6b645d">Pick a code color, then Generate. The code is built from the title + artist. (Title “Unknown…” shows the no-match state.)</span></div>
+  <article style="position:relative;display:flex;flex-direction:column;background:#ffffff;border-radius:16px;overflow:visible;border:1px solid #e6e0d8;box-shadow:0 4px 18px rgba(60,50,40,0.06)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px 0">
+      <span style="font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;background:#e4ebea;color:#2f5452">Album · #2</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;height:26px;box-sizing:border-box;font-size:12px;font-weight:800;border-radius:999px;padding:0 10px;color:#6b5532;background:#f0e7d8">
+        
+        
+        New · needs code
+        
+      </span>
+    </div>
+
+    <!-- square cover + Title / Artist / Released -->
+    <div style="display:flex;align-items:center;gap:18px;padding:14px 18px">
+      <div style="position:relative;flex:0 0 120px;width:120px">
+        <svg width="20" height="32" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;z-index:1;top:-5px;left:14px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+        <div style="width:120px;height:120px;border-radius:6px;background:#e8dcc4;box-shadow:0 0 0 3px #ffffff,0 0 0 5px #3d3935"></div>
+      </div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Title<input type="text" value="Rumours" readonly="false" onchange="" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:700"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Artist<input type="text" value="Fleetwood Mac" readonly="false" onchange="" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400"></label>
+        <div style="position:relative;display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">
+          <label for="rel-2">Released</label>
+          <span style="position:relative;display:flex">
+            <input id="rel-2" type="text" inputmode="numeric" value="02/04/1977" placeholder="MM/DD/YYYY" readonly="false" onchange="" aria-invalid="false" style="height:38px;border-radius:8px;padding:0 40px 0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400">
+            <button type="button" onclick="" disabled="false" aria-label="Choose release date" aria-haspopup="dialog" aria-expanded="false" style="position:absolute;right:4px;top:4px;width:30px;height:30px;padding:0;border:0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;color:#4a443f;cursor:pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+            </button>
+          </span>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- SPOTIFY CODE GENERATOR (replaces the genres row, same 40px height).
+         Generates from the card's Title + Artist, in the selected cover's code color. -->
+    <div role="group" aria-label="Spotify code" aria-live="polite" style="display:flex;flex-wrap:nowrap;gap:8px;align-items:center;height:40px;box-sizing:border-box;padding:0 6px 0 10px;margin:0 18px 14px;border-radius:10px;background:#f7f4f0">
+      <span style="flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#6b645d">Code</span>
+      
+      
+      <span title="" style="flex:1;min-width:0;font-size:12px;font-weight:700;color:#6b645d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Pick a code color for this cover first</span>
+      
+        <button type="button" onclick="" disabled="true" aria-label="Generate code" title="Pick a code color for this cover first" style="flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid #ddd5cb;background:#f4f1ec;color:#a59d93;cursor:not-allowed">
+          
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19L15 9"></path><path d="M15 9l2-2"></path><path d="M18 2v3M16.5 3.5h3M20 9v2M19 10h2M11 3v2M10 4h2"></path></svg>
+          Generate
+        </button>
+      
+    </div>
+
+    <div role="radiogroup" aria-label="Cover for Rumours" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:2px 18px 16px">
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="true" aria-label="Cover option 1" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#e8dcc4;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4.5px #2b2826">
+            <span style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2b2826;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+            <svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:8px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,0.85);border:1.5px dashed #6b645d" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 2" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#2d2a26;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,0.85);border:1.5px dashed #6b645d" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 3" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#8a2f2a;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,0.85);border:1.5px dashed #6b645d" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 4" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#c7a46a;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,0.85);border:1.5px dashed #6b645d" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+    </div>
+
+    <!-- CODE COLOR (replaces spine color; one color per cover image) -->
+    <div style="margin:0 18px 14px;padding:10px 12px;border-radius:12px;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;background:#f7f4f0">
+      <span aria-hidden="true" style="flex:0 0 auto;box-sizing:border-box;width:54px;height:22px;padding:0 4px;border-radius:4px;background:#efe9e2;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:space-between;overflow:hidden"><span style="flex:0 0 auto;width:14px;height:14px;margin-right:4.4px;border-radius:50%;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:8.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:11.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:14.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:8.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:11.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:5.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:11.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:8.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:14.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:11.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span><span style="flex:0 0 auto;width:1.0px;height:8.0px;border-radius:9px;background:#1f1b18;opacity:0.35"></span></span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:1px;min-width:0">
+        <span style="font-size:12px;font-weight:800">Code color</span>
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:800;color:#8a5a22">Not set · cover 1</span>
+      </div>
+      <div role="radiogroup" aria-label="Code colors from cover" style="flex:0 0 auto;display:flex;gap:6px">
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #e8dcc4" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#e8dcc4;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #8b8476" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#8b8476;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #f2ecdf" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#f2ecdf;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #efe3cf" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#efe3cf;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #2a2224" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#2a2224;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+      </div>
+      <button type="button" aria-label="Pick code color with eyedropper" disabled="false" style="flex:0 0 36px;width:36px;height:36px;border:1px solid #e0d9d0;border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;color:#2b2826;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5"></path><path d="M17 2.5a2.1 2.1 0 013 3L17.5 8l-3.5-3.5z"></path><path d="M14 7L5 16v3h3l9-9"></path></svg></button>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #efe9e2;padding:8px 10px;margin-top:auto">
+      
+      
+      
+      <button type="button" style="margin-left:auto;display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#6b645d;font-weight:700;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>Remove</button>
+    </div>
+  </article>
+</div>
+<div>
+  <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px"><span style="font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2b2826">Album · database, editing</span><span style="font-size:13px;font-weight:600;color:#6b645d">Code already generated. Click a cover to see its color; edit the title to see “Regenerate”.</span></div>
+  <article style="position:relative;display:flex;flex-direction:column;background:#ffffff;border-radius:16px;overflow:visible;border:1px solid #c9973f;box-shadow:0 0 0 1px #c9973f,0 4px 18px rgba(60,50,40,0.06)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px 0">
+      <span style="font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;background:#e4ebea;color:#2f5452">Album · #5</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;height:26px;box-sizing:border-box;font-size:12px;font-weight:800;border-radius:999px;padding:0 10px;color:#6b4a14;background:#f6ead6">
+        
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Unlocked"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 017.5-1.9"></path></svg>
+        Database
+        <span aria-label="1 unsaved changes" style="min-width:18px;height:18px;box-sizing:border-box;padding:0 5px;border-radius:999px;background:#8a5a22;color:#ffffff;font-size:11px;display:inline-flex;align-items:center;justify-content:center">1</span>
+      </span>
+    </div>
+
+    <!-- square cover + Title / Artist / Released -->
+    <div style="display:flex;align-items:center;gap:18px;padding:14px 18px">
+      <div style="position:relative;flex:0 0 120px;width:120px">
+        
+        <div style="width:120px;height:120px;border-radius:6px;background:#e3c9a0;box-shadow:0 0 0 3px #ffffff,0 0 0 5px #3d3935"></div>
+      </div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Title<input type="text" value="Abbey Road" readonly="false" onchange="" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:700"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Artist<input type="text" value="The Beatles" readonly="false" onchange="" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400"></label>
+        <div style="position:relative;display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">
+          <label for="rel-5">Released</label>
+          <span style="position:relative;display:flex">
+            <input id="rel-5" type="text" inputmode="numeric" value="09/26/1969" placeholder="MM/DD/YYYY" readonly="false" onchange="" aria-invalid="false" style="height:38px;border-radius:8px;padding:0 40px 0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400">
+            <button type="button" onclick="" disabled="false" aria-label="Choose release date" aria-haspopup="dialog" aria-expanded="false" style="position:absolute;right:4px;top:4px;width:30px;height:30px;padding:0;border:0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;color:#4a443f;cursor:pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+            </button>
+          </span>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- SPOTIFY CODE GENERATOR (replaces the genres row, same 40px height).
+         Generates from the card's Title + Artist, in the selected cover's code color. -->
+    <div role="group" aria-label="Spotify code" aria-live="polite" style="display:flex;flex-wrap:nowrap;gap:8px;align-items:center;height:40px;box-sizing:border-box;padding:0 6px 0 10px;margin:0 18px 14px;border-radius:10px;background:#f7f4f0">
+      <span style="flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#6b645d">Code</span>
+      
+        <span role="img" aria-label="Spotify code preview" style="flex:0 0 auto;box-sizing:border-box;width:120px;height:28px;padding:0 5px;border-radius:5px;background:#887960;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:space-between;overflow:hidden"><span style="flex:0 0 auto;width:18px;height:18px;margin-right:5.6px;border-radius:50%;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:16.1px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:18.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:10.3px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:16.1px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span></span>
+      
+      
+      <span title="Generated from Abbey Road by The Beatles" style="flex:1;min-width:0;font-size:12px;font-weight:700;color:#6b645d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Abbey Road · The Beatles</span>
+      
+        <button type="button" onclick="" disabled="false" aria-label="Regenerate code" title="Regenerate the code" style="flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;width:28px;padding:0;border-radius:999px;font-size:12px;font-weight:800;border:1px solid #e0d9d0;background:#ffffff;color:#2b2826;cursor:pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>
+          
+          
+        </button>
+      
+    </div>
+
+    <div role="radiogroup" aria-label="Cover for Abbey Road" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:2px 18px 16px">
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 1" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#7aa5c9;border:1px solid rgba(0,0,0,0.12)">
+            
+            <svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:8px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#7aa5c9;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="true" aria-label="Cover option 2" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#e3c9a0;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4.5px #2b2826">
+            <span style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2b2826;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#887960;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 3" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#3b5a40;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#3b5a40;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 4" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#b6463c;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#efe3cf;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+    </div>
+
+    <!-- CODE COLOR (replaces spine color; one color per cover image) -->
+    <div style="margin:0 18px 14px;padding:10px 12px;border-radius:12px;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;background:#fffaf0;box-shadow:inset 0 0 0 1.5px #c9973f">
+      <span aria-hidden="true" style="flex:0 0 auto;box-sizing:border-box;width:54px;height:22px;padding:0 4px;border-radius:4px;background:#887960;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:space-between;overflow:hidden"><span style="flex:0 0 auto;width:14px;height:14px;margin-right:4.4px;border-radius:50%;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:14.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:8.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span></span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:1px;min-width:0">
+        <span style="font-size:12px;font-weight:800">Code color</span>
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:800;color:#8a5a22">Changed</span>
+      </div>
+      <div role="radiogroup" aria-label="Code colors from cover" style="flex:0 0 auto;display:flex;gap:6px">
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #e3c9a0" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#e3c9a0;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="true" aria-label="Code color #887960" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#887960;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4px #2b2826"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #f0e1cb" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#f0e1cb;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #efe3cf" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#efe3cf;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #2a2224" disabled="false" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:pointer;background:#2a2224;border:1px solid rgba(0,0,0,0.15)"></button>
+        
+      </div>
+      <button type="button" aria-label="Pick code color with eyedropper" disabled="false" style="flex:0 0 36px;width:36px;height:36px;border:1px solid #e0d9d0;border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;color:#2b2826;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5"></path><path d="M17 2.5a2.1 2.1 0 013 3L17.5 8l-3.5-3.5z"></path><path d="M14 7L5 16v3h3l9-9"></path></svg></button>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #efe9e2;padding:8px 10px;margin-top:auto">
+      
+      
+      <button type="button" onclick="" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1px solid #c9973f;border-radius:8px;background:#fffaf0;color:#6b4a14;font-weight:800;font-size:13px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 108-8"></path><path d="M4 4v5h5"></path></svg>Clear changes</button>
+      <button type="button" style="margin-left:auto;display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#6b645d;font-weight:700;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>Remove</button>
+    </div>
+  </article>
+</div>
+<div>
+  <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px"><span style="font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2b2826">Album · database, locked</span><span style="font-size:13px;font-weight:600;color:#6b645d">Code and colors are read-only until unlocked.</span></div>
+  <article style="position:relative;display:flex;flex-direction:column;background:#ffffff;border-radius:16px;overflow:visible;border:1px solid #e6e0d8;box-shadow:0 4px 18px rgba(60,50,40,0.06)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px 0">
+      <span style="font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;background:#e4ebea;color:#2f5452">Album · #7</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;height:26px;box-sizing:border-box;font-size:12px;font-weight:800;border-radius:999px;padding:0 10px;color:#3f5637;background:#e3e9df">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Locked"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>
+        
+        Database
+        
+      </span>
+    </div>
+
+    <!-- square cover + Title / Artist / Released -->
+    <div style="display:flex;align-items:center;gap:18px;padding:14px 18px">
+      <div style="position:relative;flex:0 0 120px;width:120px">
+        <svg width="20" height="32" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;z-index:1;top:-5px;left:14px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+        <div style="width:120px;height:120px;border-radius:6px;background:#2f4f73;box-shadow:0 0 0 3px #ffffff,0 0 0 5px #3d3935"></div>
+      </div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Title<input type="text" value="Blue" readonly="true" onchange="" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #ece6de;background:#f4f1ec;color:#4a443f;font-weight:700"></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Artist<input type="text" value="Joni Mitchell" readonly="true" onchange="" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #ece6de;background:#f4f1ec;color:#4a443f;font-weight:400"></label>
+        <div style="position:relative;display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">
+          <label for="rel-7">Released</label>
+          <span style="position:relative;display:flex">
+            <input id="rel-7" type="text" inputmode="numeric" value="06/22/1971" placeholder="MM/DD/YYYY" readonly="true" onchange="" aria-invalid="false" style="height:38px;border-radius:8px;padding:0 40px 0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #ece6de;background:#f4f1ec;color:#4a443f;font-weight:400">
+            <button type="button" onclick="" disabled="true" aria-label="Choose release date" aria-haspopup="dialog" aria-expanded="false" style="position:absolute;right:4px;top:4px;width:30px;height:30px;padding:0;border:0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;color:#b3aaa0;cursor:default">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+            </button>
+          </span>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- SPOTIFY CODE GENERATOR (replaces the genres row, same 40px height).
+         Generates from the card's Title + Artist, in the selected cover's code color. -->
+    <div role="group" aria-label="Spotify code" aria-live="polite" style="display:flex;flex-wrap:nowrap;gap:8px;align-items:center;height:40px;box-sizing:border-box;padding:0 6px 0 10px;margin:0 18px 14px;border-radius:10px;background:#f7f4f0">
+      <span style="flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#6b645d">Code</span>
+      
+        <span role="img" aria-label="Spotify code preview" style="flex:0 0 auto;box-sizing:border-box;width:120px;height:28px;padding:0 5px;border-radius:5px;background:#2f4f73;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:space-between;overflow:hidden"><span style="flex:0 0 auto;width:18px;height:18px;margin-right:5.6px;border-radius:50%;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:18.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:6.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:18.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:16.1px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:4.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:8.4px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:12.2px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:2.1px;height:14.1px;border-radius:9px;background:#ffffff"></span></span>
+      
+      
+      <span title="Generated from Blue by Joni Mitchell" style="flex:1;min-width:0;font-size:12px;font-weight:700;color:#6b645d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Blue · Joni Mitchell</span>
+      
+    </div>
+
+    <div role="radiogroup" aria-label="Cover for Blue" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:2px 18px 16px">
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="true" aria-label="Cover option 1" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#2f4f73;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4.5px #2b2826">
+            <span style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2b2826;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+            <svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:8px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#2f4f73;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 2" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#d8d2c4;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#827e76;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+        <span style="position:relative;display:block">
+          <button type="button" role="radio" aria-checked="false" aria-label="Cover option 3" onclick="" style="position:relative;display:block;aspect-ratio:1/1;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#6f8fa8;border:1px solid rgba(0,0,0,0.12)">
+            
+            
+            <span style="position:absolute;left:5px;bottom:5px;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:#6f8fa8;box-shadow:0 0 0 2px #ffffff,0 1px 3px rgba(0,0,0,0.35)" title="Code color for this cover"></span>
+          </button>
+        </span>
+      
+    </div>
+
+    <!-- CODE COLOR (replaces spine color; one color per cover image) -->
+    <div style="margin:0 18px 14px;padding:10px 12px;border-radius:12px;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;background:#f7f4f0">
+      <span aria-hidden="true" style="flex:0 0 auto;box-sizing:border-box;width:54px;height:22px;padding:0 4px;border-radius:4px;background:#2f4f73;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:space-between;overflow:hidden"><span style="flex:0 0 auto;width:14px;height:14px;margin-right:4.4px;border-radius:50%;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:14.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:5.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:14.0px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:12.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:3.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:6.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:9.5px;border-radius:9px;background:#ffffff"></span><span style="flex:0 0 auto;width:1.0px;height:11.0px;border-radius:9px;background:#ffffff"></span></span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:1px;min-width:0">
+        <span style="font-size:12px;font-weight:800">Code color</span>
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:700;color:#6b645d">For cover 1</span>
+      </div>
+      <div role="radiogroup" aria-label="Code colors from cover" style="flex:0 0 auto;display:flex;gap:6px">
+        
+          <button type="button" role="radio" aria-checked="true" aria-label="Code color #2f4f73" disabled="true" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:default;background:#2f4f73;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4px #2b2826"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #1c2f45" disabled="true" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:default;background:#1c2f45;border:1px solid rgba(0,0,0,0.15);opacity:0.35"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #8d9eb2" disabled="true" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:default;background:#8d9eb2;border:1px solid rgba(0,0,0,0.15);opacity:0.35"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #efe3cf" disabled="true" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:default;background:#efe3cf;border:1px solid rgba(0,0,0,0.15);opacity:0.35"></button>
+        
+          <button type="button" role="radio" aria-checked="false" aria-label="Code color #2a2224" disabled="true" onclick="" style="width:28px;height:28px;padding:0;border-radius:50%;cursor:default;background:#2a2224;border:1px solid rgba(0,0,0,0.15);opacity:0.35"></button>
+        
+      </div>
+      <button type="button" aria-label="Pick code color with eyedropper" disabled="true" style="flex:0 0 36px;width:36px;height:36px;border:1px solid #e0d9d0;border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;color:#b3aaa0;cursor:default"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5"></path><path d="M17 2.5a2.1 2.1 0 013 3L17.5 8l-3.5-3.5z"></path><path d="M14 7L5 16v3h3l9-9"></path></svg></button>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #efe9e2;padding:8px 10px;margin-top:auto">
+      <button type="button" onclick="" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1px solid #ddd5cb;border-radius:8px;background:#ffffff;color:#2b2826;font-weight:800;font-size:13px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 017.5-1.9"></path></svg>Unlock editing</button>
+      
+      
+      <button type="button" style="margin-left:auto;display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#6b645d;font-weight:700;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>Remove</button>
+    </div>
+  </article>
+</div>
+    <div><div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px"><span style="font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2b2826">Book</span><span style="font-size:13px;font-weight:600;color:#6b645d">Unchanged: 2:3 cover with spine, author/published/pages, genres, spine color.</span></div><article style="position:relative;display:flex;flex-direction:column;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e6e0d8;box-shadow:0 4px 18px rgba(60,50,40,0.06)"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px 0">
+  <span style="font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;background:#efebe5;color:#4a443f">Book · #1</span>
+  <span style="display:inline-flex;align-items:center;gap:5px;height:26px;box-sizing:border-box;font-size:12px;font-weight:800;border-radius:999px;padding:0 10px;color:#6b5532;background:#f0e7d8">New · ready</span></div>
+<div style="display:flex;align-items:center;gap:18px;padding:14px 18px"><div style="position:relative;flex:0 0 120px;width:120px"><svg width="20" height="32" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-5px;left:20px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg><div style="position:relative;width:120px;height:180px;border-radius:6px;background:#2f5d50;box-shadow:0 0 0 3px #ffffff,0 0 0 5px #3d3935;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:#1c3830"></div></div></div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Title<input type="text" value="The Hobbit" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:700"></label><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Author<input type="text" value="J. R. R. Tolkien" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400"></label><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Published<input type="text" value="1937" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400"></label><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Pages<input type="text" value="310" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:400"></label></div></div></div>
+<div role="group" aria-label="Genres" style="display:flex;gap:6px;align-items:center;height:40px;box-sizing:border-box;padding:0 6px 0 10px;margin:0 18px 14px;border-radius:10px;background:#f7f4f0"><span style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#6b645d">Genres</span><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;background:#3d3935;color:#ffffff">Fantasy</span><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;background:#3d3935;color:#ffffff">Adventure</span><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;background:#3d3935;color:#ffffff">Classic</span><button type="button" style="height:28px;padding:0 10px;border:1px dashed #8a837c;border-radius:999px;background:#ffffff;font-size:12px;font-weight:800;color:#4a443f">+ Genre</button></div>
+<div role="radiogroup" aria-label="Covers" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:2px 18px 16px"><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="true" aria-label="Cover option 1" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#2f5d50;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4.5px #2b2826"><span style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2b2826;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span><svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:8px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 2" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#c9a45c;border:1px solid rgba(0,0,0,0.12)"></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 3" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#7a3b2e;border:1px solid rgba(0,0,0,0.12)"></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 4" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#3e4a6b;border:1px solid rgba(0,0,0,0.12)"></button></span><button type="button" aria-label="Upload a cover" style="aspect-ratio:2 / 3;width:100%;border:1.5px dashed #b3aaa0;border-radius:6px;background:#fcfbf9;color:#6b645d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span style="font-size:11px;font-weight:800">Upload</span></button></div><div style="margin:0 18px 14px;padding:10px 12px;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#f7f4f0">
+  <span style="width:12px;height:40px;border-radius:3px;background:#1c3830;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)"></span>
+  <div style="display:flex;flex-direction:column;gap:1px;min-width:92px"><span style="font-size:12px;font-weight:800">Spine color</span><span style="font-size:11px;font-weight:700;color:#6b645d">From cover 1</span></div>
+  <div role="radiogroup" aria-label="Spine colors from cover" style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" role="radio" aria-checked="true" aria-label="Spine color #2f5d50" style="width:28px;height:28px;padding:0;border-radius:50%;background:#2f5d50;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4px #2b2826"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #1c3830" style="width:28px;height:28px;padding:0;border-radius:50%;background:#1c3830;border:1px solid rgba(0,0,0,0.15)"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #8da69f" style="width:28px;height:28px;padding:0;border-radius:50%;background:#8da69f;border:1px solid rgba(0,0,0,0.15)"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #efe3cf" style="width:28px;height:28px;padding:0;border-radius:50%;background:#efe3cf;border:1px solid rgba(0,0,0,0.15)"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #2a2224" style="width:28px;height:28px;padding:0;border-radius:50%;background:#2a2224;border:1px solid rgba(0,0,0,0.15)"></button></div>
+  <button type="button" aria-label="Pick spine color with eyedropper" style="width:36px;height:36px;margin-left:auto;border:1px solid #e0d9d0;border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;color:#2b2826"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5"></path><path d="M17 2.5a2.1 2.1 0 013 3L17.5 8l-3.5-3.5z"></path><path d="M14 7L5 16v3h3l9-9"></path></svg></button></div><div style="display:flex;align-items:center;gap:8px;border-top:1px solid #efe9e2;padding:8px 10px;margin-top:auto"><button type="button" style="margin-left:auto;display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#6b645d;font-weight:700;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>Remove</button></div></article></div>
+    <div><div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px"><span style="font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2b2826">Movie</span><span style="font-size:13px;font-weight:600;color:#6b645d">Matches current code: title on top, full-width 3:2 cover, no genres or spine color.</span></div><article style="position:relative;display:flex;flex-direction:column;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e6e0d8;box-shadow:0 4px 18px rgba(60,50,40,0.06)"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px 0">
+  <span style="font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;background:#3d3935;color:#ffffff">Movie · #3</span>
+  <span style="display:inline-flex;align-items:center;gap:5px;height:26px;box-sizing:border-box;font-size:12px;font-weight:800;border-radius:999px;padding:0 10px;color:#6b5532;background:#f0e7d8">New · ready</span></div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:14px 18px 14px"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Title<input type="text" value="Spirited Away" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:700"></label><div style="position:relative;width:100%;aspect-ratio:3/2;border-radius:6px;background:#1d3557"><svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:14px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg></div></div>
+<div role="radiogroup" aria-label="Covers" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:2px 18px 16px"><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="true" aria-label="Cover option 1" style="position:relative;display:block;aspect-ratio:3 / 2;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#1d3557;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4.5px #2b2826"><span style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2b2826;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span><svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:8px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 2" style="position:relative;display:block;aspect-ratio:3 / 2;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#e09f3e;border:1px solid rgba(0,0,0,0.12)"></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 3" style="position:relative;display:block;aspect-ratio:3 / 2;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#540b0e;border:1px solid rgba(0,0,0,0.12)"></button></span><button type="button" aria-label="Upload a cover" style="aspect-ratio:3 / 2;width:100%;border:1.5px dashed #b3aaa0;border-radius:6px;background:#fcfbf9;color:#6b645d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span style="font-size:11px;font-weight:800">Upload</span></button></div><div style="display:flex;align-items:center;gap:8px;border-top:1px solid #efe9e2;padding:8px 10px;margin-top:auto"><button type="button" style="margin-left:auto;display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#6b645d;font-weight:700;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>Remove</button></div></article></div>
+    <div><div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px"><span style="font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#2b2826">Video game</span><span style="font-size:13px;font-weight:600;color:#6b645d">Matches current code: 2:3 cover with spine, title only, spine color. Spacer keeps the card height in line with books.</span></div><article style="position:relative;display:flex;flex-direction:column;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e6e0d8;box-shadow:0 4px 18px rgba(60,50,40,0.06)"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px 0">
+  <span style="font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;background:#e3e9df;color:#3f5637">Video Game · #4</span>
+  <span style="display:inline-flex;align-items:center;gap:5px;height:26px;box-sizing:border-box;font-size:12px;font-weight:800;border-radius:999px;padding:0 10px;color:#6b5532;background:#f0e7d8">New · ready</span></div>
+<div style="display:flex;align-items:center;gap:18px;padding:14px 18px"><div style="position:relative;flex:0 0 120px;width:120px"><svg width="20" height="32" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-5px;left:20px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg><div style="position:relative;width:120px;height:180px;border-radius:6px;background:#6a994e;box-shadow:0 0 0 3px #ffffff,0 0 0 5px #3d3935;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:#3d5a2c"></div></div></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#6b645d">Title<input type="text" value="Stardew Valley" style="height:38px;border-radius:8px;padding:0 10px;font-size:14px;min-width:0;box-sizing:border-box;width:100%;border:1px solid #e0d9d0;background:#fcfbf9;color:#2b2826;font-weight:700"></label></div></div>
+<div aria-hidden="true" style="height:40px;margin:0 18px 14px"></div>
+<div role="radiogroup" aria-label="Covers" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:2px 18px 16px"><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="true" aria-label="Cover option 1" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#6a994e;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4.5px #2b2826"><span style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:#ffffff;color:#2b2826;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span><svg width="16" height="26" viewBox="0 0 16 26" role="img" aria-label="Default cover" style="position:absolute;top:-4px;left:8px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))"><path d="M1 1h14v23l-7-5.25L1 24z" fill="#1f1b18" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"></path></svg></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 2" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#bc4749;border:1px solid rgba(0,0,0,0.12)"></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 3" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#386641;border:1px solid rgba(0,0,0,0.12)"></button></span><span style="position:relative;display:block"><button type="button" role="radio" aria-checked="false" aria-label="Cover option 4" style="position:relative;display:block;aspect-ratio:2 / 3;width:100%;padding:0;border-radius:6px;cursor:pointer;background:#f2e8cf;border:1px solid rgba(0,0,0,0.12)"></button></span></div><div style="margin:0 18px 14px;padding:10px 12px;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#f7f4f0">
+  <span style="width:12px;height:40px;border-radius:3px;background:#3d5a2c;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)"></span>
+  <div style="display:flex;flex-direction:column;gap:1px;min-width:92px"><span style="font-size:12px;font-weight:800">Spine color</span><span style="font-size:11px;font-weight:700;color:#6b645d">From cover 1</span></div>
+  <div role="radiogroup" aria-label="Spine colors from cover" style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" role="radio" aria-checked="true" aria-label="Spine color #6a994e" style="width:28px;height:28px;padding:0;border-radius:50%;background:#6a994e;border:0;box-shadow:0 0 0 2px #ffffff,0 0 0 4px #2b2826"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #405c2f" style="width:28px;height:28px;padding:0;border-radius:50%;background:#405c2f;border:1px solid rgba(0,0,0,0.15)"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #adc79e" style="width:28px;height:28px;padding:0;border-radius:50%;background:#adc79e;border:1px solid rgba(0,0,0,0.15)"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #efe3cf" style="width:28px;height:28px;padding:0;border-radius:50%;background:#efe3cf;border:1px solid rgba(0,0,0,0.15)"></button><button type="button" role="radio" aria-checked="false" aria-label="Spine color #2a2224" style="width:28px;height:28px;padding:0;border-radius:50%;background:#2a2224;border:1px solid rgba(0,0,0,0.15)"></button></div>
+  <button type="button" aria-label="Pick spine color with eyedropper" style="width:36px;height:36px;margin-left:auto;border:1px solid #e0d9d0;border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:0;color:#2b2826"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5"></path><path d="M17 2.5a2.1 2.1 0 013 3L17.5 8l-3.5-3.5z"></path><path d="M14 7L5 16v3h3l9-9"></path></svg></button></div><div style="display:flex;align-items:center;gap:8px;border-top:1px solid #efe9e2;padding:8px 10px;margin-top:auto"><button type="button" style="margin-left:auto;display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#6b645d;font-weight:700;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg>Remove</button></div></article></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -6,13 +6,13 @@ import {
   integer,
   timestamp,
   boolean,
+  date,
   index,
   uniqueIndex,
   check,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { MOVIE_FORMATS } from 'lib/constants/movie-formats';
-import { OTHER_MEDIA_TYPES } from 'lib/constants/media-types';
 
 // ---------- users ----------
 export const users = pgTable('users', {
@@ -69,33 +69,49 @@ export const books = pgTable(
   ],
 );
 
-export const otherMediaTypeEnum = pgEnum('other_media_type', OTHER_MEDIA_TYPES);
-
 export const movieFormatEnum = pgEnum('movie_format', MOVIE_FORMATS);
 
-// ---------- other_media ----------
-export const otherMedia = pgTable(
-  'other_media',
+// ---------- movies ----------
+export const movies = pgTable(
+  'movies',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    mediaType: otherMediaTypeEnum('media_type').notNull(),
     title: text('title').notNull(),
     spineColor: text('spine_color').notNull(),
-    movieFormat: movieFormatEnum('movie_format'),
+    movieFormat: movieFormatEnum('movie_format').notNull(),
   },
   (table) => [
-    check(
-      'other_media_movie_format_check',
-      sql`(${table.mediaType} = 'movie' AND ${table.movieFormat} IS NOT NULL) OR (${table.mediaType} <> 'movie' AND ${table.movieFormat} IS NULL)`,
-    ),
-    uniqueIndex('other_media_type_title_unique')
-      .on(table.mediaType, table.title)
-      .where(sql`${table.movieFormat} IS NULL`),
-    uniqueIndex('other_media_movie_title_format_unique')
-      .on(table.mediaType, table.title, table.movieFormat)
-      .where(sql`${table.movieFormat} IS NOT NULL`),
-    index('other_media_media_type_idx').on(table.mediaType),
-    index('other_media_title_idx').on(table.title),
+    uniqueIndex('movies_title_format_unique').on(table.title, table.movieFormat),
+  ],
+);
+
+// ---------- video_games ----------
+export const videoGames = pgTable(
+  'video_games',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: text('title').notNull(),
+    spineColor: text('spine_color').notNull(),
+  },
+  (table) => [uniqueIndex('video_games_title_unique').on(table.title)],
+);
+
+// ---------- albums ----------
+export const albums = pgTable(
+  'albums',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: text('title').notNull(),
+    artist: text('artist').notNull(),
+    releaseDate: date('release_date'),
+    spotifyAlbumUri: text('spotify_album_uri'),
+    spineColor: text('spine_color').notNull(),
+  },
+  (table) => [
+    uniqueIndex('albums_title_artist_unique').on(table.title, table.artist),
+    uniqueIndex('albums_spotify_album_uri_unique')
+      .on(table.spotifyAlbumUri)
+      .where(sql`${table.spotifyAlbumUri} IS NOT NULL`),
   ],
 );
 
@@ -105,7 +121,13 @@ export const mediaImageItems = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     bookId: uuid('book_id').references(() => books.id, { onDelete: 'cascade' }),
-    otherMediaId: uuid('other_media_id').references(() => otherMedia.id, {
+    movieId: uuid('movie_id').references(() => movies.id, {
+      onDelete: 'cascade',
+    }),
+    videoGameId: uuid('video_game_id').references(() => videoGames.id, {
+      onDelete: 'cascade',
+    }),
+    albumId: uuid('album_id').references(() => albums.id, {
       onDelete: 'cascade',
     }),
     path: text('path').notNull(),
@@ -115,6 +137,7 @@ export const mediaImageItems = pgTable(
     sortOrder: integer('sort_order').notNull().default(0),
     isDefault: boolean('is_default').notNull().default(false),
     spineColor: text('spine_color').notNull().default('#ffffff'),
+    codeColor: text('code_color'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -122,21 +145,69 @@ export const mediaImageItems = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      'media_image_items_parent_check',
+      sql`(
+        (${table.bookId} IS NOT NULL)::int +
+        (${table.movieId} IS NOT NULL)::int +
+        (${table.videoGameId} IS NOT NULL)::int +
+        (${table.albumId} IS NOT NULL)::int
+      ) = 1`,
+    ),
+    check(
+      'media_image_items_code_color_check',
+      sql`${table.albumId} IS NOT NULL OR ${table.codeColor} IS NULL`,
+    ),
     index('media_image_items_book_id_idx').on(table.bookId),
-    index('media_image_items_other_media_id_idx').on(table.otherMediaId),
+    index('media_image_items_movie_id_idx').on(table.movieId),
+    index('media_image_items_video_game_id_idx').on(table.videoGameId),
+    index('media_image_items_album_id_idx').on(table.albumId),
     index('media_image_items_book_sort_order_idx').on(
       table.bookId,
       table.sortOrder,
     ),
-    index('media_image_items_other_media_sort_order_idx').on(
-      table.otherMediaId,
+    index('media_image_items_movie_sort_order_idx').on(
+      table.movieId,
       table.sortOrder,
     ),
-    index('media_image_items_book_is_default_idx').on(table.bookId, table.isDefault),
-    index('media_image_items_other_media_is_default_idx').on(
-      table.otherMediaId,
+    index('media_image_items_video_game_sort_order_idx').on(
+      table.videoGameId,
+      table.sortOrder,
+    ),
+    index('media_image_items_album_sort_order_idx').on(
+      table.albumId,
+      table.sortOrder,
+    ),
+    index('media_image_items_book_is_default_idx').on(
+      table.bookId,
       table.isDefault,
     ),
+    index('media_image_items_movie_is_default_idx').on(
+      table.movieId,
+      table.isDefault,
+    ),
+    index('media_image_items_video_game_is_default_idx').on(
+      table.videoGameId,
+      table.isDefault,
+    ),
+    index('media_image_items_album_is_default_idx').on(
+      table.albumId,
+      table.isDefault,
+    ),
+    uniqueIndex('media_image_items_book_default_unique')
+      .on(table.bookId)
+      .where(sql`${table.bookId} IS NOT NULL AND ${table.isDefault} = true`),
+    uniqueIndex('media_image_items_movie_default_unique')
+      .on(table.movieId)
+      .where(sql`${table.movieId} IS NOT NULL AND ${table.isDefault} = true`),
+    uniqueIndex('media_image_items_video_game_default_unique')
+      .on(table.videoGameId)
+      .where(
+        sql`${table.videoGameId} IS NOT NULL AND ${table.isDefault} = true`,
+      ),
+    uniqueIndex('media_image_items_album_default_unique')
+      .on(table.albumId)
+      .where(sql`${table.albumId} IS NOT NULL AND ${table.isDefault} = true`),
   ],
 );
 
