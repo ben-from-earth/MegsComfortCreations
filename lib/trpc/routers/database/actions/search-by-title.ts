@@ -1,6 +1,7 @@
 import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/media-types';
+import { type MovieFormat } from 'lib/constants/movie-formats';
 import {
   movieTitleWithAnyYearPattern,
   splitMovieTitle,
@@ -44,6 +45,7 @@ export async function searchByTitle(
   type: MediaType,
   title: string,
   author?: string,
+  movieFormat?: MovieFormat,
 ) {
   const { rearrangedTitle, author: normalizedAuthor } = resolveBookSearchFilters(
     title,
@@ -72,6 +74,9 @@ export async function searchByTitle(
             and(
               eq(otherMedia.mediaType, type),
               otherMediaTitleCondition(type, title),
+              type === 'movie'
+                ? eq(otherMedia.movieFormat, movieFormat ?? 'dvd')
+                : undefined,
             ),
           );
   const normalizedResult =

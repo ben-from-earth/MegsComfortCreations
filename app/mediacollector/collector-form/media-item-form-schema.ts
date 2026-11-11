@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MEDIA_TYPES, type MediaType } from 'lib/constants/media-types';
+import { MOVIE_FORMATS } from 'lib/constants/movie-formats';
 import type {
   MediaImageItem,
   PostSavedMediaItem,
@@ -23,6 +24,7 @@ export const mediaItemBlockInfoSchema = z.object({
   author: z.string().nullable().optional(),
   pubYear: z.number().nullable().optional(),
   pageCount: z.number().nullable().optional(),
+  movieFormat: z.enum(MOVIE_FORMATS).optional(),
 });
 
 export const mediaItemFormSchema = z.object({
@@ -127,6 +129,9 @@ export function convertMediaItemToForm({
       author: item.author ?? null,
       pubYear: item.pubYear ?? null,
       pageCount: item.pageCount ?? null,
+      ...(type === 'movie'
+        ? { movieFormat: item.movieFormat ?? 'dvd' }
+        : {}),
     },
     blockID: item.id,
     isDatabase: true,
@@ -142,5 +147,8 @@ export function convertMediaItemFormToDatabaseItem(form: MediaItemForm) {
     author: form.blockInfo.author ?? null,
     pageCount: form.blockInfo.pageCount ?? null,
     pubYear: form.blockInfo.pubYear ?? null,
+    ...(form.blockInfo.movieFormat
+      ? { movieFormat: form.blockInfo.movieFormat }
+      : {}),
   };
 }

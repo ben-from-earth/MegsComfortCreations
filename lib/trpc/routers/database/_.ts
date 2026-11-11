@@ -48,6 +48,7 @@ import {
   MEDIA_TYPE_DEFINITIONS,
   type MediaType,
 } from 'lib/constants/media-types';
+import { MOVIE_FORMATS, MOVIE_FORMAT_OPTIONS } from 'lib/constants/movie-formats';
 import {
   appendBookCoverRecords,
   coversToPersistForNewItem,
@@ -82,6 +83,7 @@ const otherMediaEditSchema = z.object({
   title: z.string().min(1),
   spineColor: z.string().min(1),
   images: z.array(mediaImageItemSchema).min(1),
+  movieFormat: z.enum(MOVIE_FORMATS).optional(),
 });
 
 type BookEditItem = z.infer<typeof bookEditSchema>;
@@ -372,6 +374,7 @@ export const databaseRouter = router({
             mediaType: otherMedia.mediaType,
             title: otherMedia.title,
             spineColor: otherMedia.spineColor,
+            movieFormat: otherMedia.movieFormat,
           })
           .from(otherMedia)
           .where(whereFilter)
@@ -656,6 +659,10 @@ export const databaseRouter = router({
             data.images,
             data.blockInfo.spineColor,
           ),
+          movieFormat:
+            data.type === 'movie'
+              ? (data.blockInfo.movieFormat ?? 'dvd')
+              : null,
         };
         let createdOtherMediaId: string | null = null;
         try {
@@ -739,17 +746,37 @@ export const databaseRouter = router({
               ? error.cause.message
               : ''
           }`;
-          if (duplicateHint.includes('other_media_media_type_title_unique')) {
+          const isDuplicateTitle =
+            duplicateHint.includes('other_media_movie_title_format_unique') ||
+            duplicateHint.includes('other_media_type_title_unique') ||
+            duplicateHint.includes('other_media_media_type_title_unique');
+          if (isDuplicateTitle) {
             const mediaLabel = MEDIA_TYPE_DEFINITIONS.find(
               (definition) => definition.mediaType === data.type,
             )?.label;
             if (mediaLabel) {
+              const storedTitle = toOtherMediaDisplayTitle(
+                data.type,
+                insertData.title,
+              );
+              const formatLabel = MOVIE_FORMAT_OPTIONS.find(
+                (option) =>
+                  option.value === (data.blockInfo.movieFormat ?? 'dvd'),
+              )?.label;
+              const formatSuffix =
+                data.type === 'movie' &&
+                duplicateHint.includes(
+                  'other_media_movie_title_format_unique',
+                ) &&
+                formatLabel
+                  ? ` (${formatLabel})`
+                  : '';
               results.push(
                 createSaveFailureResult({
                   blockID: data.blockID,
                   title: data.blockInfo.title,
                   error: `Duplicate ${mediaLabel}`,
-                  message: `${mediaLabel} "${toOtherMediaDisplayTitle(data.type, insertData.title)}" is already stored.`,
+                  message: `${mediaLabel} "${storedTitle}"${formatSuffix} is already stored.`,
                   errors: [`Duplicate ${mediaLabel}`],
                 }),
               );
@@ -869,6 +896,9 @@ export const databaseRouter = router({
         : and(
             eq(otherMedia.title, toOtherMediaStoredTitle(type, data.title)),
             eq(otherMedia.mediaType, type),
+            type === 'movie'
+              ? eq(otherMedia.movieFormat, data.movieFormat ?? 'dvd')
+              : undefined,
           );
       const [existingOtherMedia] = await db
         .select()

@@ -244,6 +244,36 @@ describe('convertMediaItemToForm', () => {
     });
   });
 
+  test('copies a movie format onto the block and treats a missing one as DVD', () => {
+    const bluRay = convertMediaItemToForm({
+      item: {
+        id: 'movie-blu-ray',
+        title: 'Arrival',
+        spineColor: '#ffffff',
+        images: [],
+        movieFormat: 'bluRay',
+      },
+      type: 'movie',
+    });
+
+    expect(bluRay.blockInfo.movieFormat).toBe('bluRay');
+    expect(convertMediaItemFormToDatabaseItem(bluRay).movieFormat).toBe(
+      'bluRay',
+    );
+
+    expect(
+      convertMediaItemToForm({
+        item: {
+          id: 'movie-1',
+          title: 'Arrival',
+          spineColor: '#ffffff',
+          images: [],
+        },
+        type: 'movie',
+      }).blockInfo.movieFormat,
+    ).toBe('dvd');
+  });
+
   test('fills a placeholder image when the persisted row has none', () => {
     expect(
       convertMediaItemToForm({

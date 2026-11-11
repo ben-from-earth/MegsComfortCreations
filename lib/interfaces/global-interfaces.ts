@@ -1,4 +1,5 @@
 import type { MediaType } from 'lib/constants/media-types';
+import type { MovieFormat } from 'lib/constants/movie-formats';
 
 interface MediaExtras {
   blockID?: string;
@@ -22,6 +23,7 @@ export interface PostSavedMediaItem {
   pageCount?: number | null;
   pubYear?: number | null;
   genres?: string[];
+  movieFormat?: MovieFormat | null;
 }
 
 export interface SuccessfulPaginationResponse {
