@@ -11,6 +11,10 @@ import CollectedItemTextField, {
 } from '@/mediacollector/collected-item-text-field';
 import { CollectorFormData } from './collector-form/collector-form-schema';
 import { MEDIA_TYPE_DEFINITIONS, MediaType } from 'lib/constants/media-types';
+import {
+  MOVIE_FORMAT_OPTIONS,
+  type MovieFormat,
+} from 'lib/constants/movie-formats';
 import SpineColorRow from './spine-color-row';
 import { CoverImage, collectorCoverAspectClassName } from './cover-tile';
 import DatabaseEditContext from './database-edit-context';
@@ -30,6 +34,11 @@ export const typeChipClassNames: Record<MediaType, string> = {
   album: 'bg-[#e4ebea] text-[#2f5452]',
   videoGame: 'bg-[#e3e9df] text-[#3f5637]',
 };
+
+export const movieFormatLabel = (movieFormat: MovieFormat | undefined) =>
+  MOVIE_FORMAT_OPTIONS.find(
+    (option) => option.value === (movieFormat ?? 'dvd'),
+  )?.label ?? 'DVD';
 
 export interface CollectedCoversBlockProps {
   index: number;
@@ -111,9 +120,16 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
       }`}
     >
       <div className="flex items-center justify-between gap-2 px-4.5 pt-3.5">
-        <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
-          {typeLabel} · #{index + 1}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
+            {typeLabel} · #{index + 1}
+          </span>
+          {type === 'movie' ? (
+            <span className={`${pillClassName} ${typeChipClassNames.book}`}>
+              {movieFormatLabel(block?.blockInfo.movieFormat)}
+            </span>
+          ) : null}
+        </div>
         {isDatabase ? (
           <span
             className={`${pillClassName} inline-flex items-center gap-1 ${

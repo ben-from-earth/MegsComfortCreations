@@ -14,7 +14,10 @@ import {
   convertMediaItemToForm,
   type MediaItemForm,
 } from '@/mediacollector/collector-form/media-item-form-schema';
-import { typeChipClassNames } from '@/mediacollector/collected-covers-block';
+import {
+  movieFormatLabel,
+  typeChipClassNames,
+} from '@/mediacollector/collected-covers-block';
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import {
   CoverImage,
@@ -110,9 +113,16 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
           }`}
         >
           <div className="flex items-center justify-between gap-2 px-4.5 pt-3.5">
-            <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
-              {typeLabel}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className={`${pillClassName} ${typeChipClassNames[type]}`}>
+                {typeLabel}
+              </span>
+              {type === 'movie' ? (
+                <span className={`${pillClassName} ${typeChipClassNames.book}`}>
+                  {movieFormatLabel(blockInfo.movieFormat)}
+                </span>
+              ) : null}
+            </div>
             <span
               role="img"
               aria-label={
