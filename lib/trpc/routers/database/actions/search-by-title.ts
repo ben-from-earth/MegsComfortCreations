@@ -1,12 +1,34 @@
-import { and, eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/media-types';
+import {
+  movieYearlessTitlePattern,
+  splitMovieTitle,
+  toDisplayMovieTitle,
+  toStoredMovieTitle,
+} from 'lib/helpers/movie-title';
 import { toDisplayTitle, toStoredTitle } from 'lib/helpers/title-articles';
 import { books, otherMedia } from '@/db/schema';
 import {
   loadBookImagesById,
   loadOtherMediaImagesById,
 } from 'lib/media-storage/media-image-records';
+
+function otherMediaTitleCondition(type: MediaType, title: string) {
+  if (type !== 'movie') {
+    return ilike(otherMedia.title, toStoredTitle(title));
+  }
+
+  const storedTitle = toStoredMovieTitle(title);
+  if (splitMovieTitle(title).year) {
+    return ilike(otherMedia.title, storedTitle);
+  }
+
+  return or(
+    ilike(otherMedia.title, storedTitle),
+    sql`${otherMedia.title} ~* ${movieYearlessTitlePattern(storedTitle)}`,
+  );
+}
 
 export function resolveBookSearchFilters(title: string, author?: string) {
   const rearrangedTitle = toStoredTitle(title);
@@ -43,18 +65,15 @@ export async function searchByTitle(
               .select()
               .from(books)
               .where(ilike(books.title, rearrangedTitle)))
-      : await (() => {
-          const otherType = type;
-          return db
-            .select()
-            .from(otherMedia)
-            .where(
-              and(
-                eq(otherMedia.mediaType, otherType),
-                ilike(otherMedia.title, rearrangedTitle),
-              ),
-            );
-        })();
+      : await db
+          .select()
+          .from(otherMedia)
+          .where(
+            and(
+              eq(otherMedia.mediaType, type),
+              otherMediaTitleCondition(type, title),
+            ),
+          );
   const normalizedResult =
     type === 'book'
       ? await (async () => {
@@ -75,7 +94,10 @@ export async function searchByTitle(
           );
           return result.map((row) => ({
             ...row,
-            title: toDisplayTitle(row.title),
+            title:
+              type === 'movie'
+                ? toDisplayMovieTitle(row.title)
+                : toDisplayTitle(row.title),
             images: imagesByOtherMediaId.get(row.id) ?? [],
           }));
         })();

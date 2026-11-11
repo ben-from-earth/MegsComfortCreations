@@ -38,6 +38,14 @@ export function toUserFriendlyDatabaseSaveReason(
     return 'Some required details for this item were missing or invalid.';
   }
 
+  if (
+    item.error === 'Duplicate Movie' ||
+    item.error === 'Duplicate Video Game' ||
+    item.error === 'Duplicate Album'
+  ) {
+    return item.message;
+  }
+
   if (item.error === 'Database Insertion Error') {
     const hasMissingGenre = item.errors.some(
       (error) => error.includes('Genre "') && error.includes('does not exist'),

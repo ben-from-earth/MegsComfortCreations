@@ -29,6 +29,11 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
 import {
+  splitMovieTitle,
+  toDisplayMovieTitle,
+  toStoredMovieTitle,
+} from 'lib/helpers/movie-title';
+import {
   toDisplayTitle,
   toStoredTitle,
   toTitleSearchTerm,
@@ -40,6 +45,10 @@ import {
 import { allGenres, NO_GENRE_FILTER } from '@/lib/enums/genre-enums';
 import { DATABASE_SORT_OPTIONS } from 'lib/constants/database-sort-options';
 import {
+  MEDIA_TYPE_DEFINITIONS,
+  type MediaType,
+} from 'lib/constants/media-types';
+import {
   appendBookCoverRecords,
   coversToPersistForNewItem,
   listCoversToAppend,
@@ -49,7 +58,6 @@ import {
   replaceOtherMediaImageRecords,
   resolveAndPersistImageList,
 } from 'lib/media-storage/media-image-records';
-import type { MediaType } from 'lib/constants/media-types';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 const sortKey = z.enum(DATABASE_SORT_OPTIONS);
@@ -79,6 +87,26 @@ const otherMediaEditSchema = z.object({
 type BookEditItem = z.infer<typeof bookEditSchema>;
 type OtherMediaEditItem = z.infer<typeof otherMediaEditSchema>;
 type EditableMediaItem = BookEditItem | OtherMediaEditItem;
+
+function toOtherMediaStoredTitle(type: MediaType, title: string) {
+  return type === 'movie' ? toStoredMovieTitle(title) : toStoredTitle(title);
+}
+
+function toOtherMediaDisplayTitle(type: MediaType, title: string) {
+  return type === 'movie' ? toDisplayMovieTitle(title) : toDisplayTitle(title);
+}
+
+function otherMediaLibraryTitleFilter(title: string) {
+  const { baseTitle, year } = splitMovieTitle(title);
+  const containsTitle = ilike(
+    otherMedia.title,
+    `%${toTitleSearchTerm(baseTitle)}%`,
+  );
+  if (!year) {
+    return containsTitle;
+  }
+  return and(containsTitle, ilike(otherMedia.title, `% (${year})`));
+}
 
 function resolveDisplaySpineColor(
   images: Array<{ isDefault: boolean; spineColor: string }>,
@@ -331,7 +359,9 @@ export const databaseRouter = router({
         ascDesc === 'asc' ? asc(otherMedia.title) : desc(otherMedia.title);
       const titleFilter =
         title && title.trim().length > 0
-          ? ilike(otherMedia.title, `%${toTitleSearchTerm(title)}%`)
+          ? type === 'movie'
+            ? otherMediaLibraryTitleFilter(title)
+            : ilike(otherMedia.title, `%${toTitleSearchTerm(title)}%`)
           : undefined;
       const whereFilter = and(eq(otherMedia.mediaType, type), titleFilter);
 
@@ -362,7 +392,7 @@ export const databaseRouter = router({
         const images = imagesByOtherMediaId.get(row.id) ?? [];
         return {
           ...row,
-          title: toDisplayTitle(row.title),
+          title: toOtherMediaDisplayTitle(type, row.title),
           images,
           spineColor: resolveDisplaySpineColor(images, row.spineColor),
         };
@@ -621,7 +651,7 @@ export const databaseRouter = router({
 
         const insertData = {
           mediaType: data.type,
-          title: toStoredTitle(data.blockInfo.title),
+          title: toOtherMediaStoredTitle(data.type, data.blockInfo.title),
           spineColor: resolveDisplaySpineColor(
             data.images,
             data.blockInfo.spineColor,
@@ -636,7 +666,7 @@ export const databaseRouter = router({
               .returning();
             if (!insertedOtherMedia) {
               throw new Error(
-                `${toDisplayTitle(insertData.title)} could not be saved to the database.`,
+                `${toOtherMediaDisplayTitle(data.type, insertData.title)} could not be saved to the database.`,
               );
             }
             return insertedOtherMedia;
@@ -687,11 +717,11 @@ export const databaseRouter = router({
             createSaveSuccessResult({
               blockID: data.blockID,
               title: data.blockInfo.title,
-              message: `${toDisplayTitle(insertData.title)} successfully added to database.`,
+              message: `${toOtherMediaDisplayTitle(data.type, insertData.title)} successfully added to database.`,
               type: data.type,
               actionAttemptItem: {
                 ...savedOtherMedia,
-                title: toDisplayTitle(savedOtherMedia.title),
+                title: toOtherMediaDisplayTitle(data.type, savedOtherMedia.title),
                 images,
                 spineColor: persistedSpineColor,
                 blockID: data.blockID,
@@ -703,6 +733,28 @@ export const databaseRouter = router({
             await db
               .delete(otherMedia)
               .where(eq(otherMedia.id, createdOtherMediaId));
+          }
+          const duplicateHint = `${error instanceof Error ? error.message : ''} ${
+            error instanceof Error && error.cause instanceof Error
+              ? error.cause.message
+              : ''
+          }`;
+          if (duplicateHint.includes('other_media_media_type_title_unique')) {
+            const mediaLabel = MEDIA_TYPE_DEFINITIONS.find(
+              (definition) => definition.mediaType === data.type,
+            )?.label;
+            if (mediaLabel) {
+              results.push(
+                createSaveFailureResult({
+                  blockID: data.blockID,
+                  title: data.blockInfo.title,
+                  error: `Duplicate ${mediaLabel}`,
+                  message: `${mediaLabel} "${toOtherMediaDisplayTitle(data.type, insertData.title)}" is already stored.`,
+                  errors: [`Duplicate ${mediaLabel}`],
+                }),
+              );
+              continue;
+            }
           }
           const message =
             error instanceof Error
@@ -815,7 +867,7 @@ export const databaseRouter = router({
       const whereExpression = data.id
         ? and(eq(otherMedia.id, data.id), eq(otherMedia.mediaType, type))
         : and(
-            eq(otherMedia.title, toStoredTitle(data.title)),
+            eq(otherMedia.title, toOtherMediaStoredTitle(type, data.title)),
             eq(otherMedia.mediaType, type),
           );
       const [existingOtherMedia] = await db
@@ -852,7 +904,7 @@ export const databaseRouter = router({
         .update(otherMedia)
         .set({
           mediaType: type,
-          title: toStoredTitle(data.title),
+          title: toOtherMediaStoredTitle(type, data.title),
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)
@@ -867,10 +919,10 @@ export const databaseRouter = router({
       );
 
       return {
-        message: `${toDisplayTitle(savedOtherMedia.title)} successfully edited.`,
+        message: `${toOtherMediaDisplayTitle(type, savedOtherMedia.title)} successfully edited.`,
         actionAttemptItem: {
           ...savedOtherMedia,
-          title: toDisplayTitle(savedOtherMedia.title),
+          title: toOtherMediaDisplayTitle(type, savedOtherMedia.title),
           images,
           spineColor: persistedSpineColor,
         },
