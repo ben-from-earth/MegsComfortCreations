@@ -125,6 +125,49 @@ describe('buildPNGExportImages', () => {
     ]);
   });
 
+  test('adds the Spotify code URL for an album with a code color', () => {
+    const albumBlock: MediaItemForm = {
+      type: 'album',
+      images: [
+        {
+          url: 'https://img/rumours.png',
+          selected: true,
+          isDefault: true,
+          spineColor: '#ffffff',
+          codeColor: '#E8DCC4',
+        },
+      ],
+      blockInfo: {
+        title: 'Rumours',
+        spineColor: '#ffffff',
+        genres: [],
+        spotifyAlbumUri: 'spotify:album:rumours',
+      },
+      blockID: 'BLK-ALBUM',
+      isDatabase: false,
+    };
+
+    expect(buildPNGExportImages([albumBlock])).toStrictEqual<PNGExportImage[]>(
+      [
+        {
+          url: 'https://img/rumours.png',
+          type: 'album',
+          spineColor: '#ffffff',
+          codeUrl:
+            'https://scannables.scdn.co/uri/plain/png/e8dcc4/black/640/spotify:album:rumours',
+        },
+      ],
+    );
+    expect(
+      buildPNGExportImages([
+        {
+          ...albumBlock,
+          images: [{ ...albumBlock.images[0], codeColor: null }],
+        },
+      ])[0],
+    ).not.toHaveProperty('codeUrl');
+  });
+
   test('omits export IDs that are no longer in collectedData', () => {
     expect(
       buildPNGExportImages(

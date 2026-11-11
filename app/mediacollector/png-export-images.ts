@@ -1,9 +1,11 @@
+import { spotifyCodeUrl } from 'lib/trpc/routers/collect/actions/spotify-code';
 import type { MediaItemForm } from './collector-form/media-item-form-schema';
 
 export type PNGExportImage = {
   url: string;
   type: MediaItemForm['type'];
   spineColor: string;
+  codeUrl?: string;
 };
 
 function getImageForPNG(block: MediaItemForm) {
@@ -37,11 +39,18 @@ export function buildPNGExportImages(
       return [];
     }
 
+    const { spotifyAlbumUri } = block.blockInfo;
+    const codeUrl =
+      block.type === 'album' && spotifyAlbumUri && image.codeColor
+        ? spotifyCodeUrl(spotifyAlbumUri, image.codeColor)
+        : null;
+
     return [
       {
         url: image.url,
         type: block.type,
         spineColor: image.spineColor,
+        ...(codeUrl ? { codeUrl } : {}),
       },
     ];
   });

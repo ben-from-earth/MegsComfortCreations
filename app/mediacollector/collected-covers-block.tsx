@@ -93,7 +93,8 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const typeLabel =
     MEDIA_TYPE_DEFINITIONS.find(({ mediaType }) => mediaType === type)?.label ??
     type;
-  const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
+  const mainCoverSizeClassName =
+    type === 'album' ? 'h-37.5 w-37.5' : 'h-45 w-30';
 
   const needsCode =
     type === 'album' &&
@@ -216,9 +217,17 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-4.5 px-4.5 py-3.5">
+          <div
+            className={`flex gap-4.5 px-4.5 py-3.5 ${
+              type === 'album' ? 'items-start' : 'items-center'
+            }`}
+          >
             {selectedImage ? (
-              <div className="flex shrink-0 overflow-hidden rounded-r-md">
+              <div
+                className={`flex shrink-0 overflow-hidden ${
+                  type === 'album' ? 'rounded-md' : 'rounded-r-md'
+                }`}
+              >
                 {type !== 'album' ? (
                   <div
                     className="w-2.5 shrink-0"
