@@ -120,13 +120,11 @@ export default function CBBImages({
     }
   };
 
-  const showUploadSlot = type === 'book' || (type === 'movie' && isDatabase);
+  const showUploadSlot = type === 'book' || type === 'movie';
   const needsCover = !isDatabase && !images.some((image) => image.selected);
   const tileAspectClassName = collectorCoverAspectClassName(type);
-  const maxTilesWithoutOverflow =
-    type === 'movie' && !isDatabase ? 5 : MAX_TILES_WITHOUT_OVERFLOW;
 
-  const hasOverflow = images.length > maxTilesWithoutOverflow;
+  const hasOverflow = images.length > MAX_TILES_WITHOUT_OVERFLOW;
   const selectedImageIndex = images.findIndex((image) => image.selected);
   const visibleImageIndexes = hasOverflow
     ? selectedImageIndex > 2
