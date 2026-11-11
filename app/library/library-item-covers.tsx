@@ -94,6 +94,7 @@ export default function LibraryItemCovers({
           selected: true,
           isDefault: false,
           spineColor,
+          codeColor: null,
           uploaded: true,
           palette: uploadedImage.palette,
         },
@@ -106,7 +107,8 @@ export default function LibraryItemCovers({
     }
   };
 
-  const showUploadSlot = (type === 'book' || type === 'movie') && !isLocked;
+  const showUploadSlot =
+    (type === 'book' || type === 'movie' || type === 'album') && !isLocked;
   const tileAspectClassName = collectorCoverAspectClassName(type);
   const hasOverflow = images.length > MAX_TILES_WITHOUT_OVERFLOW;
   const selectedImageIndex = images.findIndex((image) => image.selected);
@@ -151,6 +153,7 @@ export default function LibraryItemCovers({
                   originalDefaultUrl,
                 )}
                 aspectClassName={tileAspectClassName}
+                codeColor={image.codeColor}
                 onClick={() => handleImageSelection(imageIndex)}
                 onSetDefault={
                   !isLocked && image.selected && !image.isDefault

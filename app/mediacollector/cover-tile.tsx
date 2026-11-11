@@ -52,6 +52,7 @@ export function CoverTile({
   isSelected,
   defaultRibbon,
   aspectClassName,
+  codeColor,
   onClick,
   onSetDefault,
 }: {
@@ -61,6 +62,7 @@ export function CoverTile({
   isSelected: boolean;
   defaultRibbon: DefaultCoverRibbonVariant | null;
   aspectClassName?: string;
+  codeColor?: string | null;
   onClick: () => void;
   onSetDefault?: () => void;
 }) {
@@ -83,6 +85,17 @@ export function CoverTile({
           <CoverImage url={url} alt={`${mediaType} cover`} />
         </span>
         {defaultRibbon ? <DefaultCoverRibbon variant={defaultRibbon} /> : null}
+        {mediaType === 'album' ? (
+          <span
+            title="Code color for this cover"
+            className={`absolute bottom-1.25 left-1.25 box-border h-4 w-4 rounded-full ${
+              codeColor
+                ? 'shadow-[0_0_0_2px_#ffffff,0_1px_3px_rgba(0,0,0,0.35)]'
+                : 'border-[1.5px] border-dashed border-[#6b645d] bg-[rgba(255,255,255,0.85)]'
+            }`}
+            style={codeColor ? { backgroundColor: codeColor } : undefined}
+          />
+        ) : null}
       </button>
       {onSetDefault ? (
         <SetDefaultRibbonButton

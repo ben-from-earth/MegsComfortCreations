@@ -18,6 +18,7 @@ import {
   movieFormatLabel,
   typeChipClassNames,
 } from '@/mediacollector/collected-covers-block';
+import AlbumCodeColorRow from '@/mediacollector/album-code-color-row';
 import AlbumCodeRow, {
   applyAlbumCodeLookup,
 } from '@/mediacollector/album-code-row';
@@ -86,7 +87,9 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
   ): CollectedFieldEditState | undefined =>
     isLocked ? 'readOnly' : isChanged ? 'changed' : undefined;
 
-  const selectedImage = images.find((image) => image.selected);
+  const selectedImageIndex = images.findIndex((image) => image.selected);
+  const selectedImage =
+    selectedImageIndex === -1 ? undefined : images[selectedImageIndex];
   const originalDefaultUrl = baseline.images.find(
     (image) => image.isDefault,
   )?.url;
@@ -283,6 +286,30 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
               isChanged={
                 selectedImage !== undefined &&
                 changes.changedSpineColorUrls.includes(selectedImage.url)
+              }
+            />
+          ) : type === 'album' ? (
+            <AlbumCodeColorRow
+              spotifyAlbumUri={blockInfo.spotifyAlbumUri}
+              codeColor={selectedImage?.codeColor}
+              palette={selectedImage?.palette ?? []}
+              coverNumber={
+                selectedImageIndex === -1 ? null : selectedImageIndex + 1
+              }
+              isLocked={isLocked}
+              isChanged={
+                selectedImage !== undefined &&
+                changes.changedCodeColorUrls.includes(selectedImage.url)
+              }
+              onApply={(hex) =>
+                form.setValue(
+                  'images',
+                  form
+                    .getValues('images')
+                    .map((image) =>
+                      image.selected ? { ...image, codeColor: hex } : image,
+                    ),
+                )
               }
             />
           ) : null}

@@ -7,6 +7,7 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import { GenreRow } from '@/components/shared/genre-row';
 import CBBImages from '@/mediacollector/cbb-images';
 import { albumCodeStatus } from 'lib/helpers/album-code-status';
+import AlbumCodeColorRow from '@/mediacollector/album-code-color-row';
 import AlbumCodeRow, {
   applyAlbumCodeLookup,
   type AlbumCodeLookup,
@@ -85,7 +86,9 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const originalDefaultUrl = original?.images.find(
     (image) => image.isDefault,
   )?.url;
-  const selectedImage = images.find((image) => image.selected);
+  const selectedImageIndex = images.findIndex((image) => image.selected);
+  const selectedImage =
+    selectedImageIndex === -1 ? undefined : images[selectedImageIndex];
   const needsCover = !isDatabase && !selectedImage;
   const typeLabel =
     MEDIA_TYPE_DEFINITIONS.find(({ mediaType }) => mediaType === type)?.label ??
@@ -108,6 +111,13 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         text: needsCode ? 'New · needs code' : 'New · ready',
         className: 'bg-[#f0e7d8] text-[#6b5532]',
       };
+  const applyCodeColor = (hex: string) =>
+    setValue(
+      `collectedData.${index}.images`,
+      getValues(`collectedData.${index}.images`).map((image) =>
+        image.selected ? { ...image, codeColor: hex } : image,
+      ),
+    );
   const handleCodeLookup = (lookup: AlbumCodeLookup) =>
     setValue(
       `collectedData.${index}`,
@@ -326,6 +336,21 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
             (changes?.changedSpineColorUrls.includes(selectedImage.url) ??
               false)
           }
+        />
+      ) : type === 'album' ? (
+        <AlbumCodeColorRow
+          spotifyAlbumUri={block?.blockInfo.spotifyAlbumUri}
+          codeColor={selectedImage?.codeColor}
+          palette={selectedImage?.palette ?? []}
+          coverNumber={
+            selectedImageIndex === -1 ? null : selectedImageIndex + 1
+          }
+          isLocked={isLocked}
+          isChanged={
+            selectedImage !== undefined &&
+            (changes?.changedCodeColorUrls.includes(selectedImage.url) ?? false)
+          }
+          onApply={applyCodeColor}
         />
       ) : null}
 

@@ -94,9 +94,10 @@ export default function CBBImages({
         dataBase64,
       });
 
-      const uploadedSpineColor = isDatabase
-        ? spineColor
-        : (uploadedImage.palette[0] ?? spineColor);
+      const uploadedSpineColor =
+        isDatabase || type === 'album'
+          ? spineColor
+          : (uploadedImage.palette[0] ?? spineColor);
       setValue(`collectedData.${index}.images`, [
         ...currentImages.map((image) => ({ ...image, selected: false })),
         {
@@ -104,6 +105,7 @@ export default function CBBImages({
           selected: true,
           isDefault: false,
           spineColor: uploadedSpineColor,
+          codeColor: null,
           uploaded: true,
           palette: uploadedImage.palette,
         },
@@ -120,7 +122,8 @@ export default function CBBImages({
     }
   };
 
-  const showUploadSlot = type === 'book' || type === 'movie';
+  const showUploadSlot =
+    type === 'book' || type === 'movie' || type === 'album';
   const needsCover = !isDatabase && !images.some((image) => image.selected);
   const tileAspectClassName = collectorCoverAspectClassName(type);
 
@@ -167,6 +170,7 @@ export default function CBBImages({
                   : null
               }
               aspectClassName={tileAspectClassName}
+              codeColor={image.codeColor}
               onClick={() => handleImageSelection(imageIndex)}
               onSetDefault={
                 isDatabase && !isLocked && image.selected && !image.isDefault
