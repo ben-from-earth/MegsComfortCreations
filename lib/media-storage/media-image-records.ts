@@ -98,7 +98,11 @@ export async function resolveAndPersistImageList(
       fallbackSpineColor,
     );
     if (normalizedSourceImage === null) {
-      if (!(sourceImage == null || sourceImage === '')) {
+      if (
+        sourceImage !== null &&
+        sourceImage !== undefined &&
+        sourceImage !== ''
+      ) {
         failures.push({
           sourceUrl: '',
           message: 'Invalid image payload. Expected an image URL string.',
@@ -132,7 +136,7 @@ export async function resolveAndPersistImageList(
           : rawSourceImage.url,
       );
       if (!sourceUrl) {
-        return rawSourceImage == null || rawSourceImage === ''
+        return rawSourceImage === ''
           ? null
           : {
               failure: {
@@ -171,7 +175,7 @@ export async function resolveAndPersistImageList(
   );
 
   for (const persistResult of persistResults) {
-    if (persistResult == null) {
+    if (persistResult === null) {
       continue;
     }
     if ('image' in persistResult) {

@@ -19,7 +19,7 @@ export function getPageWindow(
   const window: PageWindowItem[] = [];
   for (const [index, pageNumber] of sortedPages.entries()) {
     const previousPage = sortedPages[index - 1];
-    if (previousPage != null && pageNumber - previousPage > 1) {
+    if (index > 0 && pageNumber - previousPage > 1) {
       window.push('ellipsis');
     }
     window.push(pageNumber);

@@ -136,7 +136,11 @@ async function collectSearchItem(
         });
       }),
     );
-    blocks.push(...foundBlocks.filter((block) => block != null));
+    blocks.push(
+      ...foundBlocks.filter(
+        (block): block is MediaItemForm => block !== null,
+      ),
+    );
   } else {
     const imagesPromise = getMediaCovers(title, author, type);
     googleApiQueryIncrement += 1;

@@ -66,7 +66,11 @@ export function MediaTextFieldControl({
             editStateClassNames[editState ?? 'editable']
           } ${name === 'title' ? 'font-bold' : 'font-normal'}`}
           name={field.name}
-          value={field.value == null ? '' : String(field.value)}
+          value={
+            field.value === null || field.value === undefined
+              ? ''
+              : String(field.value)
+          }
           onBlur={field.onBlur}
           onChange={(event) => {
             if (isNumberField) {
