@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { MEDIA_TYPES, type MediaType } from 'lib/constants/media-types';
 import { MOVIE_FORMATS } from 'lib/constants/movie-formats';
+import { ALBUM_CODE_RESULTS } from 'lib/helpers/album-code-status';
 import type {
   MediaImageItem,
   PostSavedMediaItem,
@@ -33,7 +34,7 @@ export const mediaItemBlockInfoSchema = z.object({
     .nullable()
     .optional(),
   spotifyAlbumUri: z.string().nullable().optional(),
-  codeStatus: z.string().optional(),
+  codeStatus: z.enum(ALBUM_CODE_RESULTS).optional(),
   codeGeneratedFor: z
     .object({
       title: z.string(),

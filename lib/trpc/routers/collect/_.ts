@@ -9,7 +9,10 @@ import { MOVIE_FORMATS, type MovieFormat } from 'lib/constants/movie-formats';
 
 import { getOpenLibraryData } from './actions/get-open-library-data';
 import { getMediaCovers } from './actions/get-media-covers';
-import { getSpotifyAlbum, type SpotifyAlbumResult } from './actions/get-spotify-album';
+import {
+  getSpotifyAlbum,
+  type SpotifyAlbumResult,
+} from './actions/get-spotify-album';
 import { searchByTitle } from '../database/actions/search-by-title';
 import { googleApiQueryUsage } from '@/db/schema';
 import type { PostSavedMediaItem } from 'lib/interfaces/global-interfaces';
@@ -21,6 +24,7 @@ import type { CollectorSearchProgress } from '@/mediacollector/collector-search-
 import { persistUploadedImageToS3 } from 'lib/media-storage/local-image-storage';
 import { fetchImageBufferAxios } from 'lib/helpers/output-png';
 import { extractSpinePalette } from 'lib/helpers/spine-palette';
+import { albumCodePair } from 'lib/helpers/album-code-status';
 import sharp from 'sharp';
 
 const SPINE_PALETTE_SAMPLE_SIZE = 64;
@@ -87,7 +91,9 @@ async function addSpinePalettes(blocks: MediaItemForm[]) {
         ...image,
         palette,
         spineColor,
-        ...(block.type === 'album' ? { codeColor: image.codeColor ?? null } : {}),
+        ...(block.type === 'album'
+          ? { codeColor: image.codeColor ?? null }
+          : {}),
       };
     });
     if (!block.isDatabase && block.type !== 'album') {
@@ -162,7 +168,11 @@ async function collectSearchItem(
       );
       if (storedAlbum.total > 0) {
         blocks.push(
-          ...(await blocksFromFoundMedia(db, 'album', storedAlbum.foundMediaList)),
+          ...(await blocksFromFoundMedia(
+            db,
+            'album',
+            storedAlbum.foundMediaList,
+          )),
         );
         return { blocks, googleApiQueryIncrement };
       }
@@ -186,6 +196,8 @@ async function collectSearchItem(
         artist,
         releaseDate: lookup.found ? lookup.releaseDate : null,
         spotifyAlbumUri: lookup.found ? lookup.uri : null,
+        codeGeneratedFor:
+          lookup.found && artist ? albumCodePair(title, artist) : null,
         spineColor: '#ffffff',
         genres: [],
       },

@@ -1,4 +1,4 @@
-import { memo, use, useState } from 'react';
+import { memo, use } from 'react';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import LockIcon from '@mui/icons-material/LockOutlined';
 import LockOpenIcon from '@mui/icons-material/LockOpenOutlined';
@@ -6,7 +6,14 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { GenreRow } from '@/components/shared/genre-row';
 import CBBImages from '@/mediacollector/cbb-images';
-import AlbumReleaseField from '@/mediacollector/album-release-field';
+import { albumCodeStatus } from 'lib/helpers/album-code-status';
+import AlbumCodeRow, {
+  applyAlbumCodeLookup,
+  type AlbumCodeLookup,
+} from '@/mediacollector/album-code-row';
+import AlbumReleaseField, {
+  releasePickerOpenCardClassName,
+} from '@/mediacollector/album-release-field';
 import CollectedItemTextField, {
   type CollectedFieldEditState,
 } from '@/mediacollector/collected-item-text-field';
@@ -37,9 +44,8 @@ export const typeChipClassNames: Record<MediaType, string> = {
 };
 
 export const movieFormatLabel = (movieFormat: MovieFormat | undefined) =>
-  MOVIE_FORMAT_OPTIONS.find(
-    (option) => option.value === (movieFormat ?? 'dvd'),
-  )?.label ?? 'DVD';
+  MOVIE_FORMAT_OPTIONS.find((option) => option.value === (movieFormat ?? 'dvd'))
+    ?.label ?? 'DVD';
 
 export interface CollectedCoversBlockProps {
   index: number;
@@ -61,7 +67,6 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const { originalsByBlockId, unlockedBlockIds, setBlockUnlocked } =
     use(DatabaseEditContext);
   const { control, getValues, setValue } = useFormContext<CollectorFormData>();
-  const [isReleasePickerOpen, setIsReleasePickerOpen] = useState(false);
   const block = useWatch({ control, name: `collectedData.${index}` });
   const images = block?.images ?? [];
   const title = block?.blockInfo.title ?? '';
@@ -87,9 +92,27 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
     type;
   const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
 
+  const needsCode =
+    type === 'album' &&
+    albumCodeStatus({
+      title,
+      artist: block?.blockInfo.artist,
+      codeColor: selectedImage?.codeColor,
+      spotifyAlbumUri: block?.blockInfo.spotifyAlbumUri,
+      codeStatus: block?.blockInfo.codeStatus,
+      codeGeneratedFor: block?.blockInfo.codeGeneratedFor,
+    }) !== 'generated';
   const newItemBadge = needsCover
     ? { text: 'New · pick a cover', className: 'bg-[#f7e3dc] text-[#9a3b26]' }
-    : { text: 'New · ready', className: 'bg-[#f0e7d8] text-[#6b5532]' };
+    : {
+        text: needsCode ? 'New · needs code' : 'New · ready',
+        className: 'bg-[#f0e7d8] text-[#6b5532]',
+      };
+  const handleCodeLookup = (lookup: AlbumCodeLookup) =>
+    setValue(
+      `collectedData.${index}`,
+      applyAlbumCodeLookup(getValues(`collectedData.${index}`), lookup),
+    );
   const handleGenreClick = (genreText: string, checked: boolean) => {
     const currentGenres =
       getValues(`collectedData.${index}.blockInfo.genres`) ?? [];
@@ -113,9 +136,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
 
   return (
     <article
-      className={`relative flex flex-col rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
-        isReleasePickerOpen ? 'z-20 overflow-visible' : 'overflow-hidden'
-      } ${
+      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${releasePickerOpenCardClassName} ${
         hasError || needsCover
           ? 'border-[#b0533a] ring-1 ring-[#b0533a]'
           : changeCount > 0
@@ -248,8 +269,6 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                     value={block?.blockInfo.releaseDate ?? null}
                     readOnly={isLocked}
                     changed={changes?.releaseDate ?? false}
-                    isOpen={isReleasePickerOpen}
-                    onOpenChange={setIsReleasePickerOpen}
                     onChange={(releaseDate) =>
                       setValue(
                         `collectedData.${index}.blockInfo.releaseDate`,
@@ -269,6 +288,18 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
               isChanged={changes?.genres ?? false}
               onAdd={(genre) => handleGenreClick(genre, true)}
               onRemove={(genre) => handleGenreClick(genre, false)}
+            />
+          ) : type === 'album' ? (
+            <AlbumCodeRow
+              title={title}
+              artist={block?.blockInfo.artist}
+              releaseDate={block?.blockInfo.releaseDate}
+              spotifyAlbumUri={block?.blockInfo.spotifyAlbumUri}
+              codeStatus={block?.blockInfo.codeStatus}
+              codeGeneratedFor={block?.blockInfo.codeGeneratedFor}
+              codeColor={selectedImage?.codeColor}
+              isLocked={isLocked}
+              onLookup={handleCodeLookup}
             />
           ) : (
             <div className="mx-4.5 mb-3.5 h-10" />

@@ -18,7 +18,12 @@ import {
   movieFormatLabel,
   typeChipClassNames,
 } from '@/mediacollector/collected-covers-block';
-import AlbumReleaseField from '@/mediacollector/album-release-field';
+import AlbumCodeRow, {
+  applyAlbumCodeLookup,
+} from '@/mediacollector/album-code-row';
+import AlbumReleaseField, {
+  releasePickerOpenCardClassName,
+} from '@/mediacollector/album-release-field';
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import {
   CoverImage,
@@ -43,7 +48,6 @@ const footerButtonClassName =
 function LibraryCard({ item }: { item: MediaItemForm }) {
   const { refreshLibrary } = useLibraryPageContext();
   const [isLocked, setIsLocked] = useState(true);
-  const [isReleasePickerOpen, setIsReleasePickerOpen] = useState(false);
   const [baseline, setBaseline] = useState(item);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -108,9 +112,7 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)}>
         <article
-          className={`relative flex flex-col rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${
-            isReleasePickerOpen ? 'z-20 overflow-visible' : 'overflow-hidden'
-          } ${
+          className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_rgba(60,50,40,0.06)] ${releasePickerOpenCardClassName} ${
             changeCount > 0
               ? 'border-[#c9973f] ring-1 ring-[#c9973f]'
               : 'border-[#e6e0d8]'
@@ -233,8 +235,6 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
                       value={blockInfo.releaseDate ?? null}
                       readOnly={isLocked}
                       changed={changes.releaseDate}
-                      isOpen={isReleasePickerOpen}
-                      onOpenChange={setIsReleasePickerOpen}
                       onChange={(releaseDate) =>
                         form.setValue('blockInfo.releaseDate', releaseDate)
                       }
@@ -249,6 +249,22 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             <LibraryGenreRow
               isEditable={!isLocked}
               isChanged={changes.genres}
+            />
+          ) : type === 'album' ? (
+            <AlbumCodeRow
+              title={blockInfo.title}
+              artist={blockInfo.artist}
+              releaseDate={blockInfo.releaseDate}
+              spotifyAlbumUri={blockInfo.spotifyAlbumUri}
+              codeStatus={blockInfo.codeStatus}
+              codeGeneratedFor={blockInfo.codeGeneratedFor}
+              codeColor={selectedImage?.codeColor}
+              isLocked={isLocked}
+              onLookup={(lookup) => {
+                const next = applyAlbumCodeLookup(form.getValues(), lookup);
+                form.setValue('images', next.images);
+                form.setValue('blockInfo', next.blockInfo);
+              }}
             />
           ) : null}
 
