@@ -122,8 +122,6 @@ export default function CBBImages({
     }
   };
 
-  const showUploadSlot =
-    type === 'book' || type === 'movie' || type === 'album';
   const needsCover = !isDatabase && !images.some((image) => image.selected);
   const tileAspectClassName = collectorCoverAspectClassName(type);
 
@@ -203,15 +201,13 @@ export default function CBBImages({
             </span>
           </button>
         ) : null}
-        {showUploadSlot ? (
-          <UploadTile
-            mediaType={type}
-            isUploading={isUploading}
-            isDisabled={isLocked}
-            aspectClassName={tileAspectClassName}
-            onClick={() => fileInputRef.current?.click()}
-          />
-        ) : null}
+        <UploadTile
+          mediaType={type}
+          isUploading={isUploading}
+          isDisabled={isLocked}
+          aspectClassName={tileAspectClassName}
+          onClick={() => fileInputRef.current?.click()}
+        />
       </div>
       {isDialogOpen ? (
         <CoversDialog
@@ -228,7 +224,7 @@ export default function CBBImages({
             setIsDialogOpen(false);
           }}
           onUploadClick={
-            showUploadSlot && !isLocked
+            !isLocked
               ? () => {
                   setIsDialogOpen(false);
                   fileInputRef.current?.click();

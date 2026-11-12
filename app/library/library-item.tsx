@@ -28,8 +28,10 @@ import AlbumReleaseField, {
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import {
   CoverImage,
+  THREE_DS_COVER_ASPECT_CLASS_NAME,
   collectorCoverAspectClassName,
 } from '@/mediacollector/cover-tile';
+import { isThreeDsConsole } from 'lib/helpers/three-ds-console';
 import {
   countDatabaseItemChanges,
   diffDatabaseItem,
@@ -97,6 +99,9 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
     MEDIA_TYPE_DEFINITIONS.find(({ mediaType }) => mediaType === type)?.label ??
     type;
   const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
+  const videoGameConsole = blockInfo.console?.trim();
+  const isThreeDsGame =
+    type === 'videoGame' && isThreeDsConsole(videoGameConsole);
 
   const handleDelete = () =>
     startDeleting(async () => {
@@ -130,6 +135,10 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
                 <span className={`${pillClassName} ${typeChipClassNames.book}`}>
                   {movieFormatLabel(blockInfo.movieFormat)}
                 </span>
+              ) : type === 'videoGame' && videoGameConsole ? (
+                <span className={`${pillClassName} ${typeChipClassNames.book}`}>
+                  {videoGameConsole}
+                </span>
               ) : null}
             </div>
             <span
@@ -160,7 +169,7 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             </span>
           </div>
 
-          {type === 'movie' ? (
+          {type === 'movie' || type === 'videoGame' ? (
             <div className="mb-3.5 flex flex-col gap-3 px-4.5 pt-3.5">
               <LibraryItemTextField
                 name="title"
@@ -169,21 +178,22 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
               />
               {selectedImage ? (
                 <div
-                  className={`relative w-full overflow-hidden rounded-md ${collectorCoverAspectClassName('movie')}`}
+                  className={`relative w-full overflow-hidden rounded-md ${
+                    isThreeDsGame
+                      ? THREE_DS_COVER_ASPECT_CLASS_NAME
+                      : collectorCoverAspectClassName(type)
+                  }`}
                 >
                   <CoverImage
                     url={selectedImage.url}
                     alt={`${blockInfo.title} cover`}
+                    fit={isThreeDsGame ? 'fill' : 'cover'}
                   />
                 </div>
               ) : null}
             </div>
           ) : (
-            <div
-              className={`flex gap-4.5 px-4.5 py-3.5 ${
-                type === 'videoGame' ? 'items-start' : 'items-center'
-              }`}
-            >
+            <div className="flex items-center gap-4.5 px-4.5 py-3.5">
               {selectedImage ? (
                 <div className="flex shrink-0 overflow-hidden rounded-r-md">
                   {type !== 'album' ? (
@@ -280,7 +290,7 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
             isCoverListChanged={changes.coverList}
           />
 
-          {type !== 'album' && type !== 'movie' ? (
+          {type === 'book' ? (
             <LibrarySpineColorRow
               isLocked={isLocked}
               isChanged={

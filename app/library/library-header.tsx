@@ -34,11 +34,22 @@ export default function LibraryHeader() {
     ascDesc,
     setAscDesc,
     setTitleSearch,
+    setYear,
+    missingYear,
+    setMissingYear,
+    setArtist,
+    releaseDateFrom,
+    setReleaseDateFrom,
+    releaseDateTo,
+    setReleaseDateTo,
   } = useLibraryPageContext();
   const genres = use(GenreContext);
   const [titleInput, setTitleInput] = useState('');
+  const [yearInput, setYearInput] = useState('');
+  const [artistInput, setArtistInput] = useState('');
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const isBook = type === 'book';
+  const hasYearFilter = type === 'movie' || type === 'videoGame';
   const sortOptions = isBook
     ? BOOK_SORT_SELECT_OPTIONS
     : NON_BOOK_SORT_SELECT_OPTIONS;
@@ -50,6 +61,13 @@ export default function LibraryHeader() {
       setSortBy('title');
       setGenre('');
     }
+    setYearInput('');
+    setYear(undefined);
+    setMissingYear(false);
+    setArtistInput('');
+    setArtist('');
+    setReleaseDateFrom('');
+    setReleaseDateTo('');
   };
 
   return (
@@ -101,6 +119,8 @@ export default function LibraryHeader() {
             event.preventDefault();
             setPage(1);
             setTitleSearch(titleInput);
+            setYear(yearInput === '' ? undefined : Number(yearInput));
+            setArtist(artistInput.trim());
           }}
         >
           <label className={`${labelClassName} flex-[1_1_260px]`}>
@@ -120,30 +140,106 @@ export default function LibraryHeader() {
             </span>
           </label>
 
-          <label className={labelClassName}>
-            Genre
-            <select
-              value={genre}
-              disabled={!isBook}
-              onChange={(event) => {
-                const { value } = event.target;
-                setPage(1);
-                setGenre(
-                  genres.find((option) => option === value) ??
-                    (value === NO_GENRE_FILTER ? NO_GENRE_FILTER : ''),
-                );
-              }}
-              className={inputClassName}
-            >
-              <option value="">All genres</option>
-              <option value={NO_GENRE_FILTER}>No genre</option>
-              {genres.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+          {isBook ? (
+            <label className={labelClassName}>
+              Genre
+              <select
+                value={genre}
+                onChange={(event) => {
+                  const { value } = event.target;
+                  setPage(1);
+                  setGenre(
+                    genres.find((option) => option === value) ??
+                      (value === NO_GENRE_FILTER ? NO_GENRE_FILTER : ''),
+                  );
+                }}
+                className={inputClassName}
+              >
+                <option value="">All genres</option>
+                <option value={NO_GENRE_FILTER}>No genre</option>
+                {genres.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {hasYearFilter ? (
+            <>
+              <label className={labelClassName}>
+                Year
+                <input
+                  type="number"
+                  min={1000}
+                  max={9999}
+                  step={1}
+                  value={yearInput}
+                  disabled={missingYear}
+                  onChange={(event) => setYearInput(event.target.value)}
+                  placeholder="Any year"
+                  className={`${inputClassName} w-32`}
+                />
+              </label>
+              <label className="flex h-11 cursor-pointer items-center gap-2 text-[13px] font-bold text-[#6b645d]">
+                <input
+                  type="checkbox"
+                  checked={missingYear}
+                  onChange={(event) => {
+                    const { checked } = event.target;
+                    setPage(1);
+                    setMissingYear(checked);
+                    if (checked) {
+                      setYearInput('');
+                      setYear(undefined);
+                    }
+                  }}
+                  className="h-4 w-4 cursor-pointer accent-[#2a4637]"
+                />
+                Show items with no year
+              </label>
+            </>
+          ) : null}
+
+          {type === 'album' ? (
+            <>
+              <label className={`${labelClassName} flex-[1_1_200px]`}>
+                Artist
+                <input
+                  type="search"
+                  value={artistInput}
+                  onChange={(event) => setArtistInput(event.target.value)}
+                  placeholder="Search artists"
+                  className={`${inputClassName} w-full`}
+                />
+              </label>
+              <label className={labelClassName}>
+                From
+                <input
+                  type="date"
+                  value={releaseDateFrom}
+                  onChange={(event) => {
+                    setPage(1);
+                    setReleaseDateFrom(event.target.value);
+                  }}
+                  className={inputClassName}
+                />
+              </label>
+              <label className={labelClassName}>
+                To
+                <input
+                  type="date"
+                  value={releaseDateTo}
+                  onChange={(event) => {
+                    setPage(1);
+                    setReleaseDateTo(event.target.value);
+                  }}
+                  className={inputClassName}
+                />
+              </label>
+            </>
+          ) : null}
 
           <label className={labelClassName}>
             Sort

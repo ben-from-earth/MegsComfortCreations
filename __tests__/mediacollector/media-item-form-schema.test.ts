@@ -300,6 +300,48 @@ describe('convertMediaItemToForm', () => {
     expect(convertMediaItemFormToDatabaseItem(vhs).movieFormat).toBe('vhs');
   });
 
+  test('keeps a video game console on the block and the edit payload', () => {
+    const game = convertMediaItemToForm({
+      item: {
+        mediaType: 'videoGame',
+        id: 'game-3ds',
+        title: 'The Legend of Zelda',
+        spineColor: '#ffffff',
+        images: [],
+        console: '3DS',
+      },
+    });
+
+    expect(game.blockInfo.console).toBe('3DS');
+    expect(savedMediaItemFromForm(game)).toMatchObject({
+      mediaType: 'videoGame',
+      console: '3DS',
+    });
+    expect(convertMediaItemFormToDatabaseItem(game)).toMatchObject({
+      console: '3DS',
+    });
+  });
+
+  test('stores a blank video game console as an empty string', () => {
+    const game = createMediaItemForm({
+      type: 'videoGame',
+      blockInfo: {
+        title: 'The Legend of Zelda',
+        spineColor: '#ffffff',
+        genres: [],
+        console: '  ',
+      },
+    });
+
+    expect(savedMediaItemFromForm(game)).toMatchObject({
+      mediaType: 'videoGame',
+      console: '',
+    });
+    expect(convertMediaItemFormToDatabaseItem(game)).toMatchObject({
+      console: '',
+    });
+  });
+
   test('fills a placeholder image when the persisted row has none', () => {
     expect(
       convertMediaItemToForm({

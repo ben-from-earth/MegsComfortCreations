@@ -6,6 +6,7 @@ export type PNGExportImage = {
   type: MediaItemForm['type'];
   spineColor: string;
   codeUrl?: string;
+  console?: string;
 };
 
 function getImageForPNG(block: MediaItemForm) {
@@ -45,12 +46,18 @@ export function buildPNGExportImages(
         ? spotifyCodeUrl(spotifyAlbumUri, image.codeColor)
         : null;
 
+    const consoleName =
+      block.type === 'videoGame'
+        ? (block.blockInfo.console?.trim() ?? '')
+        : undefined;
+
     return [
       {
         url: image.url,
         type: block.type,
         spineColor: image.spineColor,
         ...(codeUrl ? { codeUrl } : {}),
+        ...(consoleName !== undefined ? { console: consoleName } : {}),
       },
     ];
   });

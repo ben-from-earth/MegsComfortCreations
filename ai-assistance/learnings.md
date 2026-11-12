@@ -132,3 +132,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: `movieTitlesMatch` existed only so a test could assert year matching. Collector search makes that decision in SQL and never called the helper. A second test restated the library filter by calling two helpers itself.
 - Correction: Deleted the helper and that test. The remaining tests call `splitMovieTitle`, `toStoredMovieTitle`, `toDisplayMovieTitle`, and `movieTitleWithAnyYearPattern`, which save and search use.
 - Rule Going Forward: Do not add a function whose only caller is a test. Test the functions the application calls. If a rule lives in a query, do not invent a twin for the test file.
+
+### 2026-11-12 - Edited migrations do not reach an existing database
+
+- Area: Drizzle migrations / local DB
+- Issue: The library proposal said a changed migration hash would fail the next migrate. `drizzle-kit migrate` only compares timestamps, so it reported success and skipped the edited `0000`/`0004`/`0008`, leaving `year` and `console` missing. The local branch also held the old uniques as unique indexes, not constraints, so `DROP CONSTRAINT` failed.
+- Correction: Snapshotted, then applied the column, title-split, and constraint changes in one transaction, dropping the old uniques with `DROP INDEX`.
+- Rule Going Forward: After editing an applied migration, check the live columns. `db:migrate` succeeding proves nothing. Inspect `pg_indexes` and `pg_constraint` before dropping a unique, and snapshot before any hand-applied change.

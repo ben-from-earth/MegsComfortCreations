@@ -6,10 +6,14 @@ import {
   desc,
   eq,
   exists,
+  gte,
   ilike,
   inArray,
+  isNull,
+  lte,
   notExists,
   sql,
+  type Column,
 } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb, type Db } from '@/db/client';
@@ -32,7 +36,6 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
 import {
-  splitMovieTitle,
   toDisplayMovieTitle,
   toStoredMovieTitle,
 } from 'lib/helpers/movie-title';
@@ -41,6 +44,11 @@ import {
   toStoredTitle,
   toTitleSearchTerm,
 } from 'lib/helpers/title-articles';
+import {
+  libraryPaginationFilterError,
+  libraryTitleSearchTerm,
+  libraryYearConstraint,
+} from './library-list-filters';
 import {
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
@@ -90,6 +98,7 @@ const titleMediaEditSchema = z.object({
   spineColor: z.string().min(1),
   images: z.array(mediaImageItemSchema).min(1),
   movieFormat: z.enum(MOVIE_FORMATS).optional(),
+  console: z.string().nullable().optional(),
 });
 
 const albumEditSchema = z.object({
@@ -113,16 +122,23 @@ type EditableMediaItem = BookEditItem | TitleMediaEditItem | AlbumEditItem;
 
 const ALBUM_ROW_SPINE_COLOR = '#ffffff';
 
-function movieLibraryTitleFilter(title: string) {
-  const { baseTitle, year } = splitMovieTitle(title);
-  const containsTitle = ilike(
-    movies.title,
-    `%${toTitleSearchTerm(baseTitle)}%`,
-  );
-  if (!year) {
-    return containsTitle;
+function libraryTitleContains(titleColumn: Column, title: string) {
+  return ilike(titleColumn, `%${libraryTitleSearchTerm(title)}%`);
+}
+
+function libraryYearFilter(
+  yearColumn: Column,
+  year: number | undefined,
+  missingYear: boolean | undefined,
+) {
+  const constraint = libraryYearConstraint(year, missingYear);
+  if (constraint.kind === 'any') {
+    return undefined;
   }
-  return and(containsTitle, ilike(movies.title, `% (${year})`));
+  if (constraint.kind === 'missing') {
+    return isNull(yearColumn);
+  }
+  return eq(yearColumn, constraint.year);
 }
 
 function databaseErrorHint(error: unknown) {
@@ -205,6 +221,7 @@ function toPostSavedMediaItem(
     title: presentation.title,
     spineColor: presentation.spineColor,
     images: presentation.images,
+    console: row.console,
   };
 }
 
@@ -377,6 +394,17 @@ export const databaseRouter = router({
       z.object({
         type: mediaType,
         title: z.string().optional(),
+        year: z.number().int().min(1000).max(9999).optional(),
+        missingYear: z.boolean().optional(),
+        artist: z.string().optional(),
+        releaseDateFrom: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        releaseDateTo: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
         limit: z.union([z.literal(12), z.literal(24), z.literal(48)]),
         page: z.number().int().positive(),
         sort: sortKey,
@@ -386,8 +414,35 @@ export const databaseRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const { type, limit, page, sort, ascDesc, genre, title } = input;
+      const {
+        type,
+        limit,
+        page,
+        sort,
+        ascDesc,
+        genre,
+        title,
+        year,
+        missingYear,
+        artist,
+        releaseDateFrom,
+        releaseDateTo,
+      } = input;
       const offset = (page - 1) * limit;
+      const filterError = libraryPaginationFilterError({
+        type,
+        year,
+        missingYear,
+        artist,
+        releaseDateFrom,
+        releaseDateTo,
+      });
+      if (filterError) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: filterError,
+        });
+      }
 
       if (type === 'book') {
         const sortColumn = (() => {
@@ -505,7 +560,10 @@ export const databaseRouter = router({
         : undefined;
 
       if (type === 'movie') {
-        const titleFilter = hasTitle ? movieLibraryTitleFilter(title) : undefined;
+        const whereFilter = and(
+          hasTitle ? libraryTitleContains(movies.title, title) : undefined,
+          libraryYearFilter(movies.year, year, missingYear),
+        );
         const orderExpression =
           ascDesc === 'asc' ? asc(movies.title) : desc(movies.title);
         const [rows, [{ count }]] = await Promise.all([
@@ -513,19 +571,20 @@ export const databaseRouter = router({
             .select({
               id: movies.id,
               title: movies.title,
+              year: movies.year,
               spineColor: movies.spineColor,
               movieFormat: movies.movieFormat,
               mediaType: sql<'movie'>`'movie'`,
             })
             .from(movies)
-            .where(titleFilter)
+            .where(whereFilter)
             .orderBy(orderExpression)
             .limit(limit)
             .offset(offset),
           db
             .select({ count: sql<number>`cast(count(*) as int)` })
             .from(movies)
-            .where(titleFilter),
+            .where(whereFilter),
         ]);
         const imagesById = await loadMovieImagesById(
           db,
@@ -534,8 +593,10 @@ export const databaseRouter = router({
         const rowsWithResolvedImages = rows.map((row) => {
           const images = imagesById.get(row.id) ?? [];
           return {
-            ...row,
-            title: toDisplayMovieTitle(row.title),
+            id: row.id,
+            mediaType: row.mediaType,
+            title: toDisplayMovieTitle(row.title, row.year),
+            movieFormat: row.movieFormat,
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
           };
@@ -549,9 +610,10 @@ export const databaseRouter = router({
       }
 
       if (type === 'videoGame') {
-        const titleFilter = titleContains
-          ? ilike(videoGames.title, titleContains)
-          : undefined;
+        const whereFilter = and(
+          hasTitle ? libraryTitleContains(videoGames.title, title) : undefined,
+          libraryYearFilter(videoGames.year, year, missingYear),
+        );
         const orderExpression =
           ascDesc === 'asc' ? asc(videoGames.title) : desc(videoGames.title);
         const [rows, [{ count }]] = await Promise.all([
@@ -559,18 +621,20 @@ export const databaseRouter = router({
             .select({
               id: videoGames.id,
               title: videoGames.title,
+              year: videoGames.year,
+              console: videoGames.console,
               spineColor: videoGames.spineColor,
               mediaType: sql<'videoGame'>`'videoGame'`,
             })
             .from(videoGames)
-            .where(titleFilter)
+            .where(whereFilter)
             .orderBy(orderExpression)
             .limit(limit)
             .offset(offset),
           db
             .select({ count: sql<number>`cast(count(*) as int)` })
             .from(videoGames)
-            .where(titleFilter),
+            .where(whereFilter),
         ]);
         const imagesById = await loadVideoGameImagesById(
           db,
@@ -579,8 +643,10 @@ export const databaseRouter = router({
         const rowsWithResolvedImages = rows.map((row) => {
           const images = imagesById.get(row.id) ?? [];
           return {
-            ...row,
-            title: toDisplayTitle(row.title),
+            id: row.id,
+            mediaType: row.mediaType,
+            title: toDisplayMovieTitle(row.title, row.year),
+            console: row.console,
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
           };
@@ -593,9 +659,20 @@ export const databaseRouter = router({
         return res;
       }
 
+      const trimmedArtist = artist?.trim() ?? '';
       const titleFilter = titleContains
         ? ilike(albums.title, titleContains)
         : undefined;
+      const whereFilter = and(
+        titleFilter,
+        trimmedArtist
+          ? ilike(albums.artist, `%${trimmedArtist}%`)
+          : undefined,
+        releaseDateFrom
+          ? gte(albums.releaseDate, releaseDateFrom)
+          : undefined,
+        releaseDateTo ? lte(albums.releaseDate, releaseDateTo) : undefined,
+      );
       const orderExpression =
         ascDesc === 'asc' ? asc(albums.title) : desc(albums.title);
       const [rows, [{ count }]] = await Promise.all([
@@ -610,14 +687,14 @@ export const databaseRouter = router({
             mediaType: sql<'album'>`'album'`,
           })
           .from(albums)
-          .where(titleFilter)
+          .where(whereFilter)
           .orderBy(orderExpression)
           .limit(limit)
           .offset(offset),
         db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(albums)
-          .where(titleFilter),
+          .where(whereFilter),
       ]);
       const imagesById = await loadAlbumImagesById(
         db,
@@ -910,19 +987,24 @@ export const databaseRouter = router({
           continue;
         }
 
-        const displayTitle =
-          data.type === 'movie'
-            ? toDisplayMovieTitle(toStoredMovieTitle(data.blockInfo.title))
-            : toDisplayTitle(toStoredTitle(data.blockInfo.title));
+        const storedTitle =
+          data.type === 'movie' || data.type === 'videoGame'
+            ? toStoredMovieTitle(data.blockInfo.title)
+            : null;
+        const displayTitle = storedTitle
+          ? toDisplayMovieTitle(storedTitle.title, storedTitle.year)
+          : toDisplayTitle(toStoredTitle(data.blockInfo.title));
         let createdMediaId: string | null = null;
         try {
           const savedMedia =
             data.type === 'movie'
               ? await db.transaction(async (tx) => {
+                  const stored = toStoredMovieTitle(data.blockInfo.title);
                   const [insertedMovie] = await tx
                     .insert(movies)
                     .values({
-                      title: toStoredMovieTitle(data.blockInfo.title),
+                      title: stored.title,
+                      year: stored.year,
                       spineColor: resolveDisplaySpineColor(
                         data.images,
                         data.blockInfo.spineColor,
@@ -939,10 +1021,13 @@ export const databaseRouter = router({
                 })
               : data.type === 'videoGame'
                 ? await db.transaction(async (tx) => {
+                    const stored = toStoredMovieTitle(data.blockInfo.title);
                     const [insertedVideoGame] = await tx
                       .insert(videoGames)
                       .values({
-                        title: toStoredTitle(data.blockInfo.title),
+                        title: stored.title,
+                        year: stored.year,
+                        console: data.blockInfo.console?.trim() ?? '',
                         spineColor: resolveDisplaySpineColor(
                           data.images,
                           data.blockInfo.spineColor,
@@ -1053,12 +1138,16 @@ export const databaseRouter = router({
               isDuplicateAlbum && data.blockInfo.artist?.trim()
                 ? ` by ${data.blockInfo.artist.trim()}`
                 : '';
+            const consoleSuffix =
+              isDuplicateVideoGame && data.blockInfo.console?.trim()
+                ? ` (${data.blockInfo.console.trim()})`
+                : '';
             results.push(
               createSaveFailureResult({
                 blockID: data.blockID,
                 title: data.blockInfo.title,
                 error: `Duplicate ${label}`,
-                message: `${label} "${displayTitle}"${artistSuffix}${formatSuffix} is already stored.`,
+                message: `${label} "${displayTitle}"${artistSuffix}${formatSuffix}${consoleSuffix} is already stored.`,
                 errors: [`Duplicate ${label}`],
               }),
             );
@@ -1284,19 +1373,16 @@ export const databaseRouter = router({
         };
       }
       const data = validation.data;
-      const storedTitle =
-        type === 'movie'
-          ? toStoredMovieTitle(data.title)
-          : toStoredTitle(data.title);
-      const displayTitle =
-        type === 'movie'
-          ? toDisplayMovieTitle(storedTitle)
-          : toDisplayTitle(storedTitle);
+      const stored = toStoredMovieTitle(data.title);
+      const displayTitle = toDisplayMovieTitle(stored.title, stored.year);
       if (type === 'movie') {
         const whereExpression = data.id
           ? eq(movies.id, data.id)
           : and(
-              eq(movies.title, storedTitle),
+              eq(movies.title, stored.title),
+              stored.year === null
+                ? isNull(movies.year)
+                : eq(movies.year, stored.year),
               eq(movies.movieFormat, data.movieFormat ?? 'dvd'),
             );
         const [existingMovie] = await db
@@ -1327,7 +1413,8 @@ export const databaseRouter = router({
         const [savedMovie] = await db
           .update(movies)
           .set({
-            title: storedTitle,
+            title: stored.title,
+            year: stored.year,
             spineColor: persistedSpineColor,
           })
           .where(whereExpression)
@@ -1352,9 +1439,16 @@ export const databaseRouter = router({
         };
       }
 
+      const storedConsole = data.console?.trim() ?? '';
       const whereExpression = data.id
         ? eq(videoGames.id, data.id)
-        : eq(videoGames.title, storedTitle);
+        : and(
+            eq(videoGames.title, stored.title),
+            stored.year === null
+              ? isNull(videoGames.year)
+              : eq(videoGames.year, stored.year),
+            eq(videoGames.console, storedConsole),
+          );
       const [existingVideoGame] = await db
         .select()
         .from(videoGames)
@@ -1383,7 +1477,9 @@ export const databaseRouter = router({
       const [savedVideoGame] = await db
         .update(videoGames)
         .set({
-          title: storedTitle,
+          title: stored.title,
+          year: stored.year,
+          console: storedConsole,
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)

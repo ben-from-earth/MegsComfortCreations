@@ -3,6 +3,7 @@
 import sharp, { OverlayOptions, RGBA } from 'sharp';
 import axios from 'axios';
 import JSZip from 'jszip';
+import { isThreeDsConsole } from './three-ds-console';
 
 /*
   PNG/ZIP renderer (paginated)
@@ -39,6 +40,7 @@ export type ImageData = {
   type: 'book' | 'movie' | 'videoGame' | 'album';
   spineColor: string;
   codeUrl?: string;
+  console?: string;
 };
 
 interface Slot {
@@ -121,8 +123,19 @@ function fullCoverVariation(rowHeight: number): Variation {
 
 const movieVariation5 = fullCoverVariation(TEMPLATE_METRICS[5].rowHeight);
 
+// A 3DS cover is 1.64 inches wide by 0.77 inches tall. The sheet is 300 DPI.
+const THREE_DS_WIDTH = Math.round(1.64 * 300);
+const THREE_DS_HEIGHT = Math.round(0.77 * 300);
+const threeDsVariation: Variation = {
+  cellWidth: THREE_DS_WIDTH,
+  imageWidth: THREE_DS_WIDTH,
+  pairGap: 0,
+  mode: 'single',
+};
+
 // Which variation is used based on format and media type.
-// Movies always use the 5 mm full cover, on either bleed setting.
+// Movies and video games use the 5 mm full cover, on either bleed setting.
+// A console of 3DS prints as one 1.64 by 0.77 inch cover.
 const COMBOS: Record<
   Template,
   Record<string, Variation> & { default: Variation }
@@ -130,14 +143,12 @@ const COMBOS: Record<
   3: {
     book: variation1,
     movie: movieVariation5,
-    videoGame: variation1,
     album: albumVariation,
     default: variation1,
   },
   5: {
     book: variation3,
     movie: movieVariation5,
-    videoGame: variation4,
     album: albumVariation,
     default: variation4,
   },
@@ -146,8 +157,12 @@ const COMBOS: Record<
 export function cellVariationFor(
   template: Template,
   type: string | undefined,
+  consoleName?: string,
 ): Variation {
-  if (type === 'movie') {
+  if (type === 'videoGame' && isThreeDsConsole(consoleName)) {
+    return threeDsVariation;
+  }
+  if (type === 'movie' || type === 'videoGame') {
     return movieVariation5;
   }
   return COMBOS[template][type ?? ''] ?? COMBOS[template].default;
@@ -189,17 +204,23 @@ function layoutPage({
   const movieMetrics = TEMPLATE_METRICS[5];
 
   for (let i = startIndex; i < images.length; i++) {
-    const type = images[i]?.type;
-    const isMovie = type === 'movie';
-    const cfg = cellVariationFor(template, type);
+    const image = images[i];
+    const type = image?.type;
+    const cfg = cellVariationFor(template, type, image?.console);
+    const is3ds = cfg === threeDsVariation;
+    const usesFiveMillimeterCover =
+      type === 'movie' || (type === 'videoGame' && !is3ds);
+    const usesFiveMillimeterGutters = type === 'movie' || type === 'videoGame';
     const w = cfg.cellWidth;
-    const h = isMovie
-      ? movieMetrics.rowHeight
-      : type === 'album'
-        ? ALBUM_SIDE
-        : rowHeight;
-    const gapX = isMovie ? movieMetrics.xGap : xGap;
-    const cellAdvance = h + (isMovie ? movieMetrics.yGap : yGap);
+    const h = is3ds
+      ? THREE_DS_HEIGHT
+      : usesFiveMillimeterCover
+        ? movieMetrics.rowHeight
+        : type === 'album'
+          ? ALBUM_SIDE
+          : rowHeight;
+    const gapX = usesFiveMillimeterGutters ? movieMetrics.xGap : xGap;
+    const cellAdvance = h + (usesFiveMillimeterGutters ? movieMetrics.yGap : yGap);
 
     if (x > marginX && x + w > canvasW - marginX) {
       // Right-align the last cell of the previous row
@@ -387,8 +408,8 @@ async function renderCell(
   img: ImageData | undefined,
   template: Template,
 ): Promise<OverlayOptions[]> {
-  const { url, spineColor, type, codeUrl } = img || {};
-  const cfg = cellVariationFor(template, type);
+  const { url, spineColor, type, codeUrl, console: consoleName } = img || {};
+  const cfg = cellVariationFor(template, type, consoleName);
 
   if (cfg.mode === 'album') {
     const side = cfg.imageWidth;

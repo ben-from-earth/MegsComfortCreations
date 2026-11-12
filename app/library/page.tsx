@@ -41,6 +41,11 @@ export default function LibraryPage() {
   const [titleSearch, setTitleSearch] = useState('');
   const [genre, setGenre] = useState<LibraryGenreFilter>('');
   const [ascDesc, setAscDesc] = useState<'asc' | 'desc'>('asc');
+  const [year, setYear] = useState<number | undefined>(undefined);
+  const [missingYear, setMissingYear] = useState(false);
+  const [artist, setArtist] = useState('');
+  const [releaseDateFrom, setReleaseDateFrom] = useState('');
+  const [releaseDateTo, setReleaseDateTo] = useState('');
   const latestPaginationStateRef = useRef({ type, page, limit });
   const paginatedQuery = trpc.database.getPaginated.useQuery({
     type,
@@ -50,6 +55,11 @@ export default function LibraryPage() {
     ascDesc,
     genre,
     title: titleSearch,
+    year: missingYear ? undefined : year,
+    missingYear: missingYear || undefined,
+    artist: artist || undefined,
+    releaseDateFrom: releaseDateFrom || undefined,
+    releaseDateTo: releaseDateTo || undefined,
   });
 
   useEffect(() => {
@@ -86,11 +96,31 @@ export default function LibraryPage() {
       ascDesc,
       setAscDesc,
       setTitleSearch,
+      setYear,
+      missingYear,
+      setMissingYear,
+      setArtist,
+      releaseDateFrom,
+      setReleaseDateFrom,
+      releaseDateTo,
+      setReleaseDateTo,
       refreshLibrary: async () => {
         await paginatedQuery.refetch();
       },
     }),
-    [page, libraryList, type, limit, sortBy, genre, ascDesc, paginatedQuery],
+    [
+      page,
+      libraryList,
+      type,
+      limit,
+      sortBy,
+      genre,
+      ascDesc,
+      missingYear,
+      releaseDateFrom,
+      releaseDateTo,
+      paginatedQuery,
+    ],
   );
 
   return (

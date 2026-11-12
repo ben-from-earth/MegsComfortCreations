@@ -27,6 +27,7 @@ export const mediaItemBlockInfoSchema = z.object({
   pubYear: z.number().nullable().optional(),
   pageCount: z.number().nullable().optional(),
   movieFormat: z.enum(MOVIE_FORMATS).optional(),
+  console: z.string().nullable().optional(),
   artist: z.string().nullable().optional(),
   releaseDate: z
     .string()
@@ -198,7 +199,10 @@ export function convertMediaItemToForm({
       return {
         type: 'videoGame',
         images,
-        blockInfo: baseBlockInfo,
+        blockInfo: {
+          ...baseBlockInfo,
+          console: item.console,
+        },
         blockID: item.id,
         isDatabase: true,
       };
@@ -255,6 +259,7 @@ export function savedMediaItemFromForm(form: MediaItemForm): PostSavedMediaItem 
       return {
         mediaType: 'videoGame',
         ...shared,
+        console: form.blockInfo.console?.trim() ?? '',
       };
     case 'album':
       return {
@@ -278,6 +283,9 @@ export function convertMediaItemFormToDatabaseItem(form: MediaItemForm) {
     pubYear: form.blockInfo.pubYear ?? null,
     ...(form.blockInfo.movieFormat
       ? { movieFormat: form.blockInfo.movieFormat }
+      : {}),
+    ...(form.type === 'videoGame'
+      ? { console: form.blockInfo.console?.trim() ?? '' }
       : {}),
     ...(form.type === 'album'
       ? {

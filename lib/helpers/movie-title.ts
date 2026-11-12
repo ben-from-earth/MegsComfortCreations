@@ -4,7 +4,6 @@ import {
 } from 'lib/helpers/title-articles';
 
 const YEAR_SUFFIX = /^\((\d{4})\)$/;
-const REGEX_METACHARACTERS = /[\\.^$*+?()[\]{}|]/g;
 
 type SplitMovieTitle = {
   baseTitle: string;
@@ -31,21 +30,21 @@ export function splitMovieTitle(title: string): SplitMovieTitle {
   return { baseTitle, year: match[1] };
 }
 
-function withYear(baseTitle: string, year: string | null) {
-  return year ? `${baseTitle} (${year})` : baseTitle;
-}
-
-export function toStoredMovieTitle(title: string): string {
+export function toStoredMovieTitle(title: string): {
+  title: string;
+  year: number | null;
+} {
   const { baseTitle, year } = splitMovieTitle(title);
-  return withYear(toStoredTitle(baseTitle), year);
+  return {
+    title: toStoredTitle(baseTitle),
+    year: year === null ? null : Number(year),
+  };
 }
 
-export function toDisplayMovieTitle(title: string): string {
-  const { baseTitle, year } = splitMovieTitle(title);
-  return withYear(toDisplayTitle(baseTitle), year);
-}
-
-export function movieTitleWithAnyYearPattern(storedBaseTitle: string): string {
-  const escapedBase = storedBaseTitle.replace(REGEX_METACHARACTERS, '\\$&');
-  return `^${escapedBase} \\([0-9]{4}\\)$`;
+export function toDisplayMovieTitle(
+  title: string,
+  year: number | null,
+): string {
+  const displayTitle = toDisplayTitle(title);
+  return year === null ? displayTitle : `${displayTitle} (${year})`;
 }

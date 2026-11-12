@@ -8,6 +8,7 @@ const imageSchema = z.object({
   type: z.enum(['book', 'movie', 'videoGame', 'album']),
   spineColor: z.string().min(1),
   codeUrl: z.string().url().optional(),
+  console: z.string().optional(),
 });
 
 export const pngRouter = router({

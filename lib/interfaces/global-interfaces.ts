@@ -36,6 +36,7 @@ export interface SavedMovie extends SavedMediaBase {
 
 export interface SavedVideoGame extends SavedMediaBase {
   mediaType: 'videoGame';
+  console: string;
 }
 
 export interface SavedAlbum extends SavedMediaBase {

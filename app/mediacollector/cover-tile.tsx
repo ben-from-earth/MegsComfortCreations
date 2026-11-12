@@ -14,13 +14,24 @@ export function coverAspectClassName(mediaType: MediaType) {
 }
 
 export function collectorCoverAspectClassName(mediaType: MediaType) {
-  if (mediaType === 'movie') {
+  if (mediaType === 'movie' || mediaType === 'videoGame') {
     return 'aspect-[3/2]';
   }
   return coverAspectClassName(mediaType);
 }
 
-export function CoverImage({ url, alt }: { url: string; alt: string }) {
+// Matches the printed 3DS cell, 1.64 by 0.77 inches at 300 DPI.
+export const THREE_DS_COVER_ASPECT_CLASS_NAME = 'aspect-[492/231]';
+
+export function CoverImage({
+  url,
+  alt,
+  fit = 'cover',
+}: {
+  url: string;
+  alt: string;
+  fit?: 'cover' | 'fill';
+}) {
   const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
 
   if (brokenUrl === url) {
@@ -33,7 +44,7 @@ export function CoverImage({ url, alt }: { url: string; alt: string }) {
 
   return (
     <Image
-      className="object-cover"
+      className={fit === 'fill' ? 'object-fill' : 'object-cover'}
       src={url}
       alt={alt}
       fill

@@ -6,7 +6,7 @@ ALTER TABLE "movies" ALTER COLUMN "movie_format" DROP DEFAULT;
 --> statement-breakpoint
 ALTER TABLE "movies" DROP CONSTRAINT "movies_title_unique";
 --> statement-breakpoint
-CREATE UNIQUE INDEX "movies_title_format_unique" ON "movies" USING btree ("title","movie_format");
+ALTER TABLE "movies" ADD CONSTRAINT "movies_title_format_unique" UNIQUE NULLS NOT DISTINCT ("title","year","movie_format");
 --> statement-breakpoint
 ALTER TABLE "albums" ADD COLUMN "artist" text DEFAULT '' NOT NULL;
 --> statement-breakpoint
