@@ -23,6 +23,12 @@ export function mediaCoverSearchQuery(
       )?.searchToken ?? 'dvd';
     return `${title} movie full ${token} cover`;
   }
+  if (type === 'videoGame') {
+    const consoleName = author?.trim();
+    return consoleName
+      ? `${title} ${consoleName} video game full case cover jacket`
+      : `${title} video game full case cover jacket`;
+  }
   return `${title}${author ? ` ${author}` : ''} ${type} Cover Image`;
 }
 

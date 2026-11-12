@@ -24,13 +24,22 @@ describe('mediaCoverSearchQuery', () => {
     ).toBe('The Princess Bride movie full vhs cover');
   });
 
-  test('keeps the author on book and video game cover searches', () => {
+  test('keeps the author on a book cover search', () => {
     expect(mediaCoverSearchQuery('Dune', 'Frank Herbert', 'book')).toBe(
       'Dune Frank Herbert book Cover Image',
     );
+  });
+
+  test('searches a video game case cover, with the console when one was typed', () => {
+    expect(
+      mediaCoverSearchQuery('The Legend of Zelda', '3DS', 'videoGame'),
+    ).toBe('The Legend of Zelda 3DS video game full case cover jacket');
     expect(
       mediaCoverSearchQuery('The Legend of Zelda', undefined, 'videoGame'),
-    ).toBe('The Legend of Zelda videoGame Cover Image');
+    ).toBe('The Legend of Zelda video game full case cover jacket');
+    expect(
+      mediaCoverSearchQuery('The Legend of Zelda', '   ', 'videoGame'),
+    ).toBe('The Legend of Zelda video game full case cover jacket');
   });
 });
 
