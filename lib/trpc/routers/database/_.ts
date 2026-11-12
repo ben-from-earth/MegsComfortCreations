@@ -98,6 +98,7 @@ const titleMediaEditSchema = z.object({
   spineColor: z.string().min(1),
   images: z.array(mediaImageItemSchema).min(1),
   movieFormat: z.enum(MOVIE_FORMATS).optional(),
+  console: z.string().nullable().optional(),
 });
 
 const albumEditSchema = z.object({
@@ -220,6 +221,7 @@ function toPostSavedMediaItem(
     title: presentation.title,
     spineColor: presentation.spineColor,
     images: presentation.images,
+    console: row.console,
   };
 }
 
@@ -620,6 +622,7 @@ export const databaseRouter = router({
               id: videoGames.id,
               title: videoGames.title,
               year: videoGames.year,
+              console: videoGames.console,
               spineColor: videoGames.spineColor,
               mediaType: sql<'videoGame'>`'videoGame'`,
             })
@@ -643,6 +646,7 @@ export const databaseRouter = router({
             id: row.id,
             mediaType: row.mediaType,
             title: toDisplayMovieTitle(row.title, row.year),
+            console: row.console,
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
           };
@@ -1023,6 +1027,7 @@ export const databaseRouter = router({
                       .values({
                         title: stored.title,
                         year: stored.year,
+                        console: data.blockInfo.console?.trim() ?? '',
                         spineColor: resolveDisplaySpineColor(
                           data.images,
                           data.blockInfo.spineColor,
@@ -1133,12 +1138,16 @@ export const databaseRouter = router({
               isDuplicateAlbum && data.blockInfo.artist?.trim()
                 ? ` by ${data.blockInfo.artist.trim()}`
                 : '';
+            const consoleSuffix =
+              isDuplicateVideoGame && data.blockInfo.console?.trim()
+                ? ` (${data.blockInfo.console.trim()})`
+                : '';
             results.push(
               createSaveFailureResult({
                 blockID: data.blockID,
                 title: data.blockInfo.title,
                 error: `Duplicate ${label}`,
-                message: `${label} "${displayTitle}"${artistSuffix}${formatSuffix} is already stored.`,
+                message: `${label} "${displayTitle}"${artistSuffix}${formatSuffix}${consoleSuffix} is already stored.`,
                 errors: [`Duplicate ${label}`],
               }),
             );
@@ -1430,6 +1439,7 @@ export const databaseRouter = router({
         };
       }
 
+      const storedConsole = data.console?.trim() ?? '';
       const whereExpression = data.id
         ? eq(videoGames.id, data.id)
         : and(
@@ -1437,6 +1447,7 @@ export const databaseRouter = router({
             stored.year === null
               ? isNull(videoGames.year)
               : eq(videoGames.year, stored.year),
+            eq(videoGames.console, storedConsole),
           );
       const [existingVideoGame] = await db
         .select()
@@ -1468,6 +1479,7 @@ export const databaseRouter = router({
         .set({
           title: stored.title,
           year: stored.year,
+          console: storedConsole,
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)

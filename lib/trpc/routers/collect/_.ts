@@ -226,6 +226,7 @@ async function collectSearchItem(
       });
     } else {
       const images = await imagesPromise;
+      const consoleName = author?.trim() ?? '';
       blocks.push({
         type,
         images: images.map((url, index) => ({
@@ -239,6 +240,9 @@ async function collectSearchItem(
           spineColor: '#ffffff',
           genres: [],
           ...(type === 'movie' ? { movieFormat: format ?? 'dvd' } : {}),
+          ...(type === 'videoGame'
+            ? { console: consoleName === '' ? null : consoleName }
+            : {}),
         },
         blockID: crypto.randomUUID(),
         isDatabase: false,

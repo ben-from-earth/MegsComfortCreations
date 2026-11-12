@@ -112,10 +112,16 @@ export async function searchByTitle(
   }
 
   if (type === 'videoGame') {
+    const consoleName = author?.trim();
     const rows = await db
       .select()
       .from(videoGames)
-      .where(titledMediaSearchCondition(videoGames.title, videoGames.year, title));
+      .where(
+        and(
+          titledMediaSearchCondition(videoGames.title, videoGames.year, title),
+          consoleName ? ilike(videoGames.console, consoleName) : undefined,
+        ),
+      );
     const imagesById = await loadImages(db, rows, loadVideoGameImagesById);
     const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
       mediaType: 'videoGame',
@@ -123,6 +129,7 @@ export async function searchByTitle(
       title: toDisplayMovieTitle(row.title, row.year),
       spineColor: row.spineColor,
       images: imagesById.get(row.id) ?? [],
+      console: row.console,
     }));
     return { foundMediaList, total: foundMediaList.length };
   }
