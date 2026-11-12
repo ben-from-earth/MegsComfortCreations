@@ -6,9 +6,11 @@ import {
   desc,
   eq,
   exists,
+  gte,
   ilike,
   inArray,
   isNull,
+  lte,
   notExists,
   sql,
   type Column,
@@ -34,7 +36,6 @@ import type {
   SuccessfulPaginationResponse,
 } from 'lib/interfaces/global-interfaces';
 import {
-  splitMovieTitle,
   toDisplayMovieTitle,
   toStoredMovieTitle,
 } from 'lib/helpers/movie-title';
@@ -43,6 +44,11 @@ import {
   toStoredTitle,
   toTitleSearchTerm,
 } from 'lib/helpers/title-articles';
+import {
+  libraryPaginationFilterError,
+  libraryTitleSearchTerm,
+  libraryYearConstraint,
+} from './library-list-filters';
 import {
   mediaItemFormSchema,
   PLACEHOLDER_MEDIA_IMAGE_URL,
@@ -115,20 +121,23 @@ type EditableMediaItem = BookEditItem | TitleMediaEditItem | AlbumEditItem;
 
 const ALBUM_ROW_SPINE_COLOR = '#ffffff';
 
-function libraryTitleFilter(
-  titleColumn: Column,
+function libraryTitleContains(titleColumn: Column, title: string) {
+  return ilike(titleColumn, `%${libraryTitleSearchTerm(title)}%`);
+}
+
+function libraryYearFilter(
   yearColumn: Column,
-  title: string,
+  year: number | undefined,
+  missingYear: boolean | undefined,
 ) {
-  const { baseTitle, year } = splitMovieTitle(title);
-  const containsTitle = ilike(
-    titleColumn,
-    `%${toTitleSearchTerm(baseTitle)}%`,
-  );
-  if (!year) {
-    return containsTitle;
+  const constraint = libraryYearConstraint(year, missingYear);
+  if (constraint.kind === 'any') {
+    return undefined;
   }
-  return and(containsTitle, eq(yearColumn, Number(year)));
+  if (constraint.kind === 'missing') {
+    return isNull(yearColumn);
+  }
+  return eq(yearColumn, constraint.year);
 }
 
 function databaseErrorHint(error: unknown) {
@@ -383,6 +392,17 @@ export const databaseRouter = router({
       z.object({
         type: mediaType,
         title: z.string().optional(),
+        year: z.number().int().min(1000).max(9999).optional(),
+        missingYear: z.boolean().optional(),
+        artist: z.string().optional(),
+        releaseDateFrom: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        releaseDateTo: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
         limit: z.union([z.literal(12), z.literal(24), z.literal(48)]),
         page: z.number().int().positive(),
         sort: sortKey,
@@ -392,8 +412,35 @@ export const databaseRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
-      const { type, limit, page, sort, ascDesc, genre, title } = input;
+      const {
+        type,
+        limit,
+        page,
+        sort,
+        ascDesc,
+        genre,
+        title,
+        year,
+        missingYear,
+        artist,
+        releaseDateFrom,
+        releaseDateTo,
+      } = input;
       const offset = (page - 1) * limit;
+      const filterError = libraryPaginationFilterError({
+        type,
+        year,
+        missingYear,
+        artist,
+        releaseDateFrom,
+        releaseDateTo,
+      });
+      if (filterError) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: filterError,
+        });
+      }
 
       if (type === 'book') {
         const sortColumn = (() => {
@@ -511,9 +558,10 @@ export const databaseRouter = router({
         : undefined;
 
       if (type === 'movie') {
-        const titleFilter = hasTitle
-          ? libraryTitleFilter(movies.title, movies.year, title)
-          : undefined;
+        const whereFilter = and(
+          hasTitle ? libraryTitleContains(movies.title, title) : undefined,
+          libraryYearFilter(movies.year, year, missingYear),
+        );
         const orderExpression =
           ascDesc === 'asc' ? asc(movies.title) : desc(movies.title);
         const [rows, [{ count }]] = await Promise.all([
@@ -527,14 +575,14 @@ export const databaseRouter = router({
               mediaType: sql<'movie'>`'movie'`,
             })
             .from(movies)
-            .where(titleFilter)
+            .where(whereFilter)
             .orderBy(orderExpression)
             .limit(limit)
             .offset(offset),
           db
             .select({ count: sql<number>`cast(count(*) as int)` })
             .from(movies)
-            .where(titleFilter),
+            .where(whereFilter),
         ]);
         const imagesById = await loadMovieImagesById(
           db,
@@ -560,9 +608,10 @@ export const databaseRouter = router({
       }
 
       if (type === 'videoGame') {
-        const titleFilter = hasTitle
-          ? libraryTitleFilter(videoGames.title, videoGames.year, title)
-          : undefined;
+        const whereFilter = and(
+          hasTitle ? libraryTitleContains(videoGames.title, title) : undefined,
+          libraryYearFilter(videoGames.year, year, missingYear),
+        );
         const orderExpression =
           ascDesc === 'asc' ? asc(videoGames.title) : desc(videoGames.title);
         const [rows, [{ count }]] = await Promise.all([
@@ -575,14 +624,14 @@ export const databaseRouter = router({
               mediaType: sql<'videoGame'>`'videoGame'`,
             })
             .from(videoGames)
-            .where(titleFilter)
+            .where(whereFilter)
             .orderBy(orderExpression)
             .limit(limit)
             .offset(offset),
           db
             .select({ count: sql<number>`cast(count(*) as int)` })
             .from(videoGames)
-            .where(titleFilter),
+            .where(whereFilter),
         ]);
         const imagesById = await loadVideoGameImagesById(
           db,
@@ -606,9 +655,20 @@ export const databaseRouter = router({
         return res;
       }
 
+      const trimmedArtist = artist?.trim() ?? '';
       const titleFilter = titleContains
         ? ilike(albums.title, titleContains)
         : undefined;
+      const whereFilter = and(
+        titleFilter,
+        trimmedArtist
+          ? ilike(albums.artist, `%${trimmedArtist}%`)
+          : undefined,
+        releaseDateFrom
+          ? gte(albums.releaseDate, releaseDateFrom)
+          : undefined,
+        releaseDateTo ? lte(albums.releaseDate, releaseDateTo) : undefined,
+      );
       const orderExpression =
         ascDesc === 'asc' ? asc(albums.title) : desc(albums.title);
       const [rows, [{ count }]] = await Promise.all([
@@ -623,14 +683,14 @@ export const databaseRouter = router({
             mediaType: sql<'album'>`'album'`,
           })
           .from(albums)
-          .where(titleFilter)
+          .where(whereFilter)
           .orderBy(orderExpression)
           .limit(limit)
           .offset(offset),
         db
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(albums)
-          .where(titleFilter),
+          .where(whereFilter),
       ]);
       const imagesById = await loadAlbumImagesById(
         db,
