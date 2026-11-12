@@ -30,16 +30,16 @@ describe('mediaCoverSearchQuery', () => {
     );
   });
 
-  test('searches a video game case cover, with the console when one was typed', () => {
+  test('searches The Cover Project art, with the console when one was typed', () => {
     expect(
       mediaCoverSearchQuery('The Legend of Zelda', '3DS', 'videoGame'),
-    ).toBe('The Legend of Zelda 3DS video game full case cover jacket');
+    ).toBe('The Legend of Zelda 3DS cover art the cover project');
     expect(
       mediaCoverSearchQuery('The Legend of Zelda', undefined, 'videoGame'),
-    ).toBe('The Legend of Zelda video game full case cover jacket');
+    ).toBe('The Legend of Zelda cover art the cover project');
     expect(
       mediaCoverSearchQuery('The Legend of Zelda', '   ', 'videoGame'),
-    ).toBe('The Legend of Zelda video game full case cover jacket');
+    ).toBe('The Legend of Zelda cover art the cover project');
   });
 });
 

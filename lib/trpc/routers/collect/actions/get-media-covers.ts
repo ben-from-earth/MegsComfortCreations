@@ -26,8 +26,8 @@ export function mediaCoverSearchQuery(
   if (type === 'videoGame') {
     const consoleName = author?.trim();
     return consoleName
-      ? `${title} ${consoleName} video game full case cover jacket`
-      : `${title} video game full case cover jacket`;
+      ? `${title} ${consoleName} cover art the cover project`
+      : `${title} cover art the cover project`;
   }
   return `${title}${author ? ` ${author}` : ''} ${type} Cover Image`;
 }
@@ -47,8 +47,10 @@ export async function getMediaCovers(
     throw new Error('Google Custom Search API key or CX not set');
   }
   const resultCount = mediaCoverResultCount(type);
+  const query = mediaCoverSearchQuery(title, author, type, movieFormat);
+  console.log('[collect] google cover query', { type, query, resultCount });
   const params = new URLSearchParams({
-    q: mediaCoverSearchQuery(title, author, type, movieFormat),
+    q: query,
     cx: CX,
     key: API_KEY,
     searchType: 'image',

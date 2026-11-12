@@ -28,8 +28,10 @@ import AlbumReleaseField, {
 import type { CollectedFieldEditState } from '@/mediacollector/collected-item-text-field';
 import {
   CoverImage,
+  THREE_DS_COVER_ASPECT_CLASS_NAME,
   collectorCoverAspectClassName,
 } from '@/mediacollector/cover-tile';
+import { isThreeDsConsole } from 'lib/helpers/three-ds-console';
 import {
   countDatabaseItemChanges,
   diffDatabaseItem,
@@ -98,6 +100,8 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
     type;
   const mainCoverSizeClassName = type === 'album' ? 'h-30 w-30' : 'h-45 w-30';
   const videoGameConsole = blockInfo.console?.trim();
+  const isThreeDsGame =
+    type === 'videoGame' && isThreeDsConsole(videoGameConsole);
 
   const handleDelete = () =>
     startDeleting(async () => {
@@ -174,11 +178,16 @@ function LibraryCard({ item }: { item: MediaItemForm }) {
               />
               {selectedImage ? (
                 <div
-                  className={`relative w-full overflow-hidden rounded-md ${collectorCoverAspectClassName(type)}`}
+                  className={`relative w-full overflow-hidden rounded-md ${
+                    isThreeDsGame
+                      ? THREE_DS_COVER_ASPECT_CLASS_NAME
+                      : collectorCoverAspectClassName(type)
+                  }`}
                 >
                   <CoverImage
                     url={selectedImage.url}
                     alt={`${blockInfo.title} cover`}
+                    fit={isThreeDsGame ? 'fill' : 'cover'}
                   />
                 </div>
               ) : null}

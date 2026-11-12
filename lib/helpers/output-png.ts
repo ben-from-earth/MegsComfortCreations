@@ -3,6 +3,7 @@
 import sharp, { OverlayOptions, RGBA } from 'sharp';
 import axios from 'axios';
 import JSZip from 'jszip';
+import { isThreeDsConsole } from './three-ds-console';
 
 /*
   PNG/ZIP renderer (paginated)
@@ -132,10 +133,6 @@ const threeDsVariation: Variation = {
   mode: 'single',
 };
 
-function is3dsConsole(consoleName: string | undefined) {
-  return consoleName?.trim().toLowerCase() === '3ds';
-}
-
 // Which variation is used based on format and media type.
 // Movies and video games use the 5 mm full cover, on either bleed setting.
 // A console of 3DS prints as one 1.64 by 0.77 inch cover.
@@ -162,7 +159,7 @@ export function cellVariationFor(
   type: string | undefined,
   consoleName?: string,
 ): Variation {
-  if (type === 'videoGame' && is3dsConsole(consoleName)) {
+  if (type === 'videoGame' && isThreeDsConsole(consoleName)) {
     return threeDsVariation;
   }
   if (type === 'movie' || type === 'videoGame') {
