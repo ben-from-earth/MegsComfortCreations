@@ -17,19 +17,19 @@ BEGIN
   CREATE TABLE "public"."movies" (
     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     "title" text NOT NULL,
+    "year" integer,
     "spine_color" text NOT NULL,
-    "movie_format" "public"."movie_format" NOT NULL
+    "movie_format" "public"."movie_format" NOT NULL,
+    CONSTRAINT "movies_title_format_unique" UNIQUE NULLS NOT DISTINCT ("title", "year", "movie_format")
   );
-  CREATE UNIQUE INDEX "movies_title_format_unique"
-    ON "public"."movies" USING btree ("title", "movie_format");
 
   CREATE TABLE "public"."video_games" (
     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     "title" text NOT NULL,
-    "spine_color" text NOT NULL
+    "year" integer,
+    "spine_color" text NOT NULL,
+    CONSTRAINT "video_games_title_unique" UNIQUE NULLS NOT DISTINCT ("title", "year")
   );
-  CREATE UNIQUE INDEX "video_games_title_unique"
-    ON "public"."video_games" USING btree ("title");
 
   CREATE TABLE "public"."albums" (
     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -53,20 +53,70 @@ BEGIN
       AND column_name = 'movie_format'
   ) THEN
     EXECUTE $insert_movies$
-      INSERT INTO "public"."movies" ("id", "title", "spine_color", "movie_format")
-      SELECT "id", "title", "spine_color", COALESCE("movie_format"::text, 'dvd')::"public"."movie_format"
+      INSERT INTO "public"."movies" ("id", "title", "year", "spine_color", "movie_format")
+      SELECT
+        "id",
+        CASE
+          WHEN length(btrim("title")) >= 7
+            AND right(btrim("title"), 6) ~ '^\([0-9]{4}\)$'
+            AND btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6)) <> ''
+          THEN btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6))
+          ELSE btrim("title")
+        END,
+        CASE
+          WHEN length(btrim("title")) >= 7
+            AND right(btrim("title"), 6) ~ '^\([0-9]{4}\)$'
+            AND btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6)) <> ''
+          THEN substring(right(btrim("title"), 6) FROM 2 FOR 4)::integer
+          ELSE NULL
+        END,
+        "spine_color",
+        COALESCE("movie_format"::text, 'dvd')::"public"."movie_format"
       FROM "public"."other_media"
       WHERE "media_type" = 'movie'
     $insert_movies$;
   ELSE
-    INSERT INTO "public"."movies" ("id", "title", "spine_color", "movie_format")
-    SELECT "id", "title", "spine_color", 'dvd'::"public"."movie_format"
+    INSERT INTO "public"."movies" ("id", "title", "year", "spine_color", "movie_format")
+    SELECT
+      "id",
+      CASE
+        WHEN length(btrim("title")) >= 7
+          AND right(btrim("title"), 6) ~ '^\([0-9]{4}\)$'
+          AND btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6)) <> ''
+        THEN btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6))
+        ELSE btrim("title")
+      END,
+      CASE
+        WHEN length(btrim("title")) >= 7
+          AND right(btrim("title"), 6) ~ '^\([0-9]{4}\)$'
+          AND btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6)) <> ''
+        THEN substring(right(btrim("title"), 6) FROM 2 FOR 4)::integer
+        ELSE NULL
+      END,
+      "spine_color",
+      'dvd'::"public"."movie_format"
     FROM "public"."other_media"
     WHERE "media_type" = 'movie';
   END IF;
 
-  INSERT INTO "public"."video_games" ("id", "title", "spine_color")
-  SELECT "id", "title", "spine_color"
+  INSERT INTO "public"."video_games" ("id", "title", "year", "spine_color")
+  SELECT
+    "id",
+    CASE
+      WHEN length(btrim("title")) >= 7
+        AND right(btrim("title"), 6) ~ '^\([0-9]{4}\)$'
+        AND btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6)) <> ''
+      THEN btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6))
+      ELSE btrim("title")
+    END,
+    CASE
+      WHEN length(btrim("title")) >= 7
+        AND right(btrim("title"), 6) ~ '^\([0-9]{4}\)$'
+        AND btrim(substring(btrim("title") FROM 1 FOR length(btrim("title")) - 6)) <> ''
+      THEN substring(right(btrim("title"), 6) FROM 2 FOR 4)::integer
+      ELSE NULL
+    END,
+    "spine_color"
   FROM "public"."other_media"
   WHERE "media_type" = 'videoGame';
 

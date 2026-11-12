@@ -8,6 +8,7 @@ import {
   boolean,
   date,
   index,
+  unique,
   uniqueIndex,
   check,
 } from 'drizzle-orm/pg-core';
@@ -77,11 +78,14 @@ export const movies = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     title: text('title').notNull(),
+    year: integer('year'),
     spineColor: text('spine_color').notNull(),
     movieFormat: movieFormatEnum('movie_format').notNull(),
   },
   (table) => [
-    uniqueIndex('movies_title_format_unique').on(table.title, table.movieFormat),
+    unique('movies_title_format_unique')
+      .on(table.title, table.year, table.movieFormat)
+      .nullsNotDistinct(),
   ],
 );
 
@@ -91,9 +95,14 @@ export const videoGames = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     title: text('title').notNull(),
+    year: integer('year'),
     spineColor: text('spine_color').notNull(),
   },
-  (table) => [uniqueIndex('video_games_title_unique').on(table.title)],
+  (table) => [
+    unique('video_games_title_unique')
+      .on(table.title, table.year)
+      .nullsNotDistinct(),
+  ],
 );
 
 // ---------- albums ----------

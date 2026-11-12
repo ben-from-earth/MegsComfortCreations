@@ -47,6 +47,7 @@ CREATE TABLE "genres_books" (
 CREATE TABLE "movies" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
+	"year" integer,
 	"spineColor" text NOT NULL,
 	"imageUrls" text[] NOT NULL,
 	CONSTRAINT "movies_title_unique" UNIQUE("title")
@@ -96,9 +97,10 @@ CREATE TABLE "verification" (
 CREATE TABLE "video_games" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
+	"year" integer,
 	"spineColor" text NOT NULL,
 	"imageUrls" text[] NOT NULL,
-	CONSTRAINT "video_games_title_unique" UNIQUE("title")
+	CONSTRAINT "video_games_title_unique" UNIQUE NULLS NOT DISTINCT ("title","year")
 );
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
