@@ -168,6 +168,52 @@ describe('buildPNGExportImages', () => {
     ).not.toHaveProperty('codeUrl');
   });
 
+  test('copies a video game console onto the printed image', () => {
+    const gameBlock: MediaItemForm = {
+      type: 'videoGame',
+      images: [
+        {
+          url: 'https://img/zelda.png',
+          selected: true,
+          isDefault: true,
+          spineColor: '#445566',
+        },
+      ],
+      blockInfo: {
+        title: 'The Legend of Zelda',
+        spineColor: '#445566',
+        genres: [],
+        console: ' 3DS ',
+      },
+      blockID: 'BLK-GAME',
+      isDatabase: false,
+    };
+
+    expect(buildPNGExportImages([gameBlock])).toEqual<PNGExportImage[]>([
+      {
+        url: 'https://img/zelda.png',
+        type: 'videoGame',
+        spineColor: '#445566',
+        console: '3DS',
+      },
+    ]);
+    expect(
+      buildPNGExportImages([
+        {
+          ...gameBlock,
+          blockInfo: { ...gameBlock.blockInfo, console: null },
+        },
+      ]),
+    ).toEqual<PNGExportImage[]>([
+      {
+        url: 'https://img/zelda.png',
+        type: 'videoGame',
+        spineColor: '#445566',
+        console: '',
+      },
+    ]);
+  });
+
   test('omits export IDs that are no longer in collectedData', () => {
     expect(
       buildPNGExportImages(
