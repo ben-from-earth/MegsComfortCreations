@@ -18,6 +18,14 @@ export interface LibraryPageContextValue {
   ascDesc: 'asc' | 'desc';
   setAscDesc: Dispatch<SetStateAction<'asc' | 'desc'>>;
   setTitleSearch: Dispatch<SetStateAction<string>>;
+  setYear: Dispatch<SetStateAction<number | undefined>>;
+  missingYear: boolean;
+  setMissingYear: Dispatch<SetStateAction<boolean>>;
+  setArtist: Dispatch<SetStateAction<string>>;
+  releaseDateFrom: string;
+  setReleaseDateFrom: Dispatch<SetStateAction<string>>;
+  releaseDateTo: string;
+  setReleaseDateTo: Dispatch<SetStateAction<string>>;
   refreshLibrary: () => Promise<void>;
 }
 
