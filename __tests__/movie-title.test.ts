@@ -1,5 +1,4 @@
 import {
-  movieTitleWithAnyYearPattern,
   splitMovieTitle,
   toDisplayMovieTitle,
   toStoredMovieTitle,
@@ -26,43 +25,27 @@ describe('splitMovieTitle', () => {
 });
 
 describe('stored and displayed movie titles', () => {
-  test('moves the article and keeps the year at the end', () => {
-    expect(toStoredMovieTitle('The Matrix (1999)')).toBe(
-      'Matrix, The (1999)',
-    );
-    expect(toDisplayMovieTitle('Matrix, The (1999)')).toBe(
-      'The Matrix (1999)',
-    );
-    expect(toDisplayMovieTitle(toStoredMovieTitle('The Matrix (1999)'))).toBe(
+  test('moves the article and keeps the year beside the title', () => {
+    const stored = toStoredMovieTitle('The Matrix (1999)');
+    expect(stored).toEqual({ title: 'Matrix, The', year: 1999 });
+    expect(toDisplayMovieTitle('Matrix, The', 1999)).toBe('The Matrix (1999)');
+    expect(toDisplayMovieTitle(stored.title, stored.year)).toBe(
       'The Matrix (1999)',
     );
   });
 
   test('leaves a stored title unchanged', () => {
-    expect(toStoredMovieTitle('Matrix, The (1999)')).toBe(
-      'Matrix, The (1999)',
-    );
-    expect(toStoredMovieTitle('Dune')).toBe('Dune');
+    expect(toStoredMovieTitle('Matrix, The (1999)')).toEqual({
+      title: 'Matrix, The',
+      year: 1999,
+    });
+    expect(toStoredMovieTitle('Dune')).toEqual({ title: 'Dune', year: null });
+    expect(toDisplayMovieTitle('Dune', null)).toBe('Dune');
   });
 
-  test('writes a space before the year when the typed title omits it', () => {
-    expect(toStoredMovieTitle('Dune(2021)')).toBe('Dune (2021)');
-  });
-});
-
-describe('movieTitleWithAnyYearPattern', () => {
-  test('matches the stored base title plus any year, and nothing longer', () => {
-    expect(movieTitleWithAnyYearPattern('Dune')).toBe(
-      '^Dune \\([0-9]{4}\\)$',
-    );
-  });
-
-  test('escapes regex characters in the stored base title', () => {
-    expect(movieTitleWithAnyYearPattern('Dr. No')).toBe(
-      '^Dr\\. No \\([0-9]{4}\\)$',
-    );
-    expect(movieTitleWithAnyYearPattern('(500) Days of Summer')).toBe(
-      '^\\(500\\) Days of Summer \\([0-9]{4}\\)$',
-    );
+  test('shows a space before the year when the typed title omits it', () => {
+    const stored = toStoredMovieTitle('Dune(2021)');
+    expect(stored).toEqual({ title: 'Dune', year: 2021 });
+    expect(toDisplayMovieTitle(stored.title, stored.year)).toBe('Dune (2021)');
   });
 });

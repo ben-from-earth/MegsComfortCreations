@@ -8,8 +8,10 @@ import {
   exists,
   ilike,
   inArray,
+  isNull,
   notExists,
   sql,
+  type Column,
 } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb, type Db } from '@/db/client';
@@ -113,16 +115,20 @@ type EditableMediaItem = BookEditItem | TitleMediaEditItem | AlbumEditItem;
 
 const ALBUM_ROW_SPINE_COLOR = '#ffffff';
 
-function movieLibraryTitleFilter(title: string) {
+function libraryTitleFilter(
+  titleColumn: Column,
+  yearColumn: Column,
+  title: string,
+) {
   const { baseTitle, year } = splitMovieTitle(title);
   const containsTitle = ilike(
-    movies.title,
+    titleColumn,
     `%${toTitleSearchTerm(baseTitle)}%`,
   );
   if (!year) {
     return containsTitle;
   }
-  return and(containsTitle, ilike(movies.title, `% (${year})`));
+  return and(containsTitle, eq(yearColumn, Number(year)));
 }
 
 function databaseErrorHint(error: unknown) {
@@ -505,7 +511,9 @@ export const databaseRouter = router({
         : undefined;
 
       if (type === 'movie') {
-        const titleFilter = hasTitle ? movieLibraryTitleFilter(title) : undefined;
+        const titleFilter = hasTitle
+          ? libraryTitleFilter(movies.title, movies.year, title)
+          : undefined;
         const orderExpression =
           ascDesc === 'asc' ? asc(movies.title) : desc(movies.title);
         const [rows, [{ count }]] = await Promise.all([
@@ -513,6 +521,7 @@ export const databaseRouter = router({
             .select({
               id: movies.id,
               title: movies.title,
+              year: movies.year,
               spineColor: movies.spineColor,
               movieFormat: movies.movieFormat,
               mediaType: sql<'movie'>`'movie'`,
@@ -534,8 +543,10 @@ export const databaseRouter = router({
         const rowsWithResolvedImages = rows.map((row) => {
           const images = imagesById.get(row.id) ?? [];
           return {
-            ...row,
-            title: toDisplayMovieTitle(row.title),
+            id: row.id,
+            mediaType: row.mediaType,
+            title: toDisplayMovieTitle(row.title, row.year),
+            movieFormat: row.movieFormat,
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
           };
@@ -549,8 +560,8 @@ export const databaseRouter = router({
       }
 
       if (type === 'videoGame') {
-        const titleFilter = titleContains
-          ? ilike(videoGames.title, titleContains)
+        const titleFilter = hasTitle
+          ? libraryTitleFilter(videoGames.title, videoGames.year, title)
           : undefined;
         const orderExpression =
           ascDesc === 'asc' ? asc(videoGames.title) : desc(videoGames.title);
@@ -559,6 +570,7 @@ export const databaseRouter = router({
             .select({
               id: videoGames.id,
               title: videoGames.title,
+              year: videoGames.year,
               spineColor: videoGames.spineColor,
               mediaType: sql<'videoGame'>`'videoGame'`,
             })
@@ -579,8 +591,9 @@ export const databaseRouter = router({
         const rowsWithResolvedImages = rows.map((row) => {
           const images = imagesById.get(row.id) ?? [];
           return {
-            ...row,
-            title: toDisplayTitle(row.title),
+            id: row.id,
+            mediaType: row.mediaType,
+            title: toDisplayMovieTitle(row.title, row.year),
             images,
             spineColor: resolveDisplaySpineColor(images, row.spineColor),
           };
@@ -910,19 +923,24 @@ export const databaseRouter = router({
           continue;
         }
 
-        const displayTitle =
-          data.type === 'movie'
-            ? toDisplayMovieTitle(toStoredMovieTitle(data.blockInfo.title))
-            : toDisplayTitle(toStoredTitle(data.blockInfo.title));
+        const storedTitle =
+          data.type === 'movie' || data.type === 'videoGame'
+            ? toStoredMovieTitle(data.blockInfo.title)
+            : null;
+        const displayTitle = storedTitle
+          ? toDisplayMovieTitle(storedTitle.title, storedTitle.year)
+          : toDisplayTitle(toStoredTitle(data.blockInfo.title));
         let createdMediaId: string | null = null;
         try {
           const savedMedia =
             data.type === 'movie'
               ? await db.transaction(async (tx) => {
+                  const stored = toStoredMovieTitle(data.blockInfo.title);
                   const [insertedMovie] = await tx
                     .insert(movies)
                     .values({
-                      title: toStoredMovieTitle(data.blockInfo.title),
+                      title: stored.title,
+                      year: stored.year,
                       spineColor: resolveDisplaySpineColor(
                         data.images,
                         data.blockInfo.spineColor,
@@ -939,10 +957,12 @@ export const databaseRouter = router({
                 })
               : data.type === 'videoGame'
                 ? await db.transaction(async (tx) => {
+                    const stored = toStoredMovieTitle(data.blockInfo.title);
                     const [insertedVideoGame] = await tx
                       .insert(videoGames)
                       .values({
-                        title: toStoredTitle(data.blockInfo.title),
+                        title: stored.title,
+                        year: stored.year,
                         spineColor: resolveDisplaySpineColor(
                           data.images,
                           data.blockInfo.spineColor,
@@ -1284,19 +1304,16 @@ export const databaseRouter = router({
         };
       }
       const data = validation.data;
-      const storedTitle =
-        type === 'movie'
-          ? toStoredMovieTitle(data.title)
-          : toStoredTitle(data.title);
-      const displayTitle =
-        type === 'movie'
-          ? toDisplayMovieTitle(storedTitle)
-          : toDisplayTitle(storedTitle);
+      const stored = toStoredMovieTitle(data.title);
+      const displayTitle = toDisplayMovieTitle(stored.title, stored.year);
       if (type === 'movie') {
         const whereExpression = data.id
           ? eq(movies.id, data.id)
           : and(
-              eq(movies.title, storedTitle),
+              eq(movies.title, stored.title),
+              stored.year === null
+                ? isNull(movies.year)
+                : eq(movies.year, stored.year),
               eq(movies.movieFormat, data.movieFormat ?? 'dvd'),
             );
         const [existingMovie] = await db
@@ -1327,7 +1344,8 @@ export const databaseRouter = router({
         const [savedMovie] = await db
           .update(movies)
           .set({
-            title: storedTitle,
+            title: stored.title,
+            year: stored.year,
             spineColor: persistedSpineColor,
           })
           .where(whereExpression)
@@ -1354,7 +1372,12 @@ export const databaseRouter = router({
 
       const whereExpression = data.id
         ? eq(videoGames.id, data.id)
-        : eq(videoGames.title, storedTitle);
+        : and(
+            eq(videoGames.title, stored.title),
+            stored.year === null
+              ? isNull(videoGames.year)
+              : eq(videoGames.year, stored.year),
+          );
       const [existingVideoGame] = await db
         .select()
         .from(videoGames)
@@ -1383,7 +1406,8 @@ export const databaseRouter = router({
       const [savedVideoGame] = await db
         .update(videoGames)
         .set({
-          title: storedTitle,
+          title: stored.title,
+          year: stored.year,
           spineColor: persistedSpineColor,
         })
         .where(whereExpression)

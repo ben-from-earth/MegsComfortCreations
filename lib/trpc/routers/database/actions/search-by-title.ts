@@ -1,10 +1,8 @@
-import { and, eq, ilike, or, sql, type Column } from 'drizzle-orm';
+import { and, eq, ilike, type Column } from 'drizzle-orm';
 import { Db } from '@/db/client';
 import { MediaType } from 'lib/constants/media-types';
 import { type MovieFormat } from 'lib/constants/movie-formats';
 import {
-  movieTitleWithAnyYearPattern,
-  splitMovieTitle,
   toDisplayMovieTitle,
   toStoredMovieTitle,
 } from 'lib/helpers/movie-title';
@@ -18,16 +16,17 @@ import {
   loadVideoGameImagesById,
 } from 'lib/media-storage/media-image-records';
 
-function movieTitleCondition(titleColumn: Column, title: string) {
-  const storedTitle = toStoredMovieTitle(title);
-  if (splitMovieTitle(title).year) {
-    return ilike(titleColumn, storedTitle);
+function titledMediaSearchCondition(
+  titleColumn: Column,
+  yearColumn: Column,
+  title: string,
+) {
+  const stored = toStoredMovieTitle(title);
+  const titleMatch = ilike(titleColumn, stored.title);
+  if (stored.year === null) {
+    return titleMatch;
   }
-
-  return or(
-    ilike(titleColumn, storedTitle),
-    sql`${titleColumn} ~* ${movieTitleWithAnyYearPattern(storedTitle)}`,
-  );
+  return and(titleMatch, eq(yearColumn, stored.year));
 }
 
 export function resolveBookSearchFilters(title: string, author?: string) {
@@ -96,7 +95,7 @@ export async function searchByTitle(
       .from(movies)
       .where(
         and(
-          movieTitleCondition(movies.title, title),
+          titledMediaSearchCondition(movies.title, movies.year, title),
           eq(movies.movieFormat, movieFormat ?? 'dvd'),
         ),
       );
@@ -104,7 +103,7 @@ export async function searchByTitle(
     const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
       mediaType: 'movie',
       id: row.id,
-      title: toDisplayMovieTitle(row.title),
+      title: toDisplayMovieTitle(row.title, row.year),
       spineColor: row.spineColor,
       images: imagesById.get(row.id) ?? [],
       movieFormat: row.movieFormat,
@@ -116,12 +115,12 @@ export async function searchByTitle(
     const rows = await db
       .select()
       .from(videoGames)
-      .where(ilike(videoGames.title, rearrangedTitle));
+      .where(titledMediaSearchCondition(videoGames.title, videoGames.year, title));
     const imagesById = await loadImages(db, rows, loadVideoGameImagesById);
     const foundMediaList: PostSavedMediaItem[] = rows.map((row) => ({
       mediaType: 'videoGame',
       id: row.id,
-      title: toDisplayTitle(row.title),
+      title: toDisplayMovieTitle(row.title, row.year),
       spineColor: row.spineColor,
       images: imagesById.get(row.id) ?? [],
     }));
