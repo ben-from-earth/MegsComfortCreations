@@ -107,8 +107,6 @@ export default function LibraryItemCovers({
     }
   };
 
-  const showUploadSlot =
-    (type === 'book' || type === 'movie' || type === 'album') && !isLocked;
   const tileAspectClassName = collectorCoverAspectClassName(type);
   const hasOverflow = images.length > MAX_TILES_WITHOUT_OVERFLOW;
   const selectedImageIndex = images.findIndex((image) => image.selected);
@@ -202,7 +200,7 @@ export default function LibraryItemCovers({
             </span>
           </button>
         ) : null}
-        {showUploadSlot ? (
+        {isLocked ? null : (
           <UploadTile
             mediaType={type}
             isUploading={isUploading}
@@ -210,7 +208,7 @@ export default function LibraryItemCovers({
             aspectClassName={tileAspectClassName}
             onClick={() => fileInputRef.current?.click()}
           />
-        ) : null}
+        )}
       </div>
       {imagesError ? (
         <p className="mx-4.5 mt-0 mb-3 text-xs font-bold text-red-600">
@@ -232,7 +230,7 @@ export default function LibraryItemCovers({
             setIsDialogOpen(false);
           }}
           onUploadClick={
-            showUploadSlot && !isLocked
+            !isLocked
               ? () => {
                   setIsDialogOpen(false);
                   fileInputRef.current?.click();

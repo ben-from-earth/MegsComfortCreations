@@ -14,7 +14,7 @@ export function coverAspectClassName(mediaType: MediaType) {
 }
 
 export function collectorCoverAspectClassName(mediaType: MediaType) {
-  if (mediaType === 'movie') {
+  if (mediaType === 'movie' || mediaType === 'videoGame') {
     return 'aspect-[3/2]';
   }
   return coverAspectClassName(mediaType);

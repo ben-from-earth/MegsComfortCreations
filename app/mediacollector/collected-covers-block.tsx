@@ -73,6 +73,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
   const title = block?.blockInfo.title ?? '';
   const spineColor = block?.blockInfo.spineColor;
   const genres = block?.blockInfo.genres ?? [];
+  const videoGameConsole = block?.blockInfo.console?.trim();
 
   const original = isDatabase ? originalsByBlockId.get(blockID) : undefined;
   const changes = original && block ? diffDatabaseItem(original, block) : null;
@@ -164,6 +165,10 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
             <span className={`${pillClassName} ${typeChipClassNames.book}`}>
               {movieFormatLabel(block?.blockInfo.movieFormat)}
             </span>
+          ) : type === 'videoGame' && videoGameConsole ? (
+            <span className={`${pillClassName} ${typeChipClassNames.book}`}>
+              {videoGameConsole}
+            </span>
           ) : null}
         </div>
         {isDatabase ? (
@@ -193,7 +198,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         )}
       </div>
 
-      {type === 'movie' ? (
+      {type === 'movie' || type === 'videoGame' ? (
         <div className="mb-3.5 flex flex-col gap-3 px-4.5 pt-3.5">
           <CollectedItemTextField
             name="title"
@@ -203,13 +208,13 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
           />
           {selectedImage ? (
             <div
-              className={`relative w-full overflow-hidden rounded-md ${collectorCoverAspectClassName('movie')}`}
+              className={`relative w-full overflow-hidden rounded-md ${collectorCoverAspectClassName(type)}`}
             >
               <CoverImage url={selectedImage.url} alt={`${title} cover`} />
             </div>
           ) : (
             <div
-              className={`flex w-full items-center justify-center rounded-md border-2 border-dashed border-[#b0533a] bg-[#f9eee9] p-2 text-center text-[13px] font-extrabold text-[#9a3b26] ${collectorCoverAspectClassName('movie')}`}
+              className={`flex w-full items-center justify-center rounded-md border-2 border-dashed border-[#b0533a] bg-[#f9eee9] p-2 text-center text-[13px] font-extrabold text-[#9a3b26] ${collectorCoverAspectClassName(type)}`}
             >
               Choose a cover below
             </div>
@@ -320,9 +325,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
               isLocked={isLocked}
               onLookup={handleCodeLookup}
             />
-          ) : (
-            <div className="mx-4.5 mb-3.5 h-10" />
-          )}
+          ) : null}
         </>
       )}
 
@@ -336,7 +339,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
         title={title}
       />
 
-      {type !== 'album' && type !== 'movie' ? (
+      {type === 'book' ? (
         <SpineColorRow
           index={index}
           isLocked={isLocked}
