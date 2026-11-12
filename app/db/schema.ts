@@ -96,11 +96,12 @@ export const videoGames = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     title: text('title').notNull(),
     year: integer('year'),
+    console: text('console').notNull().default(''),
     spineColor: text('spine_color').notNull(),
   },
   (table) => [
     unique('video_games_title_unique')
-      .on(table.title, table.year)
+      .on(table.title, table.year, table.console)
       .nullsNotDistinct(),
   ],
 );

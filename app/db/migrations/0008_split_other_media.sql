@@ -27,8 +27,9 @@ BEGIN
     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     "title" text NOT NULL,
     "year" integer,
+    "console" text DEFAULT '' NOT NULL,
     "spine_color" text NOT NULL,
-    CONSTRAINT "video_games_title_unique" UNIQUE NULLS NOT DISTINCT ("title", "year")
+    CONSTRAINT "video_games_title_unique" UNIQUE NULLS NOT DISTINCT ("title", "year", "console")
   );
 
   CREATE TABLE "public"."albums" (
@@ -99,7 +100,7 @@ BEGIN
     WHERE "media_type" = 'movie';
   END IF;
 
-  INSERT INTO "public"."video_games" ("id", "title", "year", "spine_color")
+  INSERT INTO "public"."video_games" ("id", "title", "year", "console", "spine_color")
   SELECT
     "id",
     CASE
@@ -116,6 +117,7 @@ BEGIN
       THEN substring(right(btrim("title"), 6) FROM 2 FOR 4)::integer
       ELSE NULL
     END,
+    '',
     "spine_color"
   FROM "public"."other_media"
   WHERE "media_type" = 'videoGame';
