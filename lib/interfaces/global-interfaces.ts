@@ -7,6 +7,7 @@ interface MediaExtras {
 }
 
 export interface MediaImageItem {
+  id?: string;
   url: string;
   selected?: boolean;
   isDefault: boolean;
