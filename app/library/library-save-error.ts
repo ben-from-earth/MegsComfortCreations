@@ -1,3 +1,8 @@
+import {
+  ORDER_COVER_IN_USE_ERROR,
+  ORDER_COVER_IN_USE_MESSAGE,
+} from 'lib/orders/order-cover-in-use';
+
 export const GENRE_UPDATE_FAILED_MESSAGE =
   'The item was saved, but updating genres failed. Save again to retry.';
 
@@ -12,6 +17,8 @@ export const SCHEMA_VIOLATION_MESSAGE =
 
 export const MEDIA_NOT_FOUND_MESSAGE =
   'This item is no longer in the database.';
+
+export { ORDER_COVER_IN_USE_MESSAGE };
 
 export type LibrarySaveFieldName = 'images';
 
@@ -32,6 +39,10 @@ export function toLibrarySaveDisplayError(
 
   if (error === 'Media Not Found') {
     return { placement: 'form', message: MEDIA_NOT_FOUND_MESSAGE };
+  }
+
+  if (error === ORDER_COVER_IN_USE_ERROR) {
+    return { placement: 'form', message: ORDER_COVER_IN_USE_MESSAGE };
   }
 
   if (error === 'Schema Violation') {

@@ -2,6 +2,7 @@ import type {
   DatabaseSaveFailureResult,
   DatabaseSaveServerResponse,
 } from 'lib/interfaces/global-interfaces';
+import { ORDER_COVER_IN_USE_ERROR } from 'lib/orders/order-cover-in-use';
 import type { MediaItemForm } from './collector-form/media-item-form-schema';
 
 export type DatabaseSaveFailureDisplayLine = {
@@ -24,6 +25,10 @@ export function toUserFriendlyDatabaseSaveReason(
 
   if (item.error === 'Media Not Found') {
     return 'This database item could not be found, so the edit was not saved.';
+  }
+
+  if (item.error === ORDER_COVER_IN_USE_ERROR) {
+    return item.message;
   }
 
   if (item.error === 'Database Edit Error') {

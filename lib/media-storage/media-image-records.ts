@@ -1,4 +1,4 @@
-import { Db } from '@/db/client';
+import { Db, DbExecutor } from '@/db/client';
 import { and, asc, eq, inArray, ne } from 'drizzle-orm';
 import { mediaImageItems } from '@/db/schema';
 import { MediaType } from 'lib/constants/media-types';
@@ -308,7 +308,7 @@ function storedCodeColor(
 }
 
 async function insertCover(
-  db: Db,
+  db: DbExecutor,
   mediaType: MediaType,
   mediaId: string,
   imageFile: PersistedMediaImageRecord,
@@ -344,7 +344,7 @@ async function insertCover(
 }
 
 async function replaceCoverRecords(
-  db: Db,
+  db: DbExecutor,
   mediaType: MediaType,
   mediaId: string,
   imageFiles: PersistedMediaImageRecord[],
@@ -423,7 +423,7 @@ async function replaceCoverRecords(
 }
 
 export async function replaceBookImageRecords(
-  db: Db,
+  db: DbExecutor,
   bookId: string,
   imageFiles: PersistedMediaImageRecord[],
 ) {
@@ -431,7 +431,7 @@ export async function replaceBookImageRecords(
 }
 
 export async function replaceMediaImageRecords(
-  db: Db,
+  db: DbExecutor,
   mediaReference: ParentMediaReference,
   imageFiles: PersistedMediaImageRecord[],
 ) {

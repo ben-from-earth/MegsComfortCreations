@@ -377,3 +377,21 @@ export async function persistUploadedImageToS3(
     sourceUrl: input.fileName?.trim() || 'uploaded-image',
   };
 }
+
+export async function putPublicObject(input: {
+  key: string;
+  body: Buffer;
+  contentType: string;
+}): Promise<string> {
+  const s3Config = getS3StorageConfig();
+  await s3Config.client.send(
+    new PutObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: input.key,
+      Body: input.body,
+      ContentType: input.contentType,
+      CacheControl: 'no-cache',
+    }),
+  );
+  return `${s3Config.publicBaseUrl}/${input.key}`;
+}
