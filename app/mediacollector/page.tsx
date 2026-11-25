@@ -1,7 +1,9 @@
 'use client';
 
-import { use, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { trpc } from 'lib/trpc/client';
+import LoadingWidget from '@/components/shared/loading-widget';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import QueryCounter from '@/components/shared/query-counter';
@@ -282,30 +284,73 @@ function MediaCollectorContent({
   const { mutateAsync: collectMediaStream } =
     trpc.collect.collectMediaStream.useMutation();
 
-  const applyCollectedBlocks = (
-    blocks: MediaItemForm[],
-    pngExportBlockIds: string[],
-  ) => {
-    const formBlocks = blocks.map((block) => ({
-      ...block,
-      images: toFormImages(block.images, block.blockInfo.spineColor, {
-        allowEmpty: block.type === 'album',
-      }),
-    }));
-    replace(formBlocks);
-    setValue('pngExportBlockIds', pngExportBlockIds);
-    setDatabaseOriginals(
-      new Map(
-        formBlocks
-          .filter((block) => block.isDatabase)
-          .map((block) => [block.blockID, block]),
-      ),
-    );
-    setUnlockedBlockIds(new Set());
-  };
+  const applyCollectedBlocks = useCallback(
+    (blocks: MediaItemForm[], pngExportBlockIds: string[]) => {
+      const formBlocks = blocks.map((block) => ({
+        ...block,
+        images: toFormImages(block.images, block.blockInfo.spineColor, {
+          allowEmpty: block.type === 'album',
+        }),
+      }));
+      replace(formBlocks);
+      setValue('pngExportBlockIds', pngExportBlockIds);
+      setDatabaseOriginals(
+        new Map(
+          formBlocks
+            .filter((block) => block.isDatabase)
+            .map((block) => [block.blockID, block]),
+        ),
+      );
+      setUnlockedBlockIds(new Set());
+    },
+    [replace, setValue],
+  );
+
+  const requestedOrderId = useSearchParams().get('order');
+  const [loadedOrderId, setLoadedOrderId] = useState<string | null>(null);
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+
+  useEffect(() => {
+    if (!requestedOrderId) {
+      return;
+    }
+    let isCancelled = false;
+    setIsLoadingOrder(true);
+    utils.orders.getForCollector
+      .fetch({ id: requestedOrderId })
+      .then((order) => {
+        if (isCancelled) {
+          return;
+        }
+        setValue('customerName', order.customerName);
+        setValue('orderNumber', order.orderNumber);
+        setValue('bookClubRepeat', order.repeatCount);
+        setValue('pngFormat', order.template === 5 ? '5' : '3');
+        applyCollectedBlocks(order.blocks, order.pngExportBlockIds);
+        setResultsFilter('all');
+        setLastSearchedTitles(JSON.stringify(getValues('collectionList')));
+        setLoadedOrderId(requestedOrderId);
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setInformationalDialogText(
+            'This order could not be loaded. It may have been deleted.',
+          );
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingOrder(false);
+        }
+      });
+    return () => {
+      isCancelled = true;
+    };
+  }, [requestedOrderId, utils, applyCollectedBlocks, getValues, setValue]);
 
   const handleCollectClick = async (): Promise<void> => {
     replace([]);
+    setLoadedOrderId(null);
     setResultsFilter('all');
     setValue('pngExportBlockIds', []);
     const collectionList = getValues('collectionList');
@@ -476,7 +521,7 @@ function MediaCollectorContent({
       customerName: formValues.customerName,
       orderNumber: formValues.orderNumber,
       repeatCount: formValues.bookClubRepeat,
-      order: draft,
+      order: loadedOrderId ? { ...draft, orderId: loadedOrderId } : draft,
     });
 
     const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
@@ -588,6 +633,7 @@ function MediaCollectorContent({
             </div>
           </section>
         </form>
+        {isLoadingOrder ? <LoadingWidget message="Loading order" /> : null}
         {loadingState?.step === 'collecting' ? (
           <CollectingCoversModal
             progress={loadingState.progress}
@@ -605,10 +651,7 @@ function MediaCollectorContent({
           />
         ) : null}
         {databaseSaveFailureLines.length > 0 ? (
-          <Dialog
-            title="Error"
-            onClose={() => setDatabaseSaveFailureLines([])}
-          >
+          <Dialog title="Error" onClose={() => setDatabaseSaveFailureLines([])}>
             <DatabaseSaveFailureBody failureLines={databaseSaveFailureLines} />
           </Dialog>
         ) : null}

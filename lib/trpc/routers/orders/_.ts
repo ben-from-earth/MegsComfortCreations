@@ -106,7 +106,6 @@ function displaySpineColor(
 
 type OrderCollectorBlock = {
   blockID: string;
-  databaseId: string;
   isDatabase: true;
   type: MediaType;
   images: ReturnType<typeof imagesForLink>;
@@ -326,7 +325,6 @@ export const ordersRouter = router({
 
       const links = await db
         .select({
-          linkId: orderCovers.id,
           coverId: orderCovers.mediaImageItemId,
           bookId: mediaImageItems.bookId,
           movieId: mediaImageItems.movieId,
@@ -384,7 +382,14 @@ export const ordersRouter = router({
       const videoGameById = new Map(videoGameRows.map((row) => [row.id, row]));
       const albumById = new Map(albumRows.map((row) => [row.id, row]));
 
+      const loadedLibraryIds = new Set<string>();
       const blocks = links.flatMap((link): OrderCollectorBlock[] => {
+        const libraryId =
+          link.bookId ?? link.movieId ?? link.videoGameId ?? link.albumId;
+        if (!libraryId || loadedLibraryIds.has(libraryId)) {
+          return [];
+        }
+        loadedLibraryIds.add(libraryId);
         if (link.bookId) {
           const book = bookById.get(link.bookId);
           if (!book) return [];
@@ -394,8 +399,7 @@ export const ordersRouter = router({
           );
           return [
             {
-              blockID: link.linkId,
-              databaseId: book.id,
+              blockID: book.id,
               isDatabase: true as const,
               type: 'book' as const,
               images,
@@ -419,8 +423,7 @@ export const ordersRouter = router({
           );
           return [
             {
-              blockID: link.linkId,
-              databaseId: movie.id,
+              blockID: movie.id,
               isDatabase: true as const,
               type: 'movie' as const,
               images,
@@ -442,8 +445,7 @@ export const ordersRouter = router({
           );
           return [
             {
-              blockID: link.linkId,
-              databaseId: videoGame.id,
+              blockID: videoGame.id,
               isDatabase: true as const,
               type: 'videoGame' as const,
               images,
@@ -466,8 +468,7 @@ export const ordersRouter = router({
           const title = toDisplayTitle(album.title);
           return [
             {
-              blockID: link.linkId,
-              databaseId: album.id,
+              blockID: album.id,
               isDatabase: true as const,
               type: 'album' as const,
               images,
@@ -490,6 +491,7 @@ export const ordersRouter = router({
         }
         return [];
       });
+      const blockIds = new Set(blocks.map((block) => block.blockID));
 
       return {
         customerName: order.customerName,
@@ -497,7 +499,11 @@ export const ordersRouter = router({
         template: templateValue(order.pngFormat),
         repeatCount: order.repeatCount,
         blocks,
-        pngExportBlockIds: blocks.map((block) => block.blockID),
+        pngExportBlockIds: links.flatMap((link) => {
+          const libraryId =
+            link.bookId ?? link.movieId ?? link.videoGameId ?? link.albumId;
+          return libraryId && blockIds.has(libraryId) ? [libraryId] : [];
+        }),
       };
     }),
 });
