@@ -42,3 +42,16 @@ CREATE INDEX "media_image_items_movie_sort_order_idx" ON "media_image_items" USI
 CREATE INDEX "media_image_items_video_game_sort_order_idx" ON "media_image_items" USING btree ("video_game_id","sort_order");
 --> statement-breakpoint
 CREATE INDEX "media_image_items_album_sort_order_idx" ON "media_image_items" USING btree ("album_id","sort_order");
+--> statement-breakpoint
+CREATE TABLE "order_covers" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"order_id" uuid NOT NULL,
+	"media_image_item_id" uuid NOT NULL,
+	"position" integer NOT NULL,
+	CONSTRAINT "order_covers_order_position_unique" UNIQUE("order_id","position"),
+	CONSTRAINT "order_covers_position_check" CHECK ("position" >= 0)
+);
+--> statement-breakpoint
+ALTER TABLE "order_covers" ADD CONSTRAINT "order_covers_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "order_covers" ADD CONSTRAINT "order_covers_media_image_item_id_media_image_items_id_fk" FOREIGN KEY ("media_image_item_id") REFERENCES "public"."media_image_items"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "order_covers_media_image_item_id_idx" ON "order_covers" USING btree ("media_image_item_id");

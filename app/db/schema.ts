@@ -25,34 +25,31 @@ export const users = pgTable('users', {
 });
 
 // ---------- orders ----------
-export const orders = pgTable('orders', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  customerId: uuid('customer_id')
-    .notNull()
-    .references(() => customers.id, { onDelete: 'cascade' }),
-  orderNumber: text('order_number').notNull().unique(),
-  orderDate: timestamp('order_date').defaultNow().notNull(),
-  totalAmount: integer('total_amount').notNull(),
-  pngId: uuid('png_id').references(() => pngs.id),
-});
-
-// ---------- orders_books ----------
-export const ordersBooks = pgTable('orders_books', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  orderId: uuid('order_id')
-    .notNull()
-    .references(() => orders.id, { onDelete: 'cascade' }),
-  bookId: uuid('book_id')
-    .notNull()
-    .references(() => books.id, { onDelete: 'cascade' }),
-});
-
-// ---------- pngs ----------
-export const pngs = pgTable('pngs', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  url: text('url').notNull(),
-  description: text('description'),
-});
+export const orders = pgTable(
+  'orders',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    customerName: text('customer_name').notNull(),
+    orderNumber: text('order_number').notNull().unique(),
+    pngFormat: integer('png_format').notNull(),
+    repeatCount: integer('repeat_count').notNull(),
+    fileUrl: text('file_url').notNull(),
+    fileName: text('file_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    check('orders_png_format_check', sql`${table.pngFormat} in (3, 5)`),
+    check(
+      'orders_repeat_count_check',
+      sql`${table.repeatCount} between 1 and 25`,
+    ),
+  ],
+);
 
 // ---------- books ----------
 export const books = pgTable(
@@ -218,6 +215,29 @@ export const mediaImageItems = pgTable(
     uniqueIndex('media_image_items_album_default_unique')
       .on(table.albumId)
       .where(sql`${table.albumId} IS NOT NULL AND ${table.isDefault} = true`),
+  ],
+);
+
+// ---------- order_covers ----------
+export const orderCovers = pgTable(
+  'order_covers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'cascade' }),
+    mediaImageItemId: uuid('media_image_item_id')
+      .notNull()
+      .references(() => mediaImageItems.id, { onDelete: 'restrict' }),
+    position: integer('position').notNull(),
+  },
+  (table) => [
+    unique('order_covers_order_position_unique').on(
+      table.orderId,
+      table.position,
+    ),
+    check('order_covers_position_check', sql`${table.position} >= 0`),
+    index('order_covers_media_image_item_id_idx').on(table.mediaImageItemId),
   ],
 );
 
