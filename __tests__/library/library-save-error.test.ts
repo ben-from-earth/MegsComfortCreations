@@ -2,11 +2,9 @@ import {
   LIBRARY_SAVE_FAILED_MESSAGE,
   IMAGE_PERSISTENCE_FAILED_MESSAGE,
   MEDIA_NOT_FOUND_MESSAGE,
-  ORDER_COVER_IN_USE_MESSAGE,
   SCHEMA_VIOLATION_MESSAGE,
   toLibrarySaveDisplayError,
 } from '@/library/library-save-error';
-import { ORDER_COVER_IN_USE_ERROR } from 'lib/orders/order-cover-in-use';
 
 describe('toLibrarySaveDisplayError', () => {
   test('maps image persistence to the images field', () => {
@@ -21,10 +19,6 @@ describe('toLibrarySaveDisplayError', () => {
     expect(toLibrarySaveDisplayError('Media Not Found')).toEqual({
       placement: 'form',
       message: MEDIA_NOT_FOUND_MESSAGE,
-    });
-    expect(toLibrarySaveDisplayError(ORDER_COVER_IN_USE_ERROR)).toEqual({
-      placement: 'form',
-      message: ORDER_COVER_IN_USE_MESSAGE,
     });
     expect(toLibrarySaveDisplayError('Schema Violation')).toEqual({
       placement: 'form',

@@ -6,10 +6,6 @@ import {
 } from '@/mediacollector/database-save-error-display';
 import type { MediaItemForm } from '@/mediacollector/collector-form/media-item-form-schema';
 import type { DatabaseSaveFailureResult } from 'lib/interfaces/global-interfaces';
-import {
-  ORDER_COVER_IN_USE_ERROR,
-  ORDER_COVER_IN_USE_MESSAGE,
-} from 'lib/orders/order-cover-in-use';
 
 function createBlock(overrides: Partial<MediaItemForm> = {}): MediaItemForm {
   return {
@@ -94,14 +90,6 @@ describe('toUserFriendlyDatabaseSaveReason', () => {
         errors: ['Book was not found'],
       }),
       'This database item could not be found, so the edit was not saved.',
-    ],
-    [
-      saveFailure({
-        error: ORDER_COVER_IN_USE_ERROR,
-        message: ORDER_COVER_IN_USE_MESSAGE,
-        errors: [ORDER_COVER_IN_USE_MESSAGE],
-      }),
-      ORDER_COVER_IN_USE_MESSAGE,
     ],
     [
       saveFailure({

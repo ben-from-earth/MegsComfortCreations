@@ -1,12 +1,6 @@
 import { putPublicObject } from './local-image-storage';
 
-const ORDER_FILE_MIME_TYPES = ['image/png', 'application/zip'] as const;
-
-export type OrderFileMimeType = (typeof ORDER_FILE_MIME_TYPES)[number];
-
-function isOrderFileMimeType(mimeType: string): mimeType is OrderFileMimeType {
-  return ORDER_FILE_MIME_TYPES.some((allowed) => allowed === mimeType);
-}
+export type OrderFileMimeType = 'image/png' | 'application/zip';
 
 function safeOrderFileName(fileName: string) {
   const base = fileName.trim().split(/[\\/]/).pop() ?? '';
@@ -17,22 +11,16 @@ function safeOrderFileName(fileName: string) {
 export async function putOrderFile(input: {
   orderId: string;
   fileName: string;
-  mimeType: string;
+  mimeType: OrderFileMimeType;
   body: Buffer;
-}): Promise<{ fileUrl: string; fileName: string; mimeType: OrderFileMimeType }> {
-  if (!isOrderFileMimeType(input.mimeType)) {
-    throw new Error(
-      `Order file type is not allowed. Received "${input.mimeType}".`,
-    );
-  }
-  if (input.body.length === 0) {
-    throw new Error('Order file is empty.');
-  }
-
+}): Promise<{
+  fileUrl: string;
+  fileName: string;
+  mimeType: OrderFileMimeType;
+}> {
   const fileName = safeOrderFileName(input.fileName);
-  const key = `order-files/${input.orderId}/${fileName}`;
   const fileUrl = await putPublicObject({
-    key,
+    key: `order-files/${input.orderId}/${fileName}`,
     body: input.body,
     contentType: input.mimeType,
   });

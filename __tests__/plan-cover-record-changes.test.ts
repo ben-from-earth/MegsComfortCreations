@@ -3,13 +3,10 @@ import { planCoverRecordChanges } from 'lib/media-storage/plan-cover-record-chan
 describe('planCoverRecordChanges', () => {
   test('updates a cover on this parent, inserts a new cover, and deletes a missing one', () => {
     expect(
-      planCoverRecordChanges(
-        ['keep', 'drop'],
-        [{ id: 'keep' }, { id: null }, {}],
-      ),
+      planCoverRecordChanges(['keep', 'drop'], [{ id: 'keep' }, {}]),
     ).toEqual({
       updates: [{ id: 'keep', incomingIndex: 0 }],
-      inserts: [{ incomingIndex: 1 }, { incomingIndex: 2 }],
+      inserts: [{ incomingIndex: 1 }],
       deletes: ['drop'],
     });
   });

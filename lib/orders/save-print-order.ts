@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import type { DbExecutor } from '@/db/client';
 import { mediaImageItems, orderCovers, orders } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
-import { putOrderFile } from 'lib/media-storage/order-file-storage';
+import { databaseErrorHint } from 'lib/helpers/database-error-hint';
+import {
+  putOrderFile,
+  type OrderFileMimeType,
+} from 'lib/media-storage/order-file-storage';
 import { chooseOrderWrite } from './choose-order-write';
 
 const MISSING_ORDER_MESSAGE = 'This order no longer exists.';
@@ -11,15 +15,12 @@ const ORDER_NUMBER_CONFLICT_MESSAGE =
 const MISSING_COVER_MESSAGE = 'A cover on this order no longer exists.';
 
 export class OrderWriteError extends Error {
-  readonly reason: 'bad_request' | 'conflict' | 'not_found';
-
   constructor(
-    reason: 'bad_request' | 'conflict' | 'not_found',
+    readonly reason: 'bad_request' | 'conflict' | 'not_found',
     message: string,
   ) {
     super(message);
     this.name = 'OrderWriteError';
-    this.reason = reason;
   }
 }
 
@@ -41,40 +42,6 @@ export type ResolvedPrintOrder = {
   repeatCount: number;
   coverIds: string[];
 };
-
-function errorText(error: unknown) {
-  const parts: string[] = [];
-  const visit = (value: unknown, depth: number) => {
-    if (depth > 4 || value === null || value === undefined) {
-      return;
-    }
-    if (value instanceof Error) {
-      parts.push(value.message);
-      visit(value.cause, depth + 1);
-    }
-    if (typeof value === 'object' && value !== null) {
-      if ('constraint' in value && typeof value.constraint === 'string') {
-        parts.push(value.constraint);
-      }
-      if ('code' in value && typeof value.code === 'string') {
-        parts.push(value.code);
-      }
-    }
-  };
-  visit(error, 0);
-  return parts.join(' ');
-}
-
-function unwrapOrderWriteError(error: unknown) {
-  let current: unknown = error;
-  for (let depth = 0; depth < 5 && current instanceof Error; depth += 1) {
-    if (current instanceof OrderWriteError) {
-      return current;
-    }
-    current = current.cause;
-  }
-  return null;
-}
 
 async function loadOrderById(db: DbExecutor, id: string) {
   const [row] = await db
@@ -147,20 +114,12 @@ export async function resolvePrintOrder(
 export async function storePrintOrder(
   db: DbExecutor,
   order: ResolvedPrintOrder,
-  file: { mimeType: 'image/png' | 'application/zip'; fileName: string; body: Buffer },
+  file: { mimeType: OrderFileMimeType; fileName: string; body: Buffer },
 ): Promise<void> {
-  const storedFile = await putOrderFile({
-    orderId: order.orderId,
-    fileName: file.fileName,
-    mimeType: file.mimeType,
-    body: file.body,
-  });
+  const storedFile = await putOrderFile({ orderId: order.orderId, ...file });
 
   try {
     await db.transaction(async (tx) => {
-      if (await hasMissingCover(tx, order.coverIds)) {
-        throw new OrderWriteError('bad_request', MISSING_COVER_MESSAGE);
-      }
       if (order.action === 'insert') {
         await tx.insert(orders).values({
           id: order.orderId,
@@ -192,7 +151,9 @@ export async function storePrintOrder(
         }
       }
 
-      await tx.delete(orderCovers).where(eq(orderCovers.orderId, order.orderId));
+      await tx
+        .delete(orderCovers)
+        .where(eq(orderCovers.orderId, order.orderId));
       if (order.coverIds.length > 0) {
         await tx.insert(orderCovers).values(
           order.coverIds.map((mediaImageItemId, position) => ({
@@ -204,11 +165,10 @@ export async function storePrintOrder(
       }
     });
   } catch (error) {
-    const orderWriteError = unwrapOrderWriteError(error);
-    if (orderWriteError) {
-      throw orderWriteError;
+    if (error instanceof OrderWriteError) {
+      throw error;
     }
-    const hint = errorText(error);
+    const hint = databaseErrorHint(error);
     if (hint.includes('orders_order_number_unique')) {
       throw new OrderWriteError('conflict', ORDER_NUMBER_CONFLICT_MESSAGE);
     }

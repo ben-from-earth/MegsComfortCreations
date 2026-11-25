@@ -18,8 +18,6 @@ export const SCHEMA_VIOLATION_MESSAGE =
 export const MEDIA_NOT_FOUND_MESSAGE =
   'This item is no longer in the database.';
 
-export { ORDER_COVER_IN_USE_MESSAGE };
-
 export type LibrarySaveFieldName = 'images';
 
 export type LibrarySaveDisplayError =
