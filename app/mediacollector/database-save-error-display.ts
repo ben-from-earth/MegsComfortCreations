@@ -1,7 +1,9 @@
 import type {
   DatabaseSaveFailureResult,
   DatabaseSaveServerResponse,
+  MediaImageItem,
 } from 'lib/interfaces/global-interfaces';
+import { ORDER_COVER_IN_USE_ERROR } from 'lib/orders/order-cover-in-use';
 import type { MediaItemForm } from './collector-form/media-item-form-schema';
 
 export type DatabaseSaveFailureDisplayLine = {
@@ -24,6 +26,10 @@ export function toUserFriendlyDatabaseSaveReason(
 
   if (item.error === 'Media Not Found') {
     return 'This database item could not be found, so the edit was not saved.';
+  }
+
+  if (item.error === ORDER_COVER_IN_USE_ERROR) {
+    return item.message;
   }
 
   if (item.error === 'Database Edit Error') {
@@ -73,6 +79,66 @@ export function buildDatabaseSaveFailureDisplayLines(
         reason: toUserFriendlyDatabaseSaveReason(item),
       };
     });
+}
+
+function copyIds(
+  images: MediaItemForm['images'],
+  savedImages: readonly MediaImageItem[],
+  isDatabase: boolean,
+): MediaItemForm['images'] {
+  if (!isDatabase) {
+    // A new item stores only its selected covers, or the first cover when none
+    // is selected, in that order.
+    const selectedIndexes = images.flatMap((image, index) =>
+      image.selected ? [index] : [],
+    );
+    const storedIndexes =
+      selectedIndexes.length > 0 ? selectedIndexes : images.length > 0 ? [0] : [];
+    const savedByFormIndex = new Map(
+      storedIndexes.map((formIndex, savedIndex) => [
+        formIndex,
+        savedImages[savedIndex],
+      ]),
+    );
+    return images.map((image, index) => {
+      const saved = savedByFormIndex.get(index);
+      return saved?.id ? { ...image, id: saved.id, url: saved.url } : image;
+    });
+  }
+
+  const savedByUrl = new Map(savedImages.map((image) => [image.url, image]));
+  const sameLength = savedImages.length === images.length;
+  return images.map((image, index) => {
+    const byUrl = savedByUrl.get(image.url);
+    if (byUrl?.id) {
+      return { ...image, id: byUrl.id };
+    }
+    const byPosition = sameLength ? savedImages[index] : undefined;
+    return byPosition?.id
+      ? { ...image, id: byPosition.id, url: byPosition.url }
+      : image;
+  });
+}
+
+export function applySavedCoverIds(
+  collectedData: MediaItemForm[],
+  saveResults: DatabaseSaveServerResponse,
+): MediaItemForm[] {
+  const savedImagesByBlockId = new Map(
+    saveResults.flatMap((item) =>
+      item.success ? [[item.blockID, item.actionAttemptItem.images] as const] : [],
+    ),
+  );
+  if (savedImagesByBlockId.size === 0) {
+    return collectedData;
+  }
+
+  return collectedData.map((block) => {
+    const savedImages = savedImagesByBlockId.get(block.blockID);
+    return savedImages
+      ? { ...block, images: copyIds(block.images, savedImages, block.isDatabase) }
+      : block;
+  });
 }
 
 export function markSuccessfulBlocksAsInDatabase(

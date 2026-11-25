@@ -22,24 +22,18 @@ CREATE TABLE "customers_users" (
 --> statement-breakpoint
 CREATE TABLE "orders" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"customer_id" uuid NOT NULL,
+	"customer_name" text NOT NULL,
 	"order_number" text NOT NULL,
-	"order_date" timestamp DEFAULT now() NOT NULL,
-	"total_amount" integer NOT NULL,
-	"png_id" uuid,
-	CONSTRAINT "orders_order_number_unique" UNIQUE("order_number")
-);
---> statement-breakpoint
-CREATE TABLE "orders_books" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"order_id" uuid NOT NULL,
-	"book_id" uuid NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "pngs" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"url" text NOT NULL,
-	"description" text
+	"png_format" integer NOT NULL,
+	"repeat_count" integer NOT NULL,
+	"file_url" text NOT NULL,
+	"file_name" text NOT NULL,
+	"mime_type" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "orders_order_number_unique" UNIQUE("order_number"),
+	CONSTRAINT "orders_png_format_check" CHECK ("png_format" in (3, 5)),
+	CONSTRAINT "orders_repeat_count_check" CHECK ("repeat_count" between 1 and 25)
 );
 --> statement-breakpoint
 ALTER TABLE "albums" RENAME COLUMN "spineColor" TO "spine_color";--> statement-breakpoint
@@ -54,8 +48,4 @@ ALTER TABLE "video_games" RENAME COLUMN "spineColor" TO "spine_color";--> statem
 ALTER TABLE "video_games" RENAME COLUMN "imageUrls" TO "image_urls";--> statement-breakpoint
 ALTER TABLE "customers_users" ADD CONSTRAINT "customers_users_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "customers_users" ADD CONSTRAINT "customers_users_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "orders" ADD CONSTRAINT "orders_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "orders" ADD CONSTRAINT "orders_png_id_pngs_id_fk" FOREIGN KEY ("png_id") REFERENCES "public"."pngs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "orders_books" ADD CONSTRAINT "orders_books_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "orders_books" ADD CONSTRAINT "orders_books_book_id_books_id_fk" FOREIGN KEY ("book_id") REFERENCES "public"."books"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "customers_users_customer_user_unique" ON "customers_users" USING btree ("customer_id","user_id");

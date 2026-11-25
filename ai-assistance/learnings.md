@@ -146,3 +146,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Piping a Node script to `node --input-type=module <env-file>` made Node execute the env file. The parse error printed the database URL, including the password.
 - Correction: Load the env file from inside a script file. Pass the path as an argument only when the process entry is that script.
 - Rule Going Forward: Never pass an env file as a Node entrypoint. A connection string belongs in the process environment, not in a command line or a stack trace.
+
+### 2026-11-25 - New S3 uploads must use the cover key prefix
+
+- Area: S3 uploads
+- Issue: Order files were written at `order-files/...` on the bucket root. The dev uploader can only `PutObject` under the cover prefix (`media-images/{namespace}/...`), so export failed with AccessDenied.
+- Correction: Build order-file keys with `prefixedObjectKey`, the same prefix and upload namespace cover uploads use.
+- Rule Going Forward: Any object written by the image uploader must go through `prefixedObjectKey`. A key at the bucket root is outside that user's policy.

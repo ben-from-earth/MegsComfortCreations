@@ -1,5 +1,5 @@
-import { Db } from '@/db/client';
-import { asc, eq, inArray } from 'drizzle-orm';
+import { Db, DbExecutor } from '@/db/client';
+import { and, asc, eq, inArray, ne } from 'drizzle-orm';
 import { mediaImageItems } from '@/db/schema';
 import { MediaType } from 'lib/constants/media-types';
 import { normalizeImagePath } from './image-path-utils';
@@ -8,6 +8,7 @@ import {
   PersistedImageFile,
   persistExternalImageToS3,
 } from './local-image-storage';
+import { planCoverRecordChanges } from './plan-cover-record-changes';
 
 type ParentMediaReference =
   | { mediaType: 'book'; mediaId: string }
@@ -25,12 +26,18 @@ export type SourceImageItem =
       isDefault?: boolean;
       spineColor?: string;
       codeColor?: string | null;
+      id?: string;
     };
 
 export type PersistedMediaImageRecord = PersistedImageFile & {
   isDefault: boolean;
   spineColor: string;
   codeColor: string | null;
+  id?: string;
+};
+
+export type SavedCoverRecord = PersistedMediaImageRecord & {
+  id: string;
 };
 
 function normalizeSourceImage(
@@ -47,6 +54,7 @@ function normalizeSourceImage(
       isDefault?: boolean;
       spineColor?: string;
       codeColor?: unknown;
+      id?: unknown;
     };
     const url =
       typeof imageRecord.url === 'string'
@@ -61,6 +69,9 @@ function normalizeSourceImage(
         spineColor: imageRecord.spineColor ?? fallbackSpineColor,
         codeColor:
           typeof imageRecord.codeColor === 'string' ? imageRecord.codeColor : null,
+        ...(typeof imageRecord.id === 'string' && imageRecord.id.length > 0
+          ? { id: imageRecord.id }
+          : {}),
       };
     }
   }
@@ -164,12 +175,15 @@ export async function resolveAndPersistImageList(
             : fallbackSpineColor;
         const codeColor =
           typeof rawSourceImage === 'object' ? (rawSourceImage.codeColor ?? null) : null;
+        const id =
+          typeof rawSourceImage === 'object' ? rawSourceImage.id : undefined;
         return {
           image: {
             ...persistedImage,
             isDefault: index === resolvedDefaultIndex,
             spineColor,
             codeColor,
+            ...(id ? { id } : {}),
           },
         };
       } catch (error) {
@@ -256,31 +270,6 @@ export async function appendBookCoverRecords(
   );
 }
 
-export async function replaceBookImageRecords(
-  db: Db,
-  bookId: string,
-  imageFiles: PersistedMediaImageRecord[],
-) {
-  await db.delete(mediaImageItems).where(eq(mediaImageItems.bookId, bookId));
-
-  if (imageFiles.length === 0) {
-    return;
-  }
-
-  await db.insert(mediaImageItems).values(
-    imageFiles.map((imageFile, sortOrder) => ({
-      bookId,
-      path: imageFile.publicPath,
-      sourceUrl: imageFile.sourceUrl,
-      mimeType: imageFile.mimeType,
-      sizeBytes: imageFile.sizeBytes,
-      sortOrder,
-      isDefault: imageFile.isDefault,
-      spineColor: imageFile.spineColor,
-    })),
-  );
-}
-
 function imageRecordValues(
   imageFile: PersistedMediaImageRecord,
   sortOrder: number,
@@ -298,74 +287,160 @@ function imageRecordValues(
   };
 }
 
+function parentMatch(mediaType: MediaType, mediaId: string) {
+  switch (mediaType) {
+    case 'book':
+      return eq(mediaImageItems.bookId, mediaId);
+    case 'movie':
+      return eq(mediaImageItems.movieId, mediaId);
+    case 'videoGame':
+      return eq(mediaImageItems.videoGameId, mediaId);
+    case 'album':
+      return eq(mediaImageItems.albumId, mediaId);
+  }
+}
+
+function storedCodeColor(
+  mediaType: MediaType,
+  imageFile: PersistedMediaImageRecord,
+) {
+  return mediaType === 'album' ? imageFile.codeColor : null;
+}
+
+async function insertCover(
+  db: DbExecutor,
+  mediaType: MediaType,
+  mediaId: string,
+  imageFile: PersistedMediaImageRecord,
+  sortOrder: number,
+) {
+  const values = imageRecordValues(
+    imageFile,
+    sortOrder,
+    storedCodeColor(mediaType, imageFile),
+  );
+  switch (mediaType) {
+    case 'book':
+      return db
+        .insert(mediaImageItems)
+        .values({ bookId: mediaId, ...values })
+        .returning({ id: mediaImageItems.id });
+    case 'movie':
+      return db
+        .insert(mediaImageItems)
+        .values({ movieId: mediaId, ...values })
+        .returning({ id: mediaImageItems.id });
+    case 'videoGame':
+      return db
+        .insert(mediaImageItems)
+        .values({ videoGameId: mediaId, ...values })
+        .returning({ id: mediaImageItems.id });
+    case 'album':
+      return db
+        .insert(mediaImageItems)
+        .values({ albumId: mediaId, ...values })
+        .returning({ id: mediaImageItems.id });
+  }
+}
+
+async function replaceCoverRecords(
+  db: DbExecutor,
+  mediaType: MediaType,
+  mediaId: string,
+  imageFiles: PersistedMediaImageRecord[],
+): Promise<SavedCoverRecord[]> {
+  const parentWhere = parentMatch(mediaType, mediaId);
+  const existingRows = await db
+    .select({ id: mediaImageItems.id })
+    .from(mediaImageItems)
+    .where(parentWhere);
+  const plan = planCoverRecordChanges(
+    existingRows.map((row) => row.id),
+    imageFiles,
+  );
+
+  if (imageFiles.length === 0) {
+    if (plan.deletes.length > 0) {
+      await db
+        .delete(mediaImageItems)
+        .where(and(parentWhere, inArray(mediaImageItems.id, plan.deletes)));
+    }
+    return [];
+  }
+
+  const defaultIndex = imageFiles.findIndex((image) => image.isDefault);
+  const keptDefault = plan.updates.find(
+    (update) => update.incomingIndex === defaultIndex,
+  );
+  if (existingRows.length > 0) {
+    await db
+      .update(mediaImageItems)
+      .set({ isDefault: false })
+      .where(
+        keptDefault
+          ? and(parentWhere, ne(mediaImageItems.id, keptDefault.id))
+          : parentWhere,
+      );
+  }
+
+  const saved: SavedCoverRecord[] = new Array(imageFiles.length);
+  for (const update of plan.updates) {
+    const imageFile = imageFiles[update.incomingIndex];
+    const codeColor = storedCodeColor(mediaType, imageFile);
+    await db
+      .update(mediaImageItems)
+      .set(imageRecordValues(imageFile, update.incomingIndex, codeColor))
+      .where(eq(mediaImageItems.id, update.id));
+    saved[update.incomingIndex] = { ...imageFile, id: update.id, codeColor };
+  }
+
+  for (const insert of plan.inserts) {
+    const imageFile = imageFiles[insert.incomingIndex];
+    const [row] = await insertCover(
+      db,
+      mediaType,
+      mediaId,
+      imageFile,
+      insert.incomingIndex,
+    );
+    if (!row) {
+      throw new Error('Cover insert failed');
+    }
+    saved[insert.incomingIndex] = {
+      ...imageFile,
+      id: row.id,
+      codeColor: storedCodeColor(mediaType, imageFile),
+    };
+  }
+
+  if (plan.deletes.length > 0) {
+    await db
+      .delete(mediaImageItems)
+      .where(and(parentWhere, inArray(mediaImageItems.id, plan.deletes)));
+  }
+
+  return saved;
+}
+
+export async function replaceBookImageRecords(
+  db: DbExecutor,
+  bookId: string,
+  imageFiles: PersistedMediaImageRecord[],
+) {
+  return replaceCoverRecords(db, 'book', bookId, imageFiles);
+}
+
 export async function replaceMediaImageRecords(
-  db: Db,
+  db: DbExecutor,
   mediaReference: ParentMediaReference,
   imageFiles: PersistedMediaImageRecord[],
 ) {
-  const mediaId = mediaReference.mediaId;
-  switch (mediaReference.mediaType) {
-    case 'book':
-      await db.delete(mediaImageItems).where(eq(mediaImageItems.bookId, mediaId));
-      break;
-    case 'movie':
-      await db
-        .delete(mediaImageItems)
-        .where(eq(mediaImageItems.movieId, mediaId));
-      break;
-    case 'videoGame':
-      await db
-        .delete(mediaImageItems)
-        .where(eq(mediaImageItems.videoGameId, mediaId));
-      break;
-    case 'album':
-      await db
-        .delete(mediaImageItems)
-        .where(eq(mediaImageItems.albumId, mediaId));
-      break;
-  }
-
-  if (imageFiles.length === 0) {
-    return;
-  }
-
-  const codeColorFor = (imageFile: PersistedMediaImageRecord) =>
-    mediaReference.mediaType === 'album' ? imageFile.codeColor : null;
-
-  switch (mediaReference.mediaType) {
-    case 'book':
-      await db.insert(mediaImageItems).values(
-        imageFiles.map((imageFile, sortOrder) => ({
-          bookId: mediaId,
-          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
-        })),
-      );
-      return;
-    case 'movie':
-      await db.insert(mediaImageItems).values(
-        imageFiles.map((imageFile, sortOrder) => ({
-          movieId: mediaId,
-          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
-        })),
-      );
-      return;
-    case 'videoGame':
-      await db.insert(mediaImageItems).values(
-        imageFiles.map((imageFile, sortOrder) => ({
-          videoGameId: mediaId,
-          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
-        })),
-      );
-      return;
-    case 'album':
-      await db.insert(mediaImageItems).values(
-        imageFiles.map((imageFile, sortOrder) => ({
-          albumId: mediaId,
-          ...imageRecordValues(imageFile, sortOrder, codeColorFor(imageFile)),
-        })),
-      );
-      return;
-  }
+  return replaceCoverRecords(
+    db,
+    mediaReference.mediaType,
+    mediaReference.mediaId,
+    imageFiles,
+  );
 }
 
 export async function loadBookImagesById(db: Db, bookIds: string[]) {
@@ -391,6 +466,7 @@ async function loadImagesByParentColumn(
 
   const rows = await db
     .select({
+      id: mediaImageItems.id,
       parentId: parentIdColumn,
       path: mediaImageItems.path,
       sortOrder: mediaImageItems.sortOrder,
@@ -410,6 +486,7 @@ async function loadImagesByParentColumn(
     }
     const currentList = imagesByParentId.get(parentId) ?? [];
     currentList.push({
+      id: row.id,
       url: row.path,
       isDefault: row.isDefault,
       spineColor: row.spineColor,

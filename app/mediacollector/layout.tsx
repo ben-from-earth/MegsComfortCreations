@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import { Just_Another_Hand, Nunito } from 'next/font/google';
+import LoadingWidget from '@/components/shared/loading-widget';
 import { requireAdminPageAccess } from 'lib/auth/page-access';
 
 const nunito = Nunito({ subsets: ['latin'] });
@@ -22,7 +24,9 @@ export default async function MediaCollectorLayout({
         aria-hidden
         className="fixed inset-0 -z-10 bg-[url('/collector-background.png')] bg-cover bg-center"
       />
-      {children}
+      <Suspense fallback={<LoadingWidget message="Loading collector" />}>
+        {children}
+      </Suspense>
     </div>
   );
 }

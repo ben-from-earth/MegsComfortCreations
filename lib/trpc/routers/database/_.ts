@@ -16,7 +16,7 @@ import {
   type Column,
 } from 'drizzle-orm';
 import { z } from 'zod';
-import { db as defaultDb, type Db } from '@/db/client';
+import { db as defaultDb, type Db, type DbExecutor } from '@/db/client';
 import {
   albums,
   books,
@@ -71,11 +71,18 @@ import {
   replaceBookImageRecords,
   replaceMediaImageRecords,
   resolveAndPersistImageList,
+  type SavedCoverRecord,
 } from 'lib/media-storage/media-image-records';
+import {
+  ORDER_COVER_IN_USE_ERROR,
+  ORDER_COVER_IN_USE_MESSAGE,
+} from 'lib/orders/order-cover-in-use';
+import { databaseErrorHint } from 'lib/helpers/database-error-hint';
 
 const mediaType = z.enum(['book', 'movie', 'videoGame', 'album']);
 const sortKey = z.enum(DATABASE_SORT_OPTIONS);
 const mediaImageItemSchema = z.object({
+  id: z.string().min(1).optional(),
   url: z.string().min(1),
   selected: z.boolean().optional(),
   isDefault: z.boolean(),
@@ -141,43 +148,37 @@ function libraryYearFilter(
   return eq(yearColumn, constraint.year);
 }
 
-function databaseErrorHint(error: unknown) {
-  const parts: string[] = [];
-  const visit = (value: unknown, depth: number) => {
-    if (depth > 4 || value === null || value === undefined) {
-      return;
-    }
-    if (value instanceof Error) {
-      parts.push(value.message);
-      visit(value.cause, depth + 1);
-    }
-    if (typeof value === 'object' && value !== null && 'constraint' in value) {
-      const constraint = value.constraint;
-      if (typeof constraint === 'string') {
-        parts.push(constraint);
-      }
-    }
-  };
-  visit(error, 0);
-  return parts.join(' ');
-}
-
 function mediaTypeLabel(type: MediaType) {
   return MEDIA_TYPE_DEFINITIONS.find(
     (definition) => definition.mediaType === type,
   )?.label;
 }
 
-function savedImageList(
-  images: Awaited<ReturnType<typeof resolveAndPersistImageList>>['images'],
-) {
+function savedImageList(images: SavedCoverRecord[]): MediaImageItem[] {
   return images.map((image) => ({
+    id: image.id,
     url: image.publicPath,
     isDefault: image.isDefault,
     spineColor: image.spineColor,
     codeColor: image.codeColor,
     selected: false,
   }));
+}
+
+function coverSource(image: {
+  id?: string;
+  url: string;
+  isDefault: boolean;
+  spineColor: string;
+  codeColor?: string | null;
+}) {
+  return {
+    url: image.url,
+    isDefault: image.isDefault,
+    spineColor: image.spineColor,
+    codeColor: image.codeColor ?? null,
+    ...(image.id ? { id: image.id } : {}),
+  };
 }
 
 function toPostSavedMediaItem(
@@ -230,6 +231,7 @@ async function persistCreatedImages(
   mediaType: Exclude<MediaType, 'book'>,
   mediaId: string,
   sourceImages: Array<{
+    id?: string;
     url: string;
     isDefault: boolean;
     spineColor: string;
@@ -245,12 +247,12 @@ async function persistCreatedImages(
   if (resolvedImages.failures.length > 0) {
     return null;
   }
-  await replaceMediaImageRecords(
+  const savedCovers = await replaceMediaImageRecords(
     db,
     { mediaType, mediaId },
     resolvedImages.images,
   );
-  return savedImageList(resolvedImages.images);
+  return savedImageList(savedCovers);
 }
 
 async function deleteSavedMedia(
@@ -386,6 +388,35 @@ function createMediaNotFoundEditResponse(
     type,
     errors: [`${data.title} does not exist in the database.`],
   };
+}
+
+function createOrderCoverInUseEditResponse(
+  data: EditableMediaItem,
+  type: z.infer<typeof mediaType>,
+) {
+  return {
+    error: ORDER_COVER_IN_USE_ERROR,
+    message: ORDER_COVER_IN_USE_MESSAGE,
+    actionAttemptItem: data,
+    type,
+    errors: [ORDER_COVER_IN_USE_MESSAGE],
+  };
+}
+
+async function applyMediaEdit<T>(
+  db: Db,
+  data: EditableMediaItem,
+  type: z.infer<typeof mediaType>,
+  write: (tx: DbExecutor) => Promise<T>,
+) {
+  try {
+    return { value: await db.transaction(write) };
+  } catch (error) {
+    if (databaseErrorHint(error).includes('order_covers_media_image_item_id')) {
+      return createOrderCoverInUseEditResponse(data, type);
+    }
+    throw error;
+  }
 }
 
 export const databaseRouter = router({
@@ -803,6 +834,32 @@ export const databaseRouter = router({
                   coversToAppend,
                 );
               }
+              const savedImages =
+                (await loadBookImagesById(db, [mediaItem.blockID])).get(
+                  mediaItem.blockID,
+                ) ?? [];
+              results.push(
+                createSaveSuccessResult({
+                  blockID: mediaItem.blockID,
+                  title: mediaItem.blockInfo.title,
+                  message: `${mediaItem.blockInfo.title} covers saved.`,
+                  type: 'book',
+                  actionAttemptItem: {
+                    mediaType: 'book',
+                    id: mediaItem.blockID,
+                    title: mediaItem.blockInfo.title,
+                    author: mediaItem.blockInfo.author ?? '',
+                    pageCount: mediaItem.blockInfo.pageCount ?? null,
+                    pubYear: mediaItem.blockInfo.pubYear ?? null,
+                    images: savedImages,
+                    spineColor: resolveDisplaySpineColor(
+                      savedImages,
+                      mediaItem.blockInfo.spineColor,
+                    ),
+                    genres: mediaItem.blockInfo.genres,
+                  },
+                }),
+              );
             } catch (error) {
               const message =
                 error instanceof Error
@@ -883,11 +940,7 @@ export const databaseRouter = router({
 
             const resolvedImages = await resolveAndPersistImageList(
               { mediaType: 'book', mediaId: book.id },
-              data.images.map((image) => ({
-                url: image.url,
-                isDefault: image.isDefault,
-                spineColor: image.spineColor,
-              })),
+              data.images.map((image) => coverSource(image)),
               {
                 defaultSpineColor: data.blockInfo.spineColor,
                 defaultImageIndex: 0,
@@ -903,13 +956,12 @@ export const databaseRouter = router({
               );
               continue;
             }
-            await replaceBookImageRecords(db, book.id, resolvedImages.images);
-            const images = resolvedImages.images.map((image) => ({
-              url: image.publicPath,
-              isDefault: image.isDefault,
-              spineColor: image.spineColor,
-              selected: false,
-            }));
+            const savedCovers = await replaceBookImageRecords(
+              db,
+              book.id,
+              resolvedImages.images,
+            );
+            const images = savedImageList(savedCovers);
             const persistedSpineColor = resolveDisplaySpineColor(
               images,
               data.blockInfo.spineColor,
@@ -1064,17 +1116,13 @@ export const databaseRouter = router({
 
           const sourceImages =
             data.type === 'album'
-              ? data.images.map((image) => ({
-                  url: image.url,
-                  isDefault: image.isDefault,
-                  spineColor: ALBUM_ROW_SPINE_COLOR,
-                  codeColor: image.codeColor ?? null,
-                }))
-              : data.images.map((image) => ({
-                  url: image.url,
-                  isDefault: image.isDefault,
-                  spineColor: image.spineColor,
-                }));
+              ? data.images.map((image) =>
+                  coverSource({
+                    ...image,
+                    spineColor: ALBUM_ROW_SPINE_COLOR,
+                  }),
+                )
+              : data.images.map((image) => coverSource(image));
           const images = await persistCreatedImages(
             db,
             data.type,
@@ -1238,41 +1286,45 @@ export const databaseRouter = router({
         }
         const resolvedImages = await resolveAndPersistImageList(
           { mediaType: 'book', mediaId: existingBook.id },
-          data.images.map((image) => ({
-            url: image.url,
-            isDefault: image.isDefault,
-            spineColor: image.spineColor,
-          })),
+          data.images.map((image) => coverSource(image)),
           { defaultSpineColor: data.spineColor },
         );
         if (resolvedImages.failures.length > 0) {
           return createImagePersistenceErrorResponse(data.title, false);
         }
-        const images = resolvedImages.images.map((image) => ({
-          url: image.publicPath,
-          isDefault: image.isDefault,
-          spineColor: image.spineColor,
-          selected: false,
-        }));
         const persistedSpineColor = resolveDisplaySpineColor(
-          images,
+          resolvedImages.images,
           data.spineColor,
         );
-        const [book] = await db
-          .update(books)
-          .set({
-            title: toStoredTitle(data.title),
-            author: data.author ?? '',
-            pageCount: data.pageCount ?? null,
-            pubYear: data.pubYear ?? null,
-            spineColor: persistedSpineColor,
-          })
-          .where(whereExpression)
-          .returning();
-        if (!book) {
+        const editedBook = await applyMediaEdit(db, data, type, async (tx) => {
+          const [book] = await tx
+            .update(books)
+            .set({
+              title: toStoredTitle(data.title),
+              author: data.author ?? '',
+              pageCount: data.pageCount ?? null,
+              pubYear: data.pubYear ?? null,
+              spineColor: persistedSpineColor,
+            })
+            .where(whereExpression)
+            .returning();
+          if (!book) {
+            return null;
+          }
+          return {
+            book,
+            images: savedImageList(
+              await replaceBookImageRecords(tx, book.id, resolvedImages.images),
+            ),
+          };
+        });
+        if ('error' in editedBook) {
+          return editedBook;
+        }
+        if (!editedBook.value) {
           return createMediaNotFoundEditResponse(data, type);
         }
-        await replaceBookImageRecords(db, book.id, resolvedImages.images);
+        const { book, images } = editedBook.value;
 
         return {
           message: `${toDisplayTitle(book.title)} successfully edited.`,
@@ -1318,38 +1370,51 @@ export const databaseRouter = router({
         }
         const resolvedImages = await resolveAndPersistImageList(
           { mediaType: 'album', mediaId: existingAlbum.id },
-          data.images.map((image) => ({
-            url: image.url,
-            isDefault: image.isDefault,
-            spineColor: ALBUM_ROW_SPINE_COLOR,
-            codeColor: image.codeColor ?? null,
-          })),
+          data.images.map((image) =>
+            coverSource({
+              ...image,
+              spineColor: ALBUM_ROW_SPINE_COLOR,
+            }),
+          ),
           { defaultSpineColor: ALBUM_ROW_SPINE_COLOR },
         );
         if (resolvedImages.failures.length > 0) {
           return createImagePersistenceErrorResponse(data.title, false);
         }
-        const images = savedImageList(resolvedImages.images);
-        const [savedAlbum] = await db
-          .update(albums)
-          .set({
-            title: toStoredTitle(data.title),
-            artist: data.artist ?? '',
-            releaseDate: data.releaseDate ?? null,
-            ...(data.spotifyAlbumUri
-              ? { spotifyAlbumUri: data.spotifyAlbumUri }
-              : {}),
-          })
-          .where(whereExpression)
-          .returning();
-        if (!savedAlbum) {
+        const editedAlbum = await applyMediaEdit(db, data, type, async (tx) => {
+          const [savedAlbum] = await tx
+            .update(albums)
+            .set({
+              title: toStoredTitle(data.title),
+              artist: data.artist ?? '',
+              releaseDate: data.releaseDate ?? null,
+              ...(data.spotifyAlbumUri
+                ? { spotifyAlbumUri: data.spotifyAlbumUri }
+                : {}),
+            })
+            .where(whereExpression)
+            .returning();
+          if (!savedAlbum) {
+            return null;
+          }
+          return {
+            savedAlbum,
+            images: savedImageList(
+              await replaceMediaImageRecords(
+                tx,
+                { mediaType: 'album', mediaId: savedAlbum.id },
+                resolvedImages.images,
+              ),
+            ),
+          };
+        });
+        if ('error' in editedAlbum) {
+          return editedAlbum;
+        }
+        if (!editedAlbum.value) {
           return createMediaNotFoundEditResponse(data, type);
         }
-        await replaceMediaImageRecords(
-          db,
-          { mediaType: 'album', mediaId: savedAlbum.id },
-          resolvedImages.images,
-        );
+        const { savedAlbum, images } = editedAlbum.value;
 
         return {
           message: `${toDisplayTitle(savedAlbum.title)} successfully edited.`,
@@ -1395,38 +1460,47 @@ export const databaseRouter = router({
         }
         const resolvedImages = await resolveAndPersistImageList(
           { mediaType: 'movie', mediaId: existingMovie.id },
-          data.images.map((image) => ({
-            url: image.url,
-            isDefault: image.isDefault,
-            spineColor: image.spineColor,
-          })),
+          data.images.map((image) => coverSource(image)),
           { defaultSpineColor: data.spineColor },
         );
         if (resolvedImages.failures.length > 0) {
           return createImagePersistenceErrorResponse(data.title, false);
         }
-        const images = savedImageList(resolvedImages.images);
         const persistedSpineColor = resolveDisplaySpineColor(
-          images,
+          resolvedImages.images,
           data.spineColor,
         );
-        const [savedMovie] = await db
-          .update(movies)
-          .set({
-            title: stored.title,
-            year: stored.year,
-            spineColor: persistedSpineColor,
-          })
-          .where(whereExpression)
-          .returning();
-        if (!savedMovie) {
+        const editedMovie = await applyMediaEdit(db, data, type, async (tx) => {
+          const [savedMovie] = await tx
+            .update(movies)
+            .set({
+              title: stored.title,
+              year: stored.year,
+              spineColor: persistedSpineColor,
+            })
+            .where(whereExpression)
+            .returning();
+          if (!savedMovie) {
+            return null;
+          }
+          return {
+            savedMovie,
+            images: savedImageList(
+              await replaceMediaImageRecords(
+                tx,
+                { mediaType: 'movie', mediaId: savedMovie.id },
+                resolvedImages.images,
+              ),
+            ),
+          };
+        });
+        if ('error' in editedMovie) {
+          return editedMovie;
+        }
+        if (!editedMovie.value) {
           return createMediaNotFoundEditResponse(data, type);
         }
-        await replaceMediaImageRecords(
-          db,
-          { mediaType: 'movie', mediaId: savedMovie.id },
-          resolvedImages.images,
-        );
+        const { savedMovie, images } = editedMovie.value;
 
         return {
           message: `${displayTitle} successfully edited.`,
@@ -1459,39 +1533,53 @@ export const databaseRouter = router({
       }
       const resolvedImages = await resolveAndPersistImageList(
         { mediaType: 'videoGame', mediaId: existingVideoGame.id },
-        data.images.map((image) => ({
-          url: image.url,
-          isDefault: image.isDefault,
-          spineColor: image.spineColor,
-        })),
+        data.images.map((image) => coverSource(image)),
         { defaultSpineColor: data.spineColor },
       );
       if (resolvedImages.failures.length > 0) {
         return createImagePersistenceErrorResponse(data.title, false);
       }
-      const images = savedImageList(resolvedImages.images);
       const persistedSpineColor = resolveDisplaySpineColor(
-        images,
+        resolvedImages.images,
         data.spineColor,
       );
-      const [savedVideoGame] = await db
-        .update(videoGames)
-        .set({
-          title: stored.title,
-          year: stored.year,
-          console: storedConsole,
-          spineColor: persistedSpineColor,
-        })
-        .where(whereExpression)
-        .returning();
-      if (!savedVideoGame) {
+      const editedVideoGame = await applyMediaEdit(
+        db,
+        data,
+        type,
+        async (tx) => {
+          const [savedVideoGame] = await tx
+            .update(videoGames)
+            .set({
+              title: stored.title,
+              year: stored.year,
+              console: storedConsole,
+              spineColor: persistedSpineColor,
+            })
+            .where(whereExpression)
+            .returning();
+          if (!savedVideoGame) {
+            return null;
+          }
+          return {
+            savedVideoGame,
+            images: savedImageList(
+              await replaceMediaImageRecords(
+                tx,
+                { mediaType: 'videoGame', mediaId: savedVideoGame.id },
+                resolvedImages.images,
+              ),
+            ),
+          };
+        },
+      );
+      if ('error' in editedVideoGame) {
+        return editedVideoGame;
+      }
+      if (!editedVideoGame.value) {
         return createMediaNotFoundEditResponse(data, type);
       }
-      await replaceMediaImageRecords(
-        db,
-        { mediaType: 'videoGame', mediaId: savedVideoGame.id },
-        resolvedImages.images,
-      );
+      const { savedVideoGame, images } = editedVideoGame.value;
 
       return {
         message: `${displayTitle} successfully edited.`,

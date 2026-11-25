@@ -13,7 +13,7 @@ export default async function NavBar() {
 
   return (
     <header className="relative z-10 bg-[#f3f6f0] text-[#2b2826] shadow-[0_2px_10px_rgba(60,50,40,.06)]">
-      <div className="flex h-[84px] items-center gap-14 px-10">
+      <div className="flex h-[84px] items-center gap-10 px-10">
         <Link
           href="/"
           aria-label="Comfort Creations by Meg, home"

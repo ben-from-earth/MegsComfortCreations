@@ -1,4 +1,5 @@
 import {
+  applySavedCoverIds,
   buildDatabaseSaveFailureDisplayLines,
   markSuccessfulBlocksAsInDatabase,
   toUserFriendlyDatabaseSaveReason,
@@ -207,6 +208,87 @@ describe('markSuccessfulBlocksAsInDatabase', () => {
       true,
       false,
       true,
+    ]);
+  });
+});
+
+describe('applySavedCoverIds', () => {
+  function savedBook(
+    blockID: string,
+    images: Array<{ id: string; url: string }>,
+  ) {
+    return {
+      success: true as const,
+      blockID,
+      title: 'Dune',
+      message: 'saved',
+      type: 'book' as const,
+      actionAttemptItem: {
+        mediaType: 'book' as const,
+        id: 'book-1',
+        title: 'Dune',
+        author: 'Frank Herbert',
+        pageCount: null,
+        pubYear: null,
+        spineColor: '#111111',
+        images: images.map((image) => ({
+          ...image,
+          isDefault: false,
+          spineColor: '#111111',
+        })),
+      },
+    };
+  }
+
+  test('gives a new item’s stored covers their ids in selection order', () => {
+    const [updated] = applySavedCoverIds(
+      [
+        createBlock({
+          images: [
+            { url: 'https://src/a.png', selected: false, isDefault: false, spineColor: '#111' },
+            { url: 'https://src/b.png', selected: true, isDefault: true, spineColor: '#111' },
+            { url: 'https://src/c.png', selected: true, isDefault: false, spineColor: '#111' },
+          ],
+        }),
+      ],
+      [
+        savedBook('BLK-1', [
+          { id: 'cover-b', url: 'https://s3/b.png' },
+          { id: 'cover-c', url: 'https://s3/c.png' },
+        ]),
+      ],
+    );
+
+    expect(updated?.images.map((image) => [image.id, image.url])).toEqual([
+      [undefined, 'https://src/a.png'],
+      ['cover-b', 'https://s3/b.png'],
+      ['cover-c', 'https://s3/c.png'],
+    ]);
+  });
+
+  test('matches a database item’s covers by url', () => {
+    const [updated] = applySavedCoverIds(
+      [
+        createBlock({
+          isDatabase: true,
+          images: [
+            { url: 'https://s3/uploaded.png', selected: true, isDefault: false, spineColor: '#111' },
+            { id: 'cover-old', url: 'https://s3/old.png', selected: false, isDefault: true, spineColor: '#111' },
+          ],
+        }),
+      ],
+      [
+        savedBook('BLK-1', [
+          { id: 'cover-old', url: 'https://s3/old.png' },
+          { id: 'cover-uploaded', url: 'https://s3/uploaded.png' },
+          { id: 'cover-extra', url: 'https://s3/extra.png' },
+        ]),
+      ],
+    );
+
+    expect(updated?.images.map((image) => image.id)).toEqual([
+      'cover-uploaded',
+      'cover-old',
     ]);
   });
 });
