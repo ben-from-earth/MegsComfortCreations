@@ -9,7 +9,7 @@ export type PNGExportImage = {
   console?: string;
 };
 
-function getImageForPNG(block: MediaItemForm) {
+export function getImageForPNG(block: MediaItemForm) {
   const selectedImage = block.images.find((image) => image.selected);
   if (selectedImage) {
     return selectedImage;
@@ -19,22 +19,27 @@ function getImageForPNG(block: MediaItemForm) {
   return defaultImage ?? block.images[0];
 }
 
+export function blocksInExportOrder(
+  collectedData: MediaItemForm[],
+  pngExportBlockIds?: readonly string[],
+): MediaItemForm[] {
+  if (pngExportBlockIds === undefined) {
+    return collectedData;
+  }
+  const collectedBlocksById = new Map(
+    collectedData.map((block) => [block.blockID, block]),
+  );
+  return pngExportBlockIds.flatMap((blockID) => {
+    const block = collectedBlocksById.get(blockID);
+    return block ? [block] : [];
+  });
+}
+
 export function buildPNGExportImages(
   collectedData: MediaItemForm[],
   pngExportBlockIds?: readonly string[],
 ): PNGExportImage[] {
-  const collectedBlocksById = new Map(
-    collectedData.map((block) => [block.blockID, block]),
-  );
-  const blocksForExport =
-    pngExportBlockIds === undefined
-      ? collectedData
-      : pngExportBlockIds.flatMap((blockID) => {
-          const block = collectedBlocksById.get(blockID);
-          return block ? [block] : [];
-        });
-
-  return blocksForExport.flatMap((block) => {
+  return blocksInExportOrder(collectedData, pngExportBlockIds).flatMap((block) => {
     const image = getImageForPNG(block);
     if (!image) {
       return [];

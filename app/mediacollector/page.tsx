@@ -30,6 +30,7 @@ import {
   type MediaItemForm,
 } from './collector-form/media-item-form-schema';
 import { buildPNGExportImages } from './png-export-images';
+import { buildCollectorOrderDraft } from './collector-order-draft';
 import type { CollectorSearchProgress } from './collector-search-progress';
 import {
   BuildingPngModal,
@@ -45,6 +46,7 @@ import {
   type DatabaseItemEdit,
 } from './database-item-changes';
 import {
+  applySavedCoverIds,
   buildDatabaseSaveFailureDisplayLines,
   markSuccessfulBlocksAsInDatabase,
   type DatabaseSaveFailureDisplayLine,
@@ -376,7 +378,7 @@ function MediaCollectorContent({
 
   const saveCollectedItems = async (
     formValues: CollectorFormData,
-  ): Promise<boolean> => {
+  ): Promise<MediaItemForm[] | null> => {
     const databaseEdits = formValues.collectedData.flatMap(
       (block): DatabaseItemEdit[] => {
         const original = block.isDatabase
@@ -389,6 +391,13 @@ function MediaCollectorContent({
       },
     );
     const result = await onSubmit(formValues, databaseEdits);
+    const savedCollectedData = applySavedCoverIds(
+      formValues.collectedData,
+      result,
+    );
+    const savedBlockById = new Map(
+      savedCollectedData.map((block) => [block.blockID, block]),
+    );
 
     const successfulBlockIds = new Set(
       result.filter((res) => res.success).map((res) => res.blockID),
@@ -400,7 +409,7 @@ function MediaCollectorContent({
       setDatabaseOriginals((current) => {
         const next = new Map(current);
         for (const { block } of savedEdits) {
-          next.set(block.blockID, block);
+          next.set(block.blockID, savedBlockById.get(block.blockID) ?? block);
         }
         return next;
       });
@@ -414,11 +423,12 @@ function MediaCollectorContent({
     }
 
     if (result.every((res) => res.success)) {
-      return true;
+      replace(savedCollectedData);
+      return savedCollectedData;
     }
 
     const updatedCollectedData = markSuccessfulBlocksAsInDatabase(
-      formValues.collectedData,
+      savedCollectedData,
       result,
     );
     replace(updatedCollectedData);
@@ -433,15 +443,32 @@ function MediaCollectorContent({
         .map((line) => line.blockID)
         .filter((blockID) => blockID.length > 0),
     );
-    return false;
+    return null;
   };
 
-  const downloadPng = async (formValues: CollectorFormData): Promise<void> => {
+  const downloadPng = async (
+    formValues: CollectorFormData,
+    savedCollectedData: MediaItemForm[],
+  ): Promise<void> => {
     const images = buildPNGExportImages(
-      formValues.collectedData,
+      savedCollectedData,
       formValues.pngExportBlockIds,
     );
     const template = formValues.pngFormat === '5' ? 5 : 3;
+    const { draft, missingCoverTitles } = buildCollectorOrderDraft({
+      customerName: formValues.customerName,
+      orderNumber: formValues.orderNumber,
+      template,
+      repeatCount: formValues.bookClubRepeat,
+      collectedData: savedCollectedData,
+      pngExportBlockIds: formValues.pngExportBlockIds,
+    });
+    if (!draft) {
+      setInformationalDialogText(
+        `These covers are not saved in the library yet, so the order could not be stored: ${missingCoverTitles.join(', ')}.`,
+      );
+      return;
+    }
 
     const { mime, filename, dataBase64 } = await createPNG({
       template,
@@ -449,6 +476,7 @@ function MediaCollectorContent({
       customerName: formValues.customerName,
       orderNumber: formValues.orderNumber,
       repeatCount: formValues.bookClubRepeat,
+      order: draft,
     });
 
     const byteArray = Uint8Array.from(atob(dataBase64), (c) => c.charCodeAt(0));
@@ -472,8 +500,8 @@ function MediaCollectorContent({
     setLoadingState({ step: 'saving', newItemCount });
 
     try {
-      const isSaved = await saveCollectedItems(formValues);
-      if (!isSaved) {
+      const savedCollectedData = await saveCollectedItems(formValues);
+      if (!savedCollectedData) {
         return;
       }
 
@@ -483,7 +511,13 @@ function MediaCollectorContent({
         customerName: formValues.customerName,
         orderNumber: formValues.orderNumber,
       });
-      await downloadPng(formValues);
+      await downloadPng(formValues, savedCollectedData);
+    } catch (error) {
+      setInformationalDialogText(
+        error instanceof Error
+          ? error.message
+          : 'The print file could not be created.',
+      );
     } finally {
       setLoadingState(null);
     }

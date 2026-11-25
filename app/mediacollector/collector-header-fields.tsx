@@ -40,6 +40,7 @@ export default function CollectorHeaderFields() {
                 onBlur={field.onBlur}
               />
             </FormControl>
+            <FormMessage className={errorClassName} />
           </FormItem>
         )}
       />
@@ -59,6 +60,7 @@ export default function CollectorHeaderFields() {
                 onBlur={field.onBlur}
               />
             </FormControl>
+            <FormMessage className={errorClassName} />
           </FormItem>
         )}
       />

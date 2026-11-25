@@ -219,6 +219,22 @@ describe('toFormImages', () => {
     ).toBe('#112233');
   });
 
+  test('keeps the stored cover id', () => {
+    expect(
+      toFormImages(
+        [
+          {
+            id: 'cover-1',
+            url: 'https://img/cover.png',
+            isDefault: true,
+            spineColor: '#b0533a',
+          },
+        ],
+        '#ffffff',
+      )[0]?.id,
+    ).toBe('cover-1');
+  });
+
   test('keeps the cover palette from collection', () => {
     expect(
       toFormImages(

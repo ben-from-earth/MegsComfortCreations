@@ -10,6 +10,7 @@ import type {
 export const PLACEHOLDER_MEDIA_IMAGE_URL = '/images/placeholder-image.png';
 
 export const mediaImageSelectionSchema = z.object({
+  id: z.string().optional(),
   url: z.string(),
   selected: z.boolean(),
   isDefault: z.boolean(),
@@ -107,6 +108,7 @@ export function toFormImages(
 
   const hasDefault = source.some((image) => image.isDefault);
   const mapped = source.map((image, index) => ({
+    ...(image.id ? { id: image.id } : {}),
     url: image.url,
     selected: image.selected ?? false,
     isDefault: hasDefault ? image.isDefault : index === 0,

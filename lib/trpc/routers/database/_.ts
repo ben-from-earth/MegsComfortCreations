@@ -854,6 +854,32 @@ export const databaseRouter = router({
                   coversToAppend,
                 );
               }
+              const savedImages =
+                (await loadBookImagesById(db, [mediaItem.blockID])).get(
+                  mediaItem.blockID,
+                ) ?? [];
+              results.push(
+                createSaveSuccessResult({
+                  blockID: mediaItem.blockID,
+                  title: mediaItem.blockInfo.title,
+                  message: `${mediaItem.blockInfo.title} covers saved.`,
+                  type: 'book',
+                  actionAttemptItem: {
+                    mediaType: 'book',
+                    id: mediaItem.blockID,
+                    title: mediaItem.blockInfo.title,
+                    author: mediaItem.blockInfo.author ?? '',
+                    pageCount: mediaItem.blockInfo.pageCount ?? null,
+                    pubYear: mediaItem.blockInfo.pubYear ?? null,
+                    images: savedImages,
+                    spineColor: resolveDisplaySpineColor(
+                      savedImages,
+                      mediaItem.blockInfo.spineColor,
+                    ),
+                    genres: mediaItem.blockInfo.genres,
+                  },
+                }),
+              );
             } catch (error) {
               const message =
                 error instanceof Error

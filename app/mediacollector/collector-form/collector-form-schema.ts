@@ -16,8 +16,8 @@ export const PNG_FORMAT_OPTIONS = [
 ] satisfies ReadonlyArray<{ value: PngFormat; label: string }>;
 
 export const collectorFormSchema = z.object({
-  orderNumber: z.string(),
-  customerName: z.string(),
+  orderNumber: z.string().trim().min(1, 'Etsy order number is required.'),
+  customerName: z.string().trim().min(1, 'Customer name is required.'),
   bookClubRepeat: z
     .number()
     .int()

@@ -8,6 +8,7 @@ import type { DatabaseItemEdit } from '../database-item-changes';
 import type {
   DatabaseSaveResultItem,
   DatabaseSaveServerResponse,
+  PostSavedMediaItem,
 } from 'lib/interfaces/global-interfaces';
 import { trpc } from 'lib/trpc/client';
 
@@ -55,6 +56,7 @@ export function useCollectorForm() {
       errors,
     });
 
+    let savedImages: PostSavedMediaItem['images'] = block.images;
     try {
       const result = await databaseEdit({
         type: block.type,
@@ -62,6 +64,9 @@ export function useCollectorForm() {
       });
       if ('error' in result && result.error !== undefined) {
         return failure(result.error, result.message, result.errors);
+      }
+      if ('actionAttemptItem' in result && 'images' in result.actionAttemptItem) {
+        savedImages = result.actionAttemptItem.images;
       }
     } catch (error) {
       return failure(
@@ -102,7 +107,7 @@ export function useCollectorForm() {
       title,
       message: `${title} successfully edited.`,
       type: block.type,
-      actionAttemptItem: savedMediaItemFromForm(block),
+      actionAttemptItem: { ...savedMediaItemFromForm(block), images: savedImages },
     };
   };
 
