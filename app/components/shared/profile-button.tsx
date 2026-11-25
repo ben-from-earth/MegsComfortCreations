@@ -5,7 +5,7 @@ export default function ProfileButton() {
     <Link
       href="/profile"
       aria-label="Profile"
-      className="ml-auto flex size-11 items-center justify-center rounded-full bg-transparent text-[#2b2826]"
+      className="flex size-11 flex-none items-center justify-center rounded-full bg-transparent text-[#2b2826]"
     >
       <svg
         width="26"

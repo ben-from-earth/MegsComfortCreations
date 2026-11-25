@@ -1,13 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  sql,
-} from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db as defaultDb, type Db } from '@/db/client';
 import {
@@ -174,10 +166,13 @@ async function loadBookGenres(db: Db, bookIds: string[]) {
 export const ordersRouter = router({
   list: adminProcedure.input(listInput).query(async ({ input, ctx }) => {
     const db = ctx.db ?? defaultDb;
+    const [{ total }] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(orders);
     const min = input.min;
     const max = input.max;
     if (min !== undefined && max !== undefined && min > max) {
-      return [];
+      return { total, rows: [] };
     }
 
     const conditions = [];
@@ -213,10 +208,7 @@ export const ordersRouter = router({
         )`,
       );
     }
-    if (
-      input.type &&
-      (min !== undefined || max !== undefined)
-    ) {
+    if (input.type && (min !== undefined || max !== undefined)) {
       const count = coverCount(input.type);
       if (min !== undefined) {
         conditions.push(sql`${count} >= ${min}`);
@@ -242,7 +234,7 @@ export const ordersRouter = router({
       .orderBy(desc(orders.updatedAt));
 
     if (rows.length === 0) {
-      return [];
+      return { total, rows: [] };
     }
 
     const covers = await db
@@ -290,21 +282,24 @@ export const ordersRouter = router({
       summaryByOrderId.set(cover.orderId, summary);
     }
 
-    return rows.map((row) => {
-      const summary = summaryByOrderId.get(row.id);
-      return {
-        id: row.id,
-        customerName: row.customerName,
-        orderNumber: row.orderNumber,
-        template: templateValue(row.pngFormat),
-        repeatCount: row.repeatCount,
-        fileUrl: row.fileUrl,
-        fileName: row.fileName,
-        updatedAt: row.updatedAt,
-        counts: summary?.counts ?? emptyCounts(),
-        firstCover: summary?.firstCover ?? null,
-      };
-    });
+    return {
+      total,
+      rows: rows.map((row) => {
+        const summary = summaryByOrderId.get(row.id);
+        return {
+          id: row.id,
+          customerName: row.customerName,
+          orderNumber: row.orderNumber,
+          template: templateValue(row.pngFormat),
+          repeatCount: row.repeatCount,
+          fileUrl: row.fileUrl,
+          fileName: row.fileName,
+          updatedAt: row.updatedAt,
+          counts: summary?.counts ?? emptyCounts(),
+          firstCover: summary?.firstCover ?? null,
+        };
+      }),
+    };
   }),
 
   getForCollector: adminProcedure

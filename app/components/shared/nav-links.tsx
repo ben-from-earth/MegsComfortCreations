@@ -9,6 +9,7 @@ import { flushSync, preload } from 'react-dom';
 import { SHOP_DIVISIONS } from '@/shop/shop-divisions';
 
 const nunito = Nunito({ weight: '800', subsets: ['latin'] });
+const nunitoBlack = Nunito({ weight: '900', subsets: ['latin'] });
 
 type Brush = { src: string; ink: string; tilt: number };
 
@@ -34,10 +35,15 @@ const PUBLIC_LINKS = [
 const ADMIN_LINKS = [
   { href: '/mediacollector', label: 'Collector' },
   { href: '/library', label: 'Library' },
+  { href: '/orders', label: 'Orders' },
 ] as const;
 
-const TAB_CLASS =
-  'relative inline-flex h-11 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-[18px] text-[13px] leading-none tracking-[1.2px] text-[#2b2826] uppercase no-underline focus-visible:rounded-lg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3d3935]';
+function tabClass(paddingClass: 'px-[18px]' | 'px-3.5') {
+  return `relative inline-flex h-11 cursor-pointer items-center gap-1.5 border-0 bg-transparent ${paddingClass} text-[13px] leading-none tracking-[1.2px] text-[#2b2826] uppercase no-underline focus-visible:rounded-lg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3d3935]`;
+}
+
+const TAB_CLASS = tabClass('px-[18px]');
+const ADMIN_TAB_CLASS = tabClass('px-3.5');
 
 function isCurrentRoute(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -166,7 +172,7 @@ export default function NavLinks({ isAdmin }: { isAdmin: boolean }) {
   return (
     <nav
       aria-label="Main"
-      className={`${nunito.className} flex items-center gap-1.5`}
+      className={`${nunito.className} flex flex-1 flex-wrap items-center gap-1.5`}
     >
       <span
         ref={shopWrapperRef}
@@ -226,21 +232,52 @@ export default function NavLinks({ isAdmin }: { isAdmin: boolean }) {
         </ul>
       </span>
 
-      {(isAdmin ? [...PUBLIC_LINKS, ...ADMIN_LINKS] : PUBLIC_LINKS).map(
-        (link) => {
-          const isCurrent = isCurrentRoute(pathname, link.href);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={isCurrent ? 'page' : undefined}
-              className={TAB_CLASS}
-            >
-              <TabLabel label={link.label} brush={isCurrent ? brush : null} />
-            </Link>
-          );
-        },
-      )}
+      {PUBLIC_LINKS.map((link) => {
+        const isCurrent = isCurrentRoute(pathname, link.href);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={isCurrent ? 'page' : undefined}
+            className={TAB_CLASS}
+          >
+            <TabLabel label={link.label} brush={isCurrent ? brush : null} />
+          </Link>
+        );
+      })}
+
+      {isAdmin ? (
+        <div
+          role="group"
+          aria-label="Admin only"
+          className="ml-auto flex h-[52px] items-center gap-0.5 rounded-[14px] bg-[#e3e9df] pr-1.5 pl-3 shadow-[inset_0_0_0_1px_#cdd8c6]"
+        >
+          <span
+            className={`${nunitoBlack.className} mr-1 inline-flex h-[22px] items-center gap-[5px] rounded-full bg-[#3f5637] px-2 text-[10px] font-black tracking-[1.2px] text-white uppercase`}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2M9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9zm9 14H6V10h12zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2"
+              />
+            </svg>
+            Admin
+          </span>
+          {ADMIN_LINKS.map((link) => {
+            const isCurrent = isCurrentRoute(pathname, link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isCurrent ? 'page' : undefined}
+                className={ADMIN_TAB_CLASS}
+              >
+                <TabLabel label={link.label} brush={isCurrent ? brush : null} />
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
     </nav>
   );
 }
