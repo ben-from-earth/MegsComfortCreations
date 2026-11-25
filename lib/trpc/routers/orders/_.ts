@@ -239,8 +239,6 @@ export const ordersRouter = router({
     const covers = await db
       .select({
         orderId: orderCovers.orderId,
-        position: orderCovers.position,
-        url: mediaImageItems.path,
         bookId: mediaImageItems.bookId,
         movieId: mediaImageItems.movieId,
         videoGameId: mediaImageItems.videoGameId,
@@ -256,27 +254,19 @@ export const ordersRouter = router({
           orderCovers.orderId,
           rows.map((row) => row.id),
         ),
-      )
-      .orderBy(asc(orderCovers.orderId), asc(orderCovers.position));
+      );
 
     const summaryByOrderId = new Map<
       string,
-      {
-        counts: ReturnType<typeof emptyCounts>;
-        firstCover: { url: string } | null;
-      }
+      { counts: ReturnType<typeof emptyCounts> }
     >();
     for (const cover of covers) {
       const summary = summaryByOrderId.get(cover.orderId) ?? {
         counts: emptyCounts(),
-        firstCover: null,
       };
       const type = coverType(cover);
       if (type) {
         summary.counts[type] += 1;
-      }
-      if (!summary.firstCover) {
-        summary.firstCover = { url: cover.url };
       }
       summaryByOrderId.set(cover.orderId, summary);
     }
@@ -295,7 +285,6 @@ export const ordersRouter = router({
           fileName: row.fileName,
           updatedAt: row.updatedAt,
           counts: summary?.counts ?? emptyCounts(),
-          firstCover: summary?.firstCover ?? null,
         };
       }),
     };

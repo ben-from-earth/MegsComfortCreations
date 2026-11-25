@@ -1,4 +1,4 @@
-import { putPublicObject } from './local-image-storage';
+import { prefixedObjectKey, putPublicObject } from './local-image-storage';
 
 export type OrderFileMimeType = 'image/png' | 'application/zip';
 
@@ -20,7 +20,7 @@ export async function putOrderFile(input: {
 }> {
   const fileName = safeOrderFileName(input.fileName);
   const fileUrl = await putPublicObject({
-    key: `order-files/${input.orderId}/${fileName}`,
+    key: prefixedObjectKey('order-files', input.orderId, fileName),
     body: input.body,
     contentType: input.mimeType,
   });

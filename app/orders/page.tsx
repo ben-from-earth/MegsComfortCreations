@@ -94,17 +94,6 @@ export default function OrdersPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1360px] flex-col gap-5 px-10 pt-8 pb-14">
-      <div>
-        <h1 className="m-0 text-[30px] font-black">Orders</h1>
-        {listQuery.data ? (
-          <p className="mt-1 mb-0 text-sm font-semibold text-[#6b645d]">
-            {listQuery.data.rows.length === listQuery.data.total
-              ? `${listQuery.data.total} orders`
-              : `${listQuery.data.rows.length} of ${listQuery.data.total} orders`}
-          </p>
-        ) : null}
-      </div>
-
       <OrdersFilters
         text={text}
         onTextChange={(key, value) =>

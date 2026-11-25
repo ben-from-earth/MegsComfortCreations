@@ -14,7 +14,6 @@ export type OrderTableRow = {
   fileName: string;
   updatedAt: Date;
   counts: Record<MediaType, number>;
-  firstCover: { url: string } | null;
 };
 
 const updatedThisYear = new Intl.DateTimeFormat('en-US', {
@@ -86,28 +85,14 @@ export default function OrdersTable({
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-[#f3efe9]">
                 <td className="px-[18px] py-2.5">
-                  <div className="flex items-center gap-3.5">
-                    {row.firstCover ? (
-                      <img
-                        src={row.firstCover.url}
-                        alt=""
-                        className="h-[52px] w-[52px] rounded-lg object-cover"
-                      />
-                    ) : (
-                      <span
-                        aria-hidden="true"
-                        className="h-[52px] w-[52px] rounded-lg bg-[#efebe5]"
-                      />
-                    )}
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="font-extrabold text-[#2b2826]">
-                        {row.customerName}
-                      </span>
-                      <span className="text-xs font-semibold text-[#6b645d]">
-                        #{row.orderNumber}
-                      </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-extrabold text-[#2b2826]">
+                      {row.customerName}
                     </span>
-                  </div>
+                    <span className="text-xs font-semibold text-[#6b645d]">
+                      #{row.orderNumber}
+                    </span>
+                  </span>
                 </td>
                 <td className="px-3 py-2.5 font-semibold text-[#4a443f]">
                   {countSummary(row.counts)}

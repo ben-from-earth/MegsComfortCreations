@@ -173,6 +173,14 @@ function createS3Client(): S3Client {
   return cachedS3Client;
 }
 
+export function prefixedObjectKey(...segments: string[]) {
+  const s3Config = getS3StorageConfig();
+  return [s3Config.keyPrefix, getUploadNamespace(), ...segments]
+    .map(normalizePathSegment)
+    .filter(Boolean)
+    .join('/');
+}
+
 function getS3StorageConfig(): S3StorageConfig {
   const bucket = getRequiredEnvValue('S3_BUCKET');
   const publicBaseUrl = normalizeBaseUrl(
@@ -269,7 +277,6 @@ export async function persistExternalImageToS3(
   const now = new Date();
   const year = String(now.getUTCFullYear());
   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const uploadNamespace = getUploadNamespace();
 
   const fileHash = createHash('sha256')
     .update(imageBuffer)
@@ -278,16 +285,7 @@ export async function persistExternalImageToS3(
   const orderToken = String(input.sortOrder).padStart(2, '0');
   const fileName = `${input.mediaType}-${input.mediaId}-${orderToken}-${fileHash}.${extension}`;
   const s3Config = getS3StorageConfig();
-  const objectKey = [
-    s3Config.keyPrefix,
-    uploadNamespace,
-    'covers',
-    year,
-    month,
-    fileName,
-  ]
-    .filter(Boolean)
-    .join('/');
+  const objectKey = prefixedObjectKey('covers', year, month, fileName);
 
   await s3Config.client.send(
     new PutObjectCommand({
@@ -339,7 +337,6 @@ export async function persistUploadedImageToS3(
   const now = new Date();
   const year = String(now.getUTCFullYear());
   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const uploadNamespace = getUploadNamespace();
   const fileHash = createHash('sha256')
     .update(imageBuffer)
     .digest('hex')
@@ -349,16 +346,7 @@ export async function persistUploadedImageToS3(
   const fileName = `${input.mediaType}-${input.mediaId}-${orderToken}-${fileLabel}-${fileHash}.${extension}`;
 
   const s3Config = getS3StorageConfig();
-  const objectKey = [
-    s3Config.keyPrefix,
-    uploadNamespace,
-    'covers',
-    year,
-    month,
-    fileName,
-  ]
-    .filter(Boolean)
-    .join('/');
+  const objectKey = prefixedObjectKey('covers', year, month, fileName);
 
   await s3Config.client.send(
     new PutObjectCommand({
