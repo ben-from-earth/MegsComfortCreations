@@ -66,7 +66,6 @@ export default function OrdersTable({
   const { mutateAsync: deleteOrder } = trpc.orders.delete.useMutation();
   const [pendingOrder, setPendingOrder] = useState<OrderTableRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [printFileRemains, setPrintFileRemains] = useState(false);
   const [isDeleting, startDeleting] = useTransition();
 
   const handleConfirmDelete = () => {
@@ -77,8 +76,7 @@ export default function OrdersTable({
     startDeleting(async () => {
       setDeleteError(null);
       try {
-        const { fileDeleted } = await deleteOrder({ id: orderId });
-        setPrintFileRemains(!fileDeleted);
+        await deleteOrder({ id: orderId });
         setPendingOrder(null);
       } catch (error) {
         setDeleteError(
@@ -93,11 +91,6 @@ export default function OrdersTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {printFileRemains ? (
-        <p className="m-0 text-sm font-semibold text-[#9a3b26]">
-          This order was removed. The print file is still in storage.
-        </p>
-      ) : null}
       <div className="overflow-x-auto rounded-2xl border border-[#e6e0d8] bg-white">
         {rows.length === 0 ? (
           <p className="m-0 px-6 py-16 text-center text-sm font-semibold text-[#6b645d]">

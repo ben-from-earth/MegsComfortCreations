@@ -503,7 +503,7 @@ export const ordersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = ctx.db ?? defaultDb;
       try {
-        return await deletePrintOrder(db, input.id);
+        await deletePrintOrder(db, input.id);
       } catch (error) {
         if (error instanceof OrderWriteError && error.reason === 'not_found') {
           throw new TRPCError({
@@ -511,7 +511,14 @@ export const ordersRouter = router({
             message: error.message,
           });
         }
-        throw error;
+        console.error(
+          '[orders.delete]',
+          error instanceof Error ? error.message : String(error),
+        );
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Couldn’t delete. Try again.',
+        });
       }
     }),
 });

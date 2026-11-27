@@ -167,3 +167,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: “Leave the UI alone” was read as “change PDF generation so the print matches the current crop.” The PDF stretch was already the result the client wanted to preview.
 - Correction: Restored Sharp `fit: 'fill'` and passed `fit="fill"` through the existing collector frames.
 - Rule Going Forward: When a rendered output is already right, change the preview image inside the current layout so it matches that output. Leave the output generator alone, and leave frames, spacing, and chrome alone.
+
+### 2026-11-27 - Order delete removes the print file or it does not finish
+
+- Area: Orders / S3
+- Issue: Deleting an order removed the row, then showed “The print file is still in storage” when the dev uploader was denied `s3:DeleteObject`.
+- Correction: Delete the print object first. If that fails, leave the order and show the normal delete error. The uploader still needs `s3:DeleteObject` on the same prefix it can already write.
+- Rule Going Forward: An order delete removes its print object before the row. Do not report a finished delete while the file remains, and do not explain storage leftovers in the UI.

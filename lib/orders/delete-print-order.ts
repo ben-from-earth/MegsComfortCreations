@@ -13,27 +13,25 @@ const MISSING_ORDER_MESSAGE = 'This order no longer exists.';
 export async function deletePrintOrder(
   db: DbExecutor,
   orderId: string,
-): Promise<{ fileDeleted: boolean }> {
-  const [removed] = await db
-    .delete(orders)
-    .where(eq(orders.id, orderId))
-    .returning({ fileUrl: orders.fileUrl });
-  if (!removed) {
+): Promise<void> {
+  const [order] = await db
+    .select({ fileUrl: orders.fileUrl })
+    .from(orders)
+    .where(eq(orders.id, orderId));
+  if (!order) {
     throw new OrderWriteError('not_found', MISSING_ORDER_MESSAGE);
   }
 
-  try {
-    const key = orderFileObjectKey(removed.fileUrl, publicObjectBaseUrl());
-    if (!key) {
-      return { fileDeleted: true };
-    }
+  const key = orderFileObjectKey(order.fileUrl, publicObjectBaseUrl());
+  if (key) {
     await deletePublicObject(key);
-    return { fileDeleted: true };
-  } catch (error) {
-    console.error(
-      '[deletePrintOrder] order removed, print file remains',
-      error instanceof Error ? error.message : String(error),
-    );
-    return { fileDeleted: false };
+  }
+
+  const [removed] = await db
+    .delete(orders)
+    .where(eq(orders.id, orderId))
+    .returning({ id: orders.id });
+  if (!removed) {
+    throw new OrderWriteError('not_found', MISSING_ORDER_MESSAGE);
   }
 }
