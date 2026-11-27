@@ -25,6 +25,8 @@ import {
   loadMovieImagesById,
   loadVideoGameImagesById,
 } from 'lib/media-storage/media-image-records';
+import { deletePrintOrder } from 'lib/orders/delete-print-order';
+import { OrderWriteError } from 'lib/orders/save-print-order';
 import { adminProcedure, router } from 'lib/trpc/trpc';
 
 const listInput = z.object({
@@ -494,5 +496,29 @@ export const ordersRouter = router({
           return libraryId && blockIds.has(libraryId) ? [libraryId] : [];
         }),
       };
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = ctx.db ?? defaultDb;
+      try {
+        await deletePrintOrder(db, input.id);
+      } catch (error) {
+        if (error instanceof OrderWriteError && error.reason === 'not_found') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: error.message,
+          });
+        }
+        console.error(
+          '[orders.delete]',
+          error instanceof Error ? error.message : String(error),
+        );
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Couldn’t delete. Try again.',
+        });
+      }
     }),
 });

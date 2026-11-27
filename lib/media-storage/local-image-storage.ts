@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { createHash } from 'node:crypto';
-import { PutObjectCommand, S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  S3ClientConfig,
+} from '@aws-sdk/client-s3';
 import { MediaType } from 'lib/constants/media-types';
 import { isExternalImageUrl, normalizeImagePath } from './image-path-utils';
 
@@ -382,4 +387,18 @@ export async function putPublicObject(input: {
     }),
   );
   return `${s3Config.publicBaseUrl}/${input.key}`;
+}
+
+export function publicObjectBaseUrl(): string {
+  return getS3StorageConfig().publicBaseUrl;
+}
+
+export async function deletePublicObject(key: string): Promise<void> {
+  const s3Config = getS3StorageConfig();
+  await s3Config.client.send(
+    new DeleteObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: key,
+    }),
+  );
 }

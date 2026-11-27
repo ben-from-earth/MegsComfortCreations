@@ -169,6 +169,7 @@ export default function CBBImages({
               }
               aspectClassName={tileAspectClassName}
               codeColor={image.codeColor}
+              fit="fill"
               onClick={() => handleImageSelection(imageIndex)}
               onSetDefault={
                 isDatabase && !isLocked && image.selected && !image.isDefault
@@ -188,6 +189,7 @@ export default function CBBImages({
               <CoverImage
                 url={overflowPreviewImage.url}
                 alt={`${type} cover`}
+                fit="fill"
               />
             ) : null}
             <span className="absolute inset-0 bg-[rgba(43,40,38,0.66)]" />

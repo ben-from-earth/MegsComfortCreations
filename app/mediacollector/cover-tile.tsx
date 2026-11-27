@@ -64,6 +64,7 @@ export function CoverTile({
   defaultRibbon,
   aspectClassName,
   codeColor,
+  fit = 'cover',
   onClick,
   onSetDefault,
 }: {
@@ -74,6 +75,7 @@ export function CoverTile({
   defaultRibbon: DefaultCoverRibbonVariant | null;
   aspectClassName?: string;
   codeColor?: string | null;
+  fit?: 'cover' | 'fill';
   onClick: () => void;
   onSetDefault?: () => void;
 }) {
@@ -93,7 +95,7 @@ export function CoverTile({
         }`}
       >
         <span className="absolute inset-0 overflow-hidden rounded-md">
-          <CoverImage url={url} alt={`${mediaType} cover`} />
+          <CoverImage url={url} alt={`${mediaType} cover`} fit={fit} />
         </span>
         {defaultRibbon ? <DefaultCoverRibbon variant={defaultRibbon} /> : null}
         {mediaType === 'album' ? (
