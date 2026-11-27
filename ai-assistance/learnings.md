@@ -153,3 +153,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Order files were written at `order-files/...` on the bucket root. The dev uploader can only `PutObject` under the cover prefix (`media-images/{namespace}/...`), so export failed with AccessDenied.
 - Correction: Build order-file keys with `prefixedObjectKey`, the same prefix and upload namespace cover uploads use.
 - Rule Going Forward: Any object written by the image uploader must go through `prefixedObjectKey`. A key at the bucket root is outside that user's policy.
+
+### 2026-11-27 - Edited order migrations never reached production
+
+- Area: Drizzle migrations / orders
+- Issue: Print-order columns and `order_covers` were written into `0002` and `0005` after those journal timestamps were already recorded. `drizzle-kit migrate` compares `created_at` only, so production reported success and kept the old `orders`, `orders_books`, and `pngs` tables.
+- Correction: `0011_print_orders.sql` (`when` 1774400000000, after the dev-only listings row) replaces the empty commerce tables and no-ops when `customer_name` and `order_covers` are already present.
+- Rule Going Forward: After a migration timestamp is applied, do not rely on editing that file to change an existing database. Add a newer journal entry, and make it safe for databases that already have the edited SQL.
