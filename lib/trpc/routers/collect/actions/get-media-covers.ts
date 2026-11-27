@@ -48,7 +48,6 @@ export async function getMediaCovers(
   }
   const resultCount = mediaCoverResultCount(type);
   const query = mediaCoverSearchQuery(title, author, type, movieFormat);
-  console.log('[collect] google cover query', { type, query, resultCount });
   const params = new URLSearchParams({
     q: query,
     cx: CX,
