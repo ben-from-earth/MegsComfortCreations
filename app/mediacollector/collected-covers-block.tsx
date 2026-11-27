@@ -223,7 +223,7 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
               <CoverImage
                 url={selectedImage.url}
                 alt={`${title} cover`}
-                fit={isThreeDsGame ? 'fill' : 'cover'}
+                fit="fill"
               />
             </div>
           ) : (
@@ -254,7 +254,11 @@ const CollectedCoversBlock = memo(function CollectedCoversBlock({
                   />
                 ) : null}
                 <div className={`relative ${mainCoverSizeClassName}`}>
-                  <CoverImage url={selectedImage.url} alt={`${title} cover`} />
+                  <CoverImage
+                    url={selectedImage.url}
+                    alt={`${title} cover`}
+                    fit="fill"
+                  />
                 </div>
               </div>
             ) : (

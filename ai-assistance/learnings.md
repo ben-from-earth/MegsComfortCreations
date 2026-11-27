@@ -160,3 +160,10 @@ Capture durable corrections so agents avoid repeating mistakes and preserve long
 - Issue: Print-order columns and `order_covers` were written into `0002` and `0005` after those journal timestamps were already recorded. `drizzle-kit migrate` compares `created_at` only, so production reported success and kept the old `orders`, `orders_books`, and `pngs` tables.
 - Correction: `0011_print_orders.sql` (`when` 1774400000000, after the dev-only listings row) replaces the empty commerce tables and no-ops when `customer_name` and `order_covers` are already present.
 - Rule Going Forward: After a migration timestamp is applied, do not rely on editing that file to change an existing database. Add a newer journal entry, and make it safe for databases that already have the edited SQL.
+
+### 2026-11-27 - Card preview follows a working PDF
+
+- Area: Collector cover preview
+- Issue: “Leave the UI alone” was read as “change PDF generation so the print matches the current crop.” The PDF stretch was already the result the client wanted to preview.
+- Correction: Restored Sharp `fit: 'fill'` and passed `fit="fill"` through the existing collector frames.
+- Rule Going Forward: When a rendered output is already right, change the preview image inside the current layout so it matches that output. Leave the output generator alone, and leave frames, spacing, and chrome alone.

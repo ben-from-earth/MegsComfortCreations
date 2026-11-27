@@ -91,6 +91,7 @@ export default function CoversDialog({
               }
               aspectClassName={aspectClassName}
               codeColor={image.codeColor}
+              fit="fill"
               onClick={() => setPickedIndex(imageIndex)}
             />
           ))}
