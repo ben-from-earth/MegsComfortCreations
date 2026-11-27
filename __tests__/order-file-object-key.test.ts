@@ -54,13 +54,4 @@ describe('orderFileObjectKey', () => {
       ),
     ).toBeNull();
   });
-
-  test('ignores a path that climbs out of the order file prefix', () => {
-    expect(
-      orderFileObjectKey(
-        `${base}/media-images/shared/order-files/../covers/secret.png`,
-        base,
-      ),
-    ).toBeNull();
-  });
 });

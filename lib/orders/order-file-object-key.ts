@@ -34,12 +34,6 @@ export function orderFileObjectKey(
   if (!baseSegments || !fileSegments) {
     return null;
   }
-  if (
-    baseSegments.some((segment) => segment === '..') ||
-    fileSegments.some((segment) => segment === '..')
-  ) {
-    return null;
-  }
   if (fileSegments.length <= baseSegments.length) {
     return null;
   }

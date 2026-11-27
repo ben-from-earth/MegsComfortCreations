@@ -14,25 +14,16 @@ export async function deletePrintOrder(
   db: DbExecutor,
   orderId: string,
 ): Promise<{ fileDeleted: boolean }> {
-  const [order] = await db
-    .select({ id: orders.id, fileUrl: orders.fileUrl })
-    .from(orders)
-    .where(eq(orders.id, orderId))
-    .limit(1);
-  if (!order) {
-    throw new OrderWriteError('not_found', MISSING_ORDER_MESSAGE);
-  }
-
-  const deleted = await db
+  const [removed] = await db
     .delete(orders)
     .where(eq(orders.id, orderId))
-    .returning({ id: orders.id });
-  if (deleted.length === 0) {
+    .returning({ fileUrl: orders.fileUrl });
+  if (!removed) {
     throw new OrderWriteError('not_found', MISSING_ORDER_MESSAGE);
   }
 
   try {
-    const key = orderFileObjectKey(order.fileUrl, publicObjectBaseUrl());
+    const key = orderFileObjectKey(removed.fileUrl, publicObjectBaseUrl());
     if (!key) {
       return { fileDeleted: true };
     }
